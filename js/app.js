@@ -5,7 +5,7 @@
       dashboardEndpoint:
         "https://x8ki-letl-twmt.n7.xano.io/api:seasondeals-partner/dashboard",
 
-      loginUrl: "/partner/login",
+      loginUrl: "/seasondeals-partner-portal/",
 
       tokenKey: "sd_partner_token",
       userKey: "sd_partner_user",
