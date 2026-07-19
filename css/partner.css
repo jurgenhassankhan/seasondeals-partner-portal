@@ -1540,3 +1540,29 @@
   font-weight: 700;
 }
 #sd-partner-app .sd-image-preview.has-image .sd-remove-image { display: block; }
+
+
+/* Deal detail navigation */
+#sd-partner-app .sd-deal-card[role="link"] {
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+#sd-partner-app .sd-deal-card[role="link"]:hover,
+#sd-partner-app .sd-deal-card[role="link"]:focus-visible {
+  border-color: rgba(248,102,11,.35);
+  box-shadow: 0 16px 38px rgba(4,40,33,.1);
+  transform: translateY(-3px);
+  outline: none;
+}
+#sd-partner-app .sd-upload-field.is-hidden { display: none; }
+.sd-detail-page #sd-partner-app .sd-form-field input:disabled,
+.sd-detail-page #sd-partner-app .sd-form-field textarea:disabled {
+  color: var(--sd-text);
+  -webkit-text-fill-color: var(--sd-text);
+  opacity: 1;
+  background: #f8f7f2;
+}
+.sd-detail-page #sd-partner-app .sd-checkbox:has(input:disabled) {
+  cursor: default;
+  background: #f8f7f2;
+}
