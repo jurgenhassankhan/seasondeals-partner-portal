@@ -84,12 +84,16 @@
     setLoading(true);
     try {
       const result = await apiRequest(CONFIG.dealsEndpoint, payload);
-      const createdDeal = result?.deal || result?.data || result;
+      const createdDeal = result?.deal || result?.data?.deal || result?.data || null;
       const id = createdDeal?.id;
-      sessionStorage.setItem("sd_deal_flash", id
-        ? `Conceptdeal #${id} is succesvol opgeslagen.`
-        : "De conceptdeal is succesvol opgeslagen.");
-      window.location.assign(CONFIG.dealsUrl);
+      showMessage(id
+        ? `Xano meldt succes met deal-ID #${id}. Controleer dit ID nu in de deals-tabel.`
+        : "Xano gaf een succesvolle HTTP-status terug, maar zonder herkenbaar deal-ID. Bekijk de technische response hieronder.",
+        id ? "info" : "error");
+      showTechnicalResponse(result);
+      elements.submit.disabled = true;
+      elements.submit.textContent = id ? `Opgeslagen als deal #${id}` : "Response ontvangen";
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error("SeasonDeals create deal failed:", error);
       showMessage(error?.message || "De deal kon niet worden opgeslagen. Probeer het opnieuw.", "error");
@@ -108,7 +112,6 @@
       price: toNumber(data.get("price")),
       original_price: toOptionalNumber(data.get("original_price")),
       inventory: toInteger(data.get("inventory")),
-      sold_quantity: 0,
       minimum_nights: toInteger(data.get("minimum_nights")),
       max_guests: toInteger(data.get("max_guests")),
       valid_from: clean(data.get("valid_from")),
@@ -119,9 +122,7 @@
       includes_wifi: data.has("includes_wifi"),
       includes_parking: data.has("includes_parking"),
       includes_late_checkout: data.has("includes_late_checkout"),
-      includes_welcome_drink: data.has("includes_welcome_drink"),
-      status: "draft",
-      is_active: false
+      includes_welcome_drink: data.has("includes_welcome_drink")
     };
   }
 
@@ -208,6 +209,17 @@
     const url = elements.imageUrl.value.trim();
     elements.imagePreview.style.backgroundImage = url.startsWith("https://") ? `url("${url.replace(/"/g, "%22")}")` : "";
     elements.imagePreview.classList.toggle("has-image", url.startsWith("https://"));
+  }
+
+  function showTechnicalResponse(result) {
+    let output = document.getElementById("sd-create-response");
+    if (!output) {
+      output = document.createElement("pre");
+      output.id = "sd-create-response";
+      output.className = "sd-create-response";
+      elements.message.insertAdjacentElement("afterend", output);
+    }
+    output.textContent = JSON.stringify(result, null, 2);
   }
 
   function setLoading(loading) {
