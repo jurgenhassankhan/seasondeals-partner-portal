@@ -54,7 +54,15 @@
 
     renderUser(readStoredUser());
     bindEvents();
+    showStoredFlashMessage();
     loadDeals();
+  }
+
+  function showStoredFlashMessage() {
+    const message = sessionStorage.getItem("sd_deal_flash");
+    if (!message) return;
+    sessionStorage.removeItem("sd_deal_flash");
+    showGlobalMessage(message, "info");
   }
 
   function bindEvents() {
