@@ -67,10 +67,18 @@
         elements.uploadField.classList.add("is-dragging");
       });
     });
-    ["dragleave", "drop"].forEach((eventName) => {
-      elements.uploadField?.addEventListener(eventName, () => {
-        elements.uploadField.classList.remove("is-dragging");
-      });
+    elements.uploadField?.addEventListener("dragleave", () => {
+      elements.uploadField.classList.remove("is-dragging");
+    });
+    elements.uploadField?.addEventListener("drop", (event) => {
+      event.preventDefault();
+      elements.uploadField.classList.remove("is-dragging");
+      const file = event.dataTransfer?.files?.[0];
+      if (!file) return;
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      elements.imageFile.files = transfer.files;
+      updateImagePreview();
     });
     elements.menuToggle?.addEventListener("click", openSidebar);
     elements.sidebarClose?.addEventListener("click", closeSidebar);
