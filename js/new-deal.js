@@ -98,7 +98,7 @@
 
     if (!elements.form.reportValidity()) return;
 
-    const payload = buildPayload();
+    const payload = await buildPayload();
     const validationError = validatePayload(payload);
     if (validationError) {
       showMessage(validationError, "error");
@@ -127,7 +127,7 @@
     }
   }
 
-  function buildPayload() {
+  async function buildPayload() {
     const data = new FormData(elements.form);
     [
       "includes_breakfast",
@@ -141,16 +141,48 @@
     if (clean(data.get("original_price")) === "") data.delete("original_price");
 
     const imageFile = data.get("image_file");
-    if (imageFile instanceof File) {
-      const extensionByMime = {
-        "image/jpeg": "jpg",
-        "image/png": "png",
-        "image/webp": "webp"
-      };
-      data.set("image_extension", extensionByMime[imageFile.type] || "");
+    if (imageFile instanceof File && imageFile.size > 0) {
+      const normalizedImage = await normalizeImageForXano(imageFile);
+      data.set("image_file", normalizedImage, normalizedImage.name);
+      data.set("image_extension", "jpg");
     }
 
     return data;
+  }
+
+  async function normalizeImageForXano(file) {
+    const bitmap = await createImageBitmap(file);
+    const maxDimension = 2400;
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { alpha: false });
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close?.();
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (result) => result ? resolve(result) : reject(new Error("De afbeelding kon niet worden voorbereid.")),
+        "image/jpeg",
+        0.88
+      );
+    });
+
+    const safeBaseName = (file.name || "deal-afbeelding")
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-zA-Z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "deal-afbeelding";
+
+    return new File([blob], `${safeBaseName}.jpg`, {
+      type: "image/jpeg",
+      lastModified: Date.now()
+    });
   }
 
   function validatePayload(payload) {
