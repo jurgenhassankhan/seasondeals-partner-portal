@@ -17,7 +17,9 @@
     shortDescription: document.getElementById("sd-short-description"),
     titleCount: document.getElementById("sd-title-count"),
     shortCount: document.getElementById("sd-short-count"),
-    imageUrl: document.getElementById("sd-image-url"),
+    imageFile: document.getElementById("sd-image-file"),
+    uploadField: document.getElementById("sd-upload-field"),
+    removeImage: document.getElementById("sd-remove-image"),
     imagePreview: document.getElementById("sd-image-preview"),
     sidebar: document.getElementById("sd-sidebar"),
     overlay: document.getElementById("sd-mobile-overlay"),
@@ -38,6 +40,8 @@
     dropdownEmail: document.getElementById("sd-dropdown-email")
   };
 
+  let previewObjectUrl = "";
+
   init();
 
   function init() {
@@ -55,7 +59,19 @@
     elements.form?.addEventListener("submit", submitDeal);
     elements.title?.addEventListener("input", updateCounters);
     elements.shortDescription?.addEventListener("input", updateCounters);
-    elements.imageUrl?.addEventListener("input", updateImagePreview);
+    elements.imageFile?.addEventListener("change", updateImagePreview);
+    elements.removeImage?.addEventListener("click", clearSelectedImage);
+    ["dragenter", "dragover"].forEach((eventName) => {
+      elements.uploadField?.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        elements.uploadField.classList.add("is-dragging");
+      });
+    });
+    ["dragleave", "drop"].forEach((eventName) => {
+      elements.uploadField?.addEventListener(eventName, () => {
+        elements.uploadField.classList.remove("is-dragging");
+      });
+    });
     elements.menuToggle?.addEventListener("click", openSidebar);
     elements.sidebarClose?.addEventListener("click", closeSidebar);
     elements.overlay?.addEventListener("click", closeSidebar);
@@ -105,36 +121,40 @@
 
   function buildPayload() {
     const data = new FormData(elements.form);
-    return {
-      title: clean(data.get("title")),
-      short_description: clean(data.get("short_description")),
-      long_description: clean(data.get("long_description")),
-      price: toNumber(data.get("price")),
-      original_price: toOptionalNumber(data.get("original_price")),
-      inventory: toInteger(data.get("inventory")),
-      minimum_nights: toInteger(data.get("minimum_nights")),
-      max_guests: toInteger(data.get("max_guests")),
-      valid_from: clean(data.get("valid_from")),
-      valid_until: clean(data.get("valid_until")),
-      image_url: clean(data.get("image_url")),
-      cancellation_policy: clean(data.get("cancellation_policy")),
-      includes_breakfast: data.has("includes_breakfast"),
-      includes_wifi: data.has("includes_wifi"),
-      includes_parking: data.has("includes_parking"),
-      includes_late_checkout: data.has("includes_late_checkout"),
-      includes_welcome_drink: data.has("includes_welcome_drink")
-    };
+    [
+      "includes_breakfast",
+      "includes_wifi",
+      "includes_parking",
+      "includes_late_checkout",
+      "includes_welcome_drink"
+    ].forEach((name) => {
+      data.set(name, elements.form.elements[name].checked ? "true" : "false");
+    });
+    if (clean(data.get("original_price")) === "") data.delete("original_price");
+    return data;
   }
 
   function validatePayload(payload) {
-    if (payload.original_price !== null && payload.original_price <= payload.price) {
+    const price = toNumber(payload.get("price"));
+    const originalPrice = toOptionalNumber(payload.get("original_price"));
+    const validFrom = clean(payload.get("valid_from"));
+    const validUntil = clean(payload.get("valid_until"));
+    const file = payload.get("image_file");
+
+    if (originalPrice !== null && originalPrice <= price) {
       return "De oorspronkelijke prijs moet hoger zijn dan de dealprijs.";
     }
-    if (payload.valid_until < payload.valid_from) {
+    if (validUntil < validFrom) {
       return "De einddatum moet op of na de begindatum liggen.";
     }
-    if (!payload.image_url.startsWith("https://")) {
-      return "Gebruik een veilige afbeeldingslink die begint met https://.";
+    if (!(file instanceof File) || file.size === 0) {
+      return "Kies een afbeelding voor deze deal.";
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      return "Gebruik een JPG-, PNG- of WebP-afbeelding.";
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      return "De afbeelding mag maximaal 8 MB groot zijn.";
     }
     return "";
   }
@@ -154,10 +174,9 @@
         credentials: "omit",
         headers: {
           Accept: "application/json",
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(body)
+        body
       });
     } catch {
       throw new Error("De dealservice is niet bereikbaar. Controleer je verbinding en probeer opnieuw.");
@@ -206,9 +225,36 @@
   }
 
   function updateImagePreview() {
-    const url = elements.imageUrl.value.trim();
-    elements.imagePreview.style.backgroundImage = url.startsWith("https://") ? `url("${url.replace(/"/g, "%22")}")` : "";
-    elements.imagePreview.classList.toggle("has-image", url.startsWith("https://"));
+    const file = elements.imageFile.files?.[0];
+    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = "";
+
+    if (!file) {
+      elements.imagePreview.style.backgroundImage = "";
+      elements.imagePreview.classList.remove("has-image");
+      return;
+    }
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) {
+      elements.imageFile.value = "";
+      showMessage(file.size > 8 * 1024 * 1024
+        ? "De afbeelding mag maximaal 8 MB groot zijn."
+        : "Gebruik een JPG-, PNG- of WebP-afbeelding.", "error");
+      return;
+    }
+
+    clearMessage();
+    previewObjectUrl = URL.createObjectURL(file);
+    elements.imagePreview.style.backgroundImage = `url("${previewObjectUrl}")`;
+    elements.imagePreview.classList.add("has-image");
+  }
+
+  function clearSelectedImage() {
+    elements.imageFile.value = "";
+    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = "";
+    elements.imagePreview.style.backgroundImage = "";
+    elements.imagePreview.classList.remove("has-image");
   }
 
   function showTechnicalResponse(result) {
