@@ -238,7 +238,16 @@
   }
 
   function getDealTitle(deal) { return textOrFallback(deal.title || deal.name || deal.deal_name || deal.deal_title, "SeasonDeals deal"); }
-  function getDealImage(deal) { return deal.image_url || deal.image || deal.photo_url || deal.cover_image || deal.images?.[0]?.url || deal.images?.[0] || deal.media?.[0]?.url || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"; }
+  function getDealImage(deal) {
+    const firstImage = deal.images?.[0];
+    return deal.image_url ||
+      deal.image ||
+      deal.photo_url ||
+      deal.cover_image ||
+      (typeof firstImage === "string" ? firstImage : firstImage?.url || firstImage?.path) ||
+      deal.media?.[0]?.url ||
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
+  }
   function getDealPrice(deal) { return normalizeMoney(deal.price ?? deal.amount ?? deal.from_price ?? deal.sale_price ?? deal.total_price); }
 
   function updateUserFromResponse(data) {
