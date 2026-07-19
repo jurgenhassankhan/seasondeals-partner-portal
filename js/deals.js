@@ -54,7 +54,6 @@
 
     renderUser(readStoredUser());
     bindEvents();
-    showStoredFlashMessage();
     loadDeals();
   }
 
@@ -102,6 +101,10 @@
       updateUserFromResponse(data);
       deals = resolveDeals(data);
       renderDeals();
+      showStoredFlashMessage();
+      if (!deals.length) {
+        showGlobalMessage("De API is bereikbaar, maar heeft voor dit hotel 0 deals teruggegeven.", "info");
+      }
       elements.loading?.classList.add("is-hidden");
       elements.content?.classList.add("is-visible");
     } catch (error) {
@@ -160,7 +163,21 @@
   }
 
   function resolveDeals(data) {
-    const direct = [data, data?.data, data?.deals, data?.data?.deals, data?.items, data?.records];
+    const direct = [
+      data,
+      data?.items,
+      data?.deals,
+      data?.records,
+      data?.result,
+      data?.result?.items,
+      data?.result?.deals,
+      data?.data,
+      data?.data?.items,
+      data?.data?.deals,
+      data?.data?.records,
+      data?.response,
+      data?.response?.items
+    ];
     for (const value of direct) {
       if (Array.isArray(value)) return value;
     }
@@ -215,12 +232,13 @@
     const stock = getNumber(deal.stock ?? deal.inventory ?? deal.available_quantity ?? deal.quantity_available ?? deal.remaining_inventory);
     const isActive = deal.is_active ?? deal.active ?? deal.published;
     if (stock === 0 || raw.includes("sold")) return { key: "sold_out", label: "Uitverkocht" };
-    if (isActive === false || raw.includes("inactive") || raw.includes("draft") || raw.includes("offline")) return { key: "inactive", label: "Inactief" };
+    if (raw.includes("draft") || raw.includes("pending")) return { key: "draft", label: "Concept" };
+    if (isActive === false || raw.includes("inactive") || raw.includes("paused") || raw.includes("offline")) return { key: "inactive", label: "Inactief" };
     return { key: "active", label: "Actief" };
   }
 
   function getDealTitle(deal) { return textOrFallback(deal.title || deal.name || deal.deal_name || deal.deal_title, "SeasonDeals deal"); }
-  function getDealImage(deal) { return deal.image_url || deal.image || deal.photo_url || deal.cover_image || deal.media?.[0]?.url || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"; }
+  function getDealImage(deal) { return deal.image_url || deal.image || deal.photo_url || deal.cover_image || deal.images?.[0]?.url || deal.images?.[0] || deal.media?.[0]?.url || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"; }
   function getDealPrice(deal) { return normalizeMoney(deal.price ?? deal.amount ?? deal.from_price ?? deal.sale_price ?? deal.total_price); }
 
   function updateUserFromResponse(data) {
@@ -260,7 +278,7 @@
   function getNumber(value) { if (typeof value === "number" && Number.isFinite(value)) return value; if (typeof value === "string" && value.trim()) { const parsed = Number(value.replace(",", ".")); return Number.isFinite(parsed) ? parsed : null; } return null; }
   function formatNumber(value) { return new Intl.NumberFormat(CONFIG.locale, { maximumFractionDigits: 0 }).format(getNumber(value) || 0); }
   function formatCurrency(value) { return new Intl.NumberFormat(CONFIG.locale, { style: "currency", currency: CONFIG.currency, maximumFractionDigits: 2 }).format(getNumber(value) || 0); }
-  function getStatusClass(status) { return status.key === "active" ? "sd-status-success" : status.key === "sold_out" ? "sd-status-warning" : "sd-status-neutral"; }
+  function getStatusClass(status) { return status.key === "active" ? "sd-status-success" : status.key === "sold_out" ? "sd-status-warning" : status.key === "draft" ? "sd-status-warning" : "sd-status-neutral"; }
   function formatLabel(value) { return String(value || "").replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase()); }
   function getInitial(value) { return String(value || "S").trim().charAt(0).toUpperCase(); }
   function textOrFallback(value, fallback) { return value === null || value === undefined || String(value).trim() === "" ? fallback : String(value); }
