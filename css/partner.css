@@ -1315,3 +1315,157 @@
       justify-self: start;
     }
   }
+
+
+/* New deal form */
+#sd-partner-app .sd-back-link {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: var(--sd-green);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+#sd-partner-app .sd-deal-form {
+  display: grid;
+  gap: 20px;
+  max-width: 1120px;
+}
+#sd-partner-app .sd-form-card {
+  padding: 28px;
+  border: 1px solid rgba(4,40,33,.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,.84);
+  box-shadow: 0 8px 28px rgba(4,40,33,.04);
+}
+#sd-partner-app .sd-form-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 24px;
+}
+#sd-partner-app .sd-form-step {
+  display: grid;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  color: var(--sd-orange);
+  border-radius: 11px;
+  background: rgba(248,102,11,.1);
+  font-size: 10px;
+  font-weight: 800;
+  place-items: center;
+}
+#sd-partner-app .sd-form-card-heading h2 {
+  margin: 0 0 6px;
+  color: var(--sd-green);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 29px;
+  line-height: 1;
+}
+#sd-partner-app .sd-form-card-heading p {
+  margin: 0;
+  color: var(--sd-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+#sd-partner-app .sd-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 18px;
+}
+#sd-partner-app .sd-form-grid-3 { grid-template-columns: repeat(3,minmax(0,1fr)); }
+#sd-partner-app .sd-form-field-full { grid-column: 1 / -1; }
+#sd-partner-app .sd-form-field > span,
+#sd-partner-app .sd-form-field > small { display: block; }
+#sd-partner-app .sd-form-field > span {
+  margin-bottom: 8px;
+  color: var(--sd-green);
+  font-size: 11px;
+  font-weight: 700;
+}
+#sd-partner-app .sd-form-field > small {
+  margin-top: 7px;
+  color: var(--sd-muted);
+  font-size: 9px;
+}
+#sd-partner-app .sd-form-field input,
+#sd-partner-app .sd-form-field textarea {
+  width: 100%;
+  padding: 13px 14px;
+  color: var(--sd-text);
+  border: 1px solid var(--sd-border);
+  border-radius: 11px;
+  outline: 0;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1.5;
+}
+#sd-partner-app .sd-form-field input { min-height: 48px; }
+#sd-partner-app .sd-form-field textarea { resize: vertical; }
+#sd-partner-app .sd-form-field input:focus,
+#sd-partner-app .sd-form-field textarea:focus {
+  border-color: var(--sd-orange);
+  box-shadow: 0 0 0 3px rgba(248,102,11,.1);
+}
+#sd-partner-app .sd-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 12px;
+}
+#sd-partner-app .sd-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  color: var(--sd-green);
+  border: 1px solid var(--sd-border);
+  border-radius: 11px;
+  cursor: pointer;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+#sd-partner-app .sd-checkbox input { width: 17px; height: 17px; accent-color: var(--sd-orange); }
+#sd-partner-app .sd-image-preview {
+  grid-column: 1 / -1;
+  display: grid;
+  min-height: 260px;
+  color: var(--sd-muted);
+  border: 1px dashed #c6cbc7;
+  border-radius: 14px;
+  background: var(--sd-beige) center/cover no-repeat;
+  font-size: 11px;
+  place-items: center;
+}
+#sd-partner-app .sd-image-preview.has-image span { display: none; }
+#sd-partner-app .sd-form-actions {
+  position: sticky;
+  bottom: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 17px 20px;
+  border: 1px solid rgba(4,40,33,.1);
+  border-radius: 16px;
+  background: rgba(255,255,255,.95);
+  box-shadow: 0 16px 45px rgba(4,40,33,.13);
+  backdrop-filter: blur(14px);
+}
+#sd-partner-app .sd-form-actions > div { margin-right: auto; }
+#sd-partner-app .sd-form-actions strong,
+#sd-partner-app .sd-form-actions span { display: block; }
+#sd-partner-app .sd-form-actions strong { margin-bottom: 4px; color: var(--sd-green); font-size: 11px; }
+#sd-partner-app .sd-form-actions span { color: var(--sd-muted); font-size: 9px; }
+@media (max-width:767px) {
+  #sd-partner-app .sd-form-grid,
+  #sd-partner-app .sd-form-grid-3,
+  #sd-partner-app .sd-checkbox-grid { grid-template-columns:1fr; }
+  #sd-partner-app .sd-form-card { padding:22px 18px; }
+  #sd-partner-app .sd-form-actions { align-items:stretch; flex-direction:column; bottom:8px; }
+  #sd-partner-app .sd-form-actions > div { width:100%; margin:0 0 4px; }
+  #sd-partner-app .sd-form-actions .sd-primary-button,
+  #sd-partner-app .sd-form-actions .sd-secondary-button { width:100%; }
+}
