@@ -219,6 +219,19 @@
           <div><dt>Verkocht</dt><dd>${escapeHtml(sold === null ? "0" : formatNumber(sold))}</dd></div>
         </dl>
       </div>`;
+    card.tabIndex = 0;
+    card.setAttribute("role", "link");
+    card.setAttribute("aria-label", `Bekijk ${getDealTitle(deal)}`);
+    const openDeal = () => {
+      if (deal?.id != null) window.location.href = `deal-detail.html?id=${encodeURIComponent(deal.id)}`;
+    };
+    card.addEventListener("click", openDeal);
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openDeal();
+      }
+    });
     return card;
   }
 
