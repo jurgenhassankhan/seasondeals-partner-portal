@@ -139,6 +139,17 @@
       data.set(name, elements.form.elements[name].checked ? "true" : "false");
     });
     if (clean(data.get("original_price")) === "") data.delete("original_price");
+
+    const imageFile = data.get("image_file");
+    if (imageFile instanceof File) {
+      const extensionByMime = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp"
+      };
+      data.set("image_extension", extensionByMime[imageFile.type] || "");
+    }
+
     return data;
   }
 
