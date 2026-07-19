@@ -1469,3 +1469,74 @@
   #sd-partner-app .sd-form-actions .sd-primary-button,
   #sd-partner-app .sd-form-actions .sd-secondary-button { width:100%; }
 }
+
+
+/* Deal image upload */
+#sd-partner-app .sd-upload-field {
+  display: grid;
+  min-height: 190px;
+  padding: 28px;
+  color: var(--sd-muted);
+  border: 1px dashed #b9c2bd;
+  border-radius: 14px;
+  cursor: pointer;
+  background: var(--sd-beige);
+  text-align: center;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+  place-items: center;
+}
+#sd-partner-app .sd-upload-field:hover,
+#sd-partner-app .sd-upload-field.is-dragging {
+  border-color: var(--sd-orange);
+  background: #fff8f1;
+  transform: translateY(-1px);
+}
+#sd-partner-app .sd-upload-field input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+#sd-partner-app .sd-upload-field > span,
+#sd-partner-app .sd-upload-field > strong,
+#sd-partner-app .sd-upload-field > small { display: block; }
+#sd-partner-app .sd-upload-icon {
+  display: grid !important;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  color: var(--sd-orange);
+  border-radius: 14px;
+  background: rgba(248,102,11,.1);
+  place-items: center;
+}
+#sd-partner-app .sd-upload-icon svg { width: 24px; height: 24px; }
+#sd-partner-app .sd-upload-field > strong {
+  margin-bottom: 6px;
+  color: var(--sd-green);
+  font-size: 13px;
+}
+#sd-partner-app .sd-upload-field > span:not(.sd-upload-icon) {
+  margin-bottom: 8px;
+  font-size: 10px;
+}
+#sd-partner-app .sd-upload-field > small { color: #8e9995; font-size: 9px; }
+#sd-partner-app .sd-image-preview { position: relative; }
+#sd-partner-app .sd-remove-image {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: none;
+  min-height: 36px;
+  padding: 0 12px;
+  color: #8f2118;
+  border: 1px solid #efc2bd;
+  border-radius: 9px;
+  cursor: pointer;
+  background: rgba(255,255,255,.94);
+  font-size: 9px;
+  font-weight: 700;
+}
+#sd-partner-app .sd-image-preview.has-image .sd-remove-image { display: block; }
