@@ -58,6 +58,17 @@
   }
 
   function bindForm() {
+    submit?.addEventListener("click", (event) => {
+      if (editing || !currentDeal) return;
+      event.preventDefault();
+      if (currentDeal.status !== "draft") {
+        showMessage("Alleen conceptdeals kunnen worden bewerkt.", "error");
+        return;
+      }
+      setEditing(true);
+      showMessage("Bewerk de gegevens en klik daarna op Wijzigingen opslaan.", "info");
+    });
+
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!currentDeal) return;
@@ -173,11 +184,13 @@
     });
     uploadField?.classList.toggle("is-hidden", !enabled);
     if (removeImage) removeImage.hidden = !enabled;
-    if (submit && currentDeal?.status !== "draft") {
+    if (submit && currentDeal && currentDeal.status !== "draft") {
+      submit.type = "button";
       submit.disabled = true;
       submit.textContent = formatLabel(currentDeal.status);
     } else if (submit) {
-      submit.disabled = false;
+      submit.type = enabled ? "submit" : "button";
+      submit.disabled = !currentDeal;
       submit.textContent = enabled ? "Wijzigingen opslaan" : "Bewerken";
     }
   }
