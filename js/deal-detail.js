@@ -2,7 +2,8 @@
   "use strict";
 
   const CONFIG = {
-    dealsEndpoint: "https://x8ki-letl-twmt.n7.xano.io/api:seasondeals-partner/deals",
+    endpoint: "https://x8ki-letl-twmt.n7.xano.io/api:seasondeals-partner/deals",
+    xanoOrigin: "https://x8ki-letl-twmt.n7.xano.io",
     loginUrl: "/seasondeals-partner-portal/login.html",
     tokenKey: "sd_partner_token",
     userKey: "sd_partner_user"
@@ -12,9 +13,14 @@
   const message = document.getElementById("sd-global-message");
   const preview = document.getElementById("sd-image-preview");
   const uploadField = document.getElementById("sd-upload-field");
+  const imageInput = document.getElementById("sd-image-file");
+  const removeImage = document.getElementById("sd-remove-image");
   const submit = document.getElementById("sd-submit-deal");
   const titleHeading = document.getElementById("sd-detail-title");
   const dealId = Number(new URLSearchParams(location.search).get("id"));
+  let currentDeal = null;
+  let editing = false;
+  let previewUrl = "";
 
   init();
 
@@ -22,22 +28,119 @@
     if (!sessionStorage.getItem(CONFIG.tokenKey)) return redirectToLogin();
     renderUser(readStoredUser());
     bindShell();
-    setReadOnly(true);
+    bindForm();
+    setEditing(false);
 
     if (!Number.isInteger(dealId) || dealId < 1) {
       showMessage("Geen geldige deal geselecteerd.", "error");
+      submit.disabled = true;
       return;
     }
 
+    await loadDeal();
+  }
+
+  async function loadDeal() {
+    setBusy(true, "Deal laden...");
     try {
-      const data = await request(CONFIG.dealsEndpoint);
-      const deal = resolveDeals(data).find((item) => Number(item.id) === dealId);
-      if (!deal) throw new Error("Deze deal is niet gevonden binnen je hotelaccount.");
-      populate(deal);
-      showMessage(`Deal #${dealId} is geladen. Je bekijkt de opgeslagen gegevens zonder ze te wijzigen.`, "info");
+      const data = await request(CONFIG.endpoint, { method: "GET" });
+      currentDeal = resolveDeals(data).find((item) => Number(item.id) === dealId);
+      if (!currentDeal) throw new Error("Deze deal is niet gevonden binnen je hotelaccount.");
+      populate(currentDeal);
+      setEditing(false);
+      showMessage(`Deal #${dealId} is geladen.`, "info");
     } catch (error) {
       showMessage(error.message || "De deal kon niet worden geladen.", "error");
+      submit.disabled = true;
+    } finally {
+      setBusy(false);
     }
+  }
+
+  function bindForm() {
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!currentDeal) return;
+      if (!editing) {
+        if (currentDeal.status !== "draft") {
+          showMessage("Alleen conceptdeals kunnen worden bewerkt.", "error");
+          return;
+        }
+        setEditing(true);
+        showMessage("Bewerk de gegevens en klik daarna op Wijzigingen opslaan.", "info");
+        return;
+      }
+      await saveDeal();
+    });
+
+    imageInput?.addEventListener("change", showSelectedImage);
+    removeImage?.addEventListener("click", () => {
+      imageInput.value = "";
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = "";
+      showCurrentImage();
+    });
+  }
+
+  async function saveDeal() {
+    const payload = new FormData(form);
+    const file = payload.get("image_file");
+    if (file instanceof File && file.size > 0) {
+      try {
+        const normalized = await normalizeImage(file);
+        payload.set("image_file", normalized, normalized.name);
+      } catch {
+        showMessage("De gekozen afbeelding kon niet worden voorbereid.", "error");
+        return;
+      }
+    } else {
+      payload.delete("image_file");
+    }
+
+    ["includes_breakfast", "includes_wifi", "includes_parking", "includes_late_checkout", "includes_welcome_drink"]
+      .forEach((name) => payload.set(name, form.elements[name]?.checked ? "true" : "false"));
+    if (clean(payload.get("original_price")) === "") payload.delete("original_price");
+
+    const error = validate(payload);
+    if (error) return showMessage(error, "error");
+
+    setBusy(true, "Wijzigingen opslaan...");
+    try {
+      const data = await request(`${CONFIG.endpoint}/${encodeURIComponent(dealId)}`, {
+        method: "PATCH",
+        body: payload
+      });
+      const updated = data?.deal || data?.data?.deal || data?.data;
+      if (!updated?.id) throw new Error("Xano gaf geen bijgewerkte deal terug.");
+      currentDeal = updated;
+      populate(currentDeal);
+      setEditing(false);
+      sessionStorage.setItem("sd_deal_flash", `Conceptdeal #${dealId} is succesvol bijgewerkt.`);
+      showMessage(`Conceptdeal #${dealId} is succesvol bijgewerkt.`, "info");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      showMessage(error.message || "De wijzigingen konden niet worden opgeslagen.", "error");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function validate(data) {
+    const required = [
+      ["title", "Titel"], ["short_description", "Korte beschrijving"],
+      ["long_description", "Lange beschrijving"], ["cancellation_policy", "Annuleringsbeleid"]
+    ];
+    for (const [name, label] of required) if (!clean(data.get(name))) return `${label} is verplicht.`;
+    const price = Number(data.get("price"));
+    const original = data.has("original_price") ? Number(data.get("original_price")) : null;
+    if (!(price > 0)) return "De dealprijs moet groter zijn dan 0.";
+    if (original !== null && original <= price) return "De oorspronkelijke prijs moet hoger zijn dan de dealprijs.";
+    if (!(Number(data.get("inventory")) > 0)) return "Voorraad moet groter zijn dan 0.";
+    if (!(Number(data.get("minimum_nights")) >= 1)) return "Minimaal aantal nachten moet minimaal 1 zijn.";
+    if (!(Number(data.get("max_guests")) >= 1)) return "Maximaal aantal gasten moet minimaal 1 zijn.";
+    if (clean(data.get("valid_until")) < clean(data.get("valid_from"))) return "De einddatum mag niet vóór de begindatum liggen.";
+    return "";
   }
 
   function populate(deal) {
@@ -57,62 +160,107 @@
     setChecked("includes_parking", deal.includes_parking);
     setChecked("includes_late_checkout", deal.includes_late_checkout);
     setChecked("includes_welcome_drink", deal.includes_welcome_drink);
-
-    const image = deal.images?.[0]?.url || deal.images?.[0]?.path;
-    if (image) {
-      const url = image.startsWith("http") ? image : `https://x8ki-letl-twmt.n7.xano.io${image}`;
-      preview.style.backgroundImage = `url("${url.replace(/"/g, "%22")}")`;
-      preview.classList.add("has-image");
-    }
-    uploadField?.classList.add("is-hidden");
+    imageInput.value = "";
+    showCurrentImage();
     if (titleHeading) titleHeading.textContent = deal.title || `Deal #${dealId}`;
-    if (submit) {
+  }
+
+  function setEditing(enabled) {
+    editing = enabled;
+    Array.from(form?.elements || []).forEach((field) => {
+      if (field === submit || field.type === "button") return;
+      field.disabled = !enabled;
+    });
+    uploadField?.classList.toggle("is-hidden", !enabled);
+    if (removeImage) removeImage.hidden = !enabled;
+    if (submit && currentDeal?.status !== "draft") {
       submit.disabled = true;
-      submit.textContent = deal.status === "draft" ? "Conceptdeal" : formatLabel(deal.status);
+      submit.textContent = formatLabel(currentDeal.status);
+    } else if (submit) {
+      submit.disabled = false;
+      submit.textContent = enabled ? "Wijzigingen opslaan" : "Bewerken";
     }
   }
 
-  function setReadOnly(value) {
-    Array.from(form?.elements || []).forEach((field) => {
-      if (field.type !== "button") field.disabled = value;
-    });
-    document.getElementById("sd-remove-image")?.remove();
+  function showCurrentImage() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = "";
+    const image = currentDeal?.images?.[0]?.url || currentDeal?.images?.[0]?.path;
+    if (!image) {
+      preview.style.backgroundImage = "";
+      preview.classList.remove("has-image");
+      return;
+    }
+    const url = image.startsWith("http") ? image : CONFIG.xanoOrigin + image;
+    preview.style.backgroundImage = `url("${url.replace(/"/g, "%22")}")`;
+    preview.classList.add("has-image");
   }
 
-  async function request(url) {
+  function showSelectedImage() {
+    const file = imageInput.files?.[0];
+    if (!file) return showCurrentImage();
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) {
+      imageInput.value = "";
+      showMessage(file.size > 8 * 1024 * 1024 ? "De afbeelding mag maximaal 8 MB groot zijn." : "Gebruik een JPG-, PNG- of WebP-afbeelding.", "error");
+      return showCurrentImage();
+    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(file);
+    preview.style.backgroundImage = `url("${previewUrl}")`;
+    preview.classList.add("has-image");
+  }
+
+  async function normalizeImage(file) {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d", { alpha: false });
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    const blob = await new Promise((resolve, reject) =>
+      canvas.toBlob((value) => value ? resolve(value) : reject(), "image/jpeg", .88)
+    );
+    return new File([blob], `deal-${dealId}.jpg`, { type: "image/jpeg", lastModified: Date.now() });
+  }
+
+  async function request(url, options) {
     const token = sessionStorage.getItem(CONFIG.tokenKey);
-    const response = await fetch(url, {
-      method: "GET",
-      mode: "cors",
-      credentials: "omit",
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` }
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        ...options, mode: "cors", credentials: "omit",
+        headers: { Accept: "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) }
+      });
+    } catch {
+      throw new Error("De dealservice is niet bereikbaar.");
+    }
     const text = await response.text();
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
     if (response.status === 401 || response.status === 403) {
-      sessionStorage.removeItem(CONFIG.tokenKey);
-      sessionStorage.removeItem(CONFIG.userKey);
-      redirectToLogin();
+      clearSession(); setTimeout(redirectToLogin, 500);
       throw new Error("Je sessie is verlopen.");
     }
-    if (!response.ok) throw new Error(data.message || data.error || `Laden mislukt (${response.status}).`);
+    if (!response.ok) throw new Error(data.message || data.error || data.detail || `Aanroep mislukt (${response.status}).`);
     return data;
   }
 
   function resolveDeals(data) {
-    const options = [data, data?.items, data?.deals, data?.data, data?.data?.items, data?.result?.items];
-    return options.find(Array.isArray) || [];
+    return [data, data?.items, data?.deals, data?.data, data?.data?.items, data?.result?.items].find(Array.isArray) || [];
   }
-
-  function setValue(name, value) {
-    const field = form?.elements?.[name];
-    if (field) field.value = value ?? "";
+  function setBusy(busy, label) {
+    if (!submit) return;
+    submit.disabled = busy;
+    if (busy && label) submit.textContent = label;
+    else if (!busy) setEditing(editing);
   }
-  function setChecked(name, value) {
-    const field = form?.elements?.[name];
-    if (field) field.checked = Boolean(value);
-  }
+  function setValue(name, value) { const field = form?.elements?.[name]; if (field) field.value = value ?? ""; }
+  function setChecked(name, value) { const field = form?.elements?.[name]; if (field) field.checked = Boolean(value); }
+  function clean(value) { return String(value ?? "").trim(); }
   function toDate(value) {
     if (!value) return "";
     const number = Number(value);
@@ -123,22 +271,14 @@
   function bindShell() {
     const sidebar = document.getElementById("sd-sidebar");
     const overlay = document.getElementById("sd-mobile-overlay");
-    document.getElementById("sd-menu-toggle")?.addEventListener("click", () => {
-      sidebar?.classList.add("is-open"); overlay?.classList.add("is-visible");
-    });
+    document.getElementById("sd-menu-toggle")?.addEventListener("click", () => { sidebar?.classList.add("is-open"); overlay?.classList.add("is-visible"); });
     const close = () => { sidebar?.classList.remove("is-open"); overlay?.classList.remove("is-visible"); };
     document.getElementById("sd-sidebar-close")?.addEventListener("click", close);
     overlay?.addEventListener("click", close);
     const menu = document.getElementById("sd-user-dropdown");
-    document.getElementById("sd-user-menu-button")?.addEventListener("click", (event) => {
-      event.stopPropagation(); menu?.classList.toggle("is-open");
-    });
+    document.getElementById("sd-user-menu-button")?.addEventListener("click", (event) => { event.stopPropagation(); menu?.classList.toggle("is-open"); });
     document.addEventListener("click", () => menu?.classList.remove("is-open"));
-    ["sd-sidebar-logout", "sd-dropdown-logout"].forEach((id) =>
-      document.getElementById(id)?.addEventListener("click", () => {
-        sessionStorage.removeItem(CONFIG.tokenKey); sessionStorage.removeItem(CONFIG.userKey); redirectToLogin();
-      })
-    );
+    ["sd-sidebar-logout", "sd-dropdown-logout"].forEach((id) => document.getElementById(id)?.addEventListener("click", () => { clearSession(); redirectToLogin(); }));
   }
 
   function renderUser(user) {
@@ -153,6 +293,7 @@
 
   function showMessage(text, type) { message.textContent = text; message.className = `sd-global-message is-${type}`; }
   function readStoredUser() { try { return JSON.parse(sessionStorage.getItem(CONFIG.userKey) || "{}"); } catch { return {}; } }
+  function clearSession() { sessionStorage.removeItem(CONFIG.tokenKey); sessionStorage.removeItem(CONFIG.userKey); }
   function redirectToLogin() { location.replace(CONFIG.loginUrl); }
   function formatLabel(value) { return String(value || "").replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()); }
   function initial(value) { return String(value || "S").trim().charAt(0).toUpperCase(); }
