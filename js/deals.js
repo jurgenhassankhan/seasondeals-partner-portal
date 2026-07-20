@@ -245,7 +245,8 @@
     const stock = getNumber(deal.stock ?? deal.inventory ?? deal.available_quantity ?? deal.quantity_available ?? deal.remaining_inventory);
     const isActive = deal.is_active ?? deal.active ?? deal.published;
     if (stock === 0 || raw.includes("sold")) return { key: "sold_out", label: "Uitverkocht" };
-    if (raw.includes("draft") || raw.includes("pending")) return { key: "draft", label: "Concept" };
+    if (raw.includes("pending")) return { key: "pending_approval", label: "In beoordeling" };
+    if (raw.includes("draft")) return { key: "draft", label: "Concept" };
     if (isActive === false || raw.includes("inactive") || raw.includes("paused") || raw.includes("offline")) return { key: "inactive", label: "Inactief" };
     return { key: "active", label: "Actief" };
   }

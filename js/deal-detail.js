@@ -16,6 +16,9 @@
   const imageInput = document.getElementById("sd-image-file");
   const removeImage = document.getElementById("sd-remove-image");
   const submit = document.getElementById("sd-submit-deal");
+  const submitApproval = document.getElementById("sd-submit-approval");
+  const actionTitle = document.getElementById("sd-action-title");
+  const actionDescription = document.getElementById("sd-action-description");
   const titleHeading = document.getElementById("sd-detail-title");
   const dealId = Number(new URLSearchParams(location.search).get("id"));
   let currentDeal = null;
@@ -84,6 +87,8 @@
       await saveDeal();
     });
 
+    submitApproval?.addEventListener("click", submitForApproval);
+
     imageInput?.addEventListener("change", showSelectedImage);
     removeImage?.addEventListener("click", () => {
       imageInput.value = "";
@@ -91,6 +96,37 @@
       previewUrl = "";
       showCurrentImage();
     });
+  }
+
+  async function submitForApproval() {
+    if (!currentDeal || currentDeal.status !== "draft" || editing) return;
+    const confirmed = window.confirm(
+      "Weet je zeker dat je deze deal wilt indienen? Na het indienen kun je de deal niet meer bewerken totdat SeasonDeals hem heeft beoordeeld."
+    );
+    if (!confirmed) return;
+
+    setApprovalBusy(true);
+    try {
+      const data = await request(`${CONFIG.endpoint}/${encodeURIComponent(dealId)}/submit`, {
+        method: "POST"
+      });
+      const returnedDeal = data?.deal || data?.data?.deal || data?.data;
+      currentDeal = {
+        ...currentDeal,
+        ...(returnedDeal && typeof returnedDeal === "object" ? returnedDeal : {}),
+        status: returnedDeal?.status || "pending_approval"
+      };
+      populate(currentDeal);
+      setEditing(false);
+      sessionStorage.setItem("sd_deal_flash", `Deal #${dealId} is ter goedkeuring ingediend.`);
+      showMessage(data?.message || `Deal #${dealId} is ter goedkeuring ingediend.`, "info");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      showMessage(error.message || "De deal kon niet ter goedkeuring worden ingediend.", "error");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setApprovalBusy(false);
+    }
   }
 
   async function saveDeal() {
@@ -193,6 +229,33 @@
       submit.disabled = !currentDeal;
       submit.textContent = enabled ? "Wijzigingen opslaan" : "Bewerken";
     }
+    updateApprovalAction();
+  }
+
+  function updateApprovalAction() {
+    if (!submitApproval) return;
+    const status = currentDeal?.status;
+    const isDraft = status === "draft";
+    submitApproval.disabled = !currentDeal || !isDraft || editing;
+    submitApproval.textContent = status === "pending_approval"
+      ? "Ingediend ter goedkeuring"
+      : "Indienen ter goedkeuring";
+    if (actionTitle) actionTitle.textContent = status === "pending_approval" ? "Deal wordt beoordeeld" : "Dealgegevens";
+    if (actionDescription) {
+      actionDescription.textContent = status === "pending_approval"
+        ? "SeasonDeals beoordeelt deze deal. Bewerken is tijdelijk uitgeschakeld."
+        : editing
+          ? "Sla je wijzigingen op voordat je de deal indient."
+          : "Controleer de gegevens voordat je de deal indient.";
+    }
+  }
+
+  function setApprovalBusy(busy) {
+    if (!submitApproval) return;
+    submitApproval.disabled = busy;
+    submitApproval.textContent = busy ? "Deal indienen..." : "Indienen ter goedkeuring";
+    if (submit) submit.disabled = busy;
+    if (!busy) setEditing(editing);
   }
 
   function showCurrentImage() {

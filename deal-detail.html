@@ -237,7 +237,7 @@
           <a class="sd-back-link" href="deals.html">← Terug naar deals</a>
           <span class="sd-page-eyebrow">Deal bekijken</span>
           <h1 id="sd-detail-title">Deal bekijken</h1>
-          <p>Bekijk alle gegevens van deze deal. Bewerken koppelen we in de volgende veilige backendstap.</p>
+          <p>Controleer de dealgegevens, pas een concept aan of dien het in bij SeasonDeals.</p>
         </div>
       </section>
 
@@ -354,15 +354,16 @@
         </section>
 
         <section class="sd-form-actions">
-          <div><strong>Dealgegevens</strong><span>Deze pagina wijzigt nog geen gegevens.</span></div>
+          <div><strong id="sd-action-title">Dealgegevens</strong><span id="sd-action-description">Controleer de gegevens voordat je de deal indient.</span></div>
           <a class="sd-secondary-button" href="deals.html">Annuleren</a>
-          <button id="sd-submit-deal" class="sd-primary-button" type="button" data-mode="view" onclick="if(this.dataset.mode==='view'){event.preventDefault();document.querySelectorAll('#sd-deal-form input, #sd-deal-form textarea').forEach(function(field){field.disabled=false;});document.getElementById('sd-upload-field').classList.remove('is-hidden');this.dataset.mode='edit';this.type='submit';this.textContent='Wijzigingen opslaan';return false;}">Bewerken</button>
+          <button id="sd-submit-approval" class="sd-secondary-button" type="button">Indienen ter goedkeuring</button>
+          <button id="sd-submit-deal" class="sd-primary-button" type="button">Bewerken</button>
         </section>
       </form>
     </main>
   </div>
 </div>
 
-  <script src="js/deal-detail.js?v=20260720-4"></script>
+  <script src="js/deal-detail.js?v=20260720-5"></script>
 </body>
 </html>

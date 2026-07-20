@@ -551,6 +551,12 @@
     background: #fff;
   }
 
+  #sd-partner-app .sd-primary-button:disabled,
+  #sd-partner-app .sd-secondary-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+  }
+
   #sd-partner-app .sd-global-message {
     display: none;
     margin-bottom: 24px;
