@@ -356,13 +356,13 @@
         <section class="sd-form-actions">
           <div><strong>Dealgegevens</strong><span>Deze pagina wijzigt nog geen gegevens.</span></div>
           <a class="sd-secondary-button" href="deals.html">Annuleren</a>
-          <button id="sd-submit-deal" class="sd-primary-button" type="submit">Bewerken</button>
+          <button id="sd-submit-deal" class="sd-primary-button" type="button" data-mode="view" onclick="if(this.dataset.mode==='view'){event.preventDefault();document.querySelectorAll('#sd-deal-form input, #sd-deal-form textarea').forEach(function(field){field.disabled=false;});document.getElementById('sd-upload-field').classList.remove('is-hidden');this.dataset.mode='edit';this.type='submit';this.textContent='Wijzigingen opslaan';return false;}">Bewerken</button>
         </section>
       </form>
     </main>
   </div>
 </div>
 
-  <script src="js/deal-detail.js?v=20260720-3"></script>
+  <script src="js/deal-detail.js?v=20260720-4"></script>
 </body>
 </html>
