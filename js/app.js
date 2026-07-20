@@ -3,7 +3,7 @@
 
     const CONFIG = {
       dashboardEndpoint:
-        "https://x8ki-letl-twmt.n7.xano.io/api:seasondeals-partner/dashboard",
+        "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-partner/dashboard",
 
       loginUrl: "/seasondeals-partner-portal/login.html",
 

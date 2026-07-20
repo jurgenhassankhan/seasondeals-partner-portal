@@ -1,5 +1,5 @@
 window.SeasonDealsConfig = {
-    apiBase: "https://x8ki-letl-twmt.n7.xano.io/api:seasondeals-partner",
+    apiBase: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-partner",
 
     routes: {
         login: "/auth/login",

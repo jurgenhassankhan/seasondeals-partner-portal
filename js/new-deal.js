@@ -2,7 +2,7 @@
   "use strict";
 
   const CONFIG = {
-    dealsEndpoint: "https://x8ki-letl-twmt.n7.xano.io/api:seasondeals-partner/deals",
+    dealsEndpoint: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-partner/deals",
     loginUrl: "/seasondeals-partner-portal/login.html",
     dealsUrl: "deals.html",
     tokenKey: "sd_partner_token",
