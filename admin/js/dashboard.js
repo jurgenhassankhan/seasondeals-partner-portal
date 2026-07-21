@@ -8,14 +8,17 @@
       const admin = await core.requireAuth();
       if (!admin) return;
       core.mountShell({ active: "dashboard", title: "Dashboard", subtitle: "Platformoverzicht en de nieuwste deals die op beoordeling wachten." }, admin);
-      const [dashboard, pending, deals, hotels] = await Promise.all([
+      const results = await Promise.allSettled([
         core.request("/dashboard"),
         core.request("/deals?status=pending_approval&page=1&per_page=6"),
         core.request("/deals?page=1&per_page=100"),
         core.request("/hotels?page=1&per_page=100")
       ]);
+      const [dashboard, pending, deals, hotels] = results.map((result) => result.status === "fulfilled" ? result.value : {});
       renderKpis(dashboard, pending, deals, hotels);
       renderPending(items(pending));
+      const failures = results.filter((result) => result.status === "rejected");
+      if (failures.length) showDashboardWarning(failures.map((result) => result.reason?.message || "Onbekende API-fout"));
     } catch (error) { renderError(error.message); }
   }
 
@@ -53,6 +56,7 @@
     if (kpis) kpis.innerHTML = `<div class="error-panel">${core.escapeHtml(message)}</div>`;
   }
   function kpiIcon() { return '<svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>'; }
+  function showDashboardWarning(messages) { const target = document.getElementById("pending-content"); if (!target || target.querySelector?.(".dashboard-warning")) return; const warning = document.createElement("div"); warning.className = "notice dashboard-warning"; warning.innerHTML = `<strong>Niet alle dashboardbronnen konden laden.</strong><br>${messages.map((message) => core.escapeHtml(message)).join(" · ")}`; target.prepend(warning); }
   function items(data) { return [data, data?.items, data?.data, data?.data?.items, data?.result?.items].find(Array.isArray) || []; }
   function total(data) { return Number(data?.itemsTotal ?? data?.pagination?.total_items ?? data?.total_items ?? items(data).length) || 0; }
   function findNumber(value, keys) { if (!value || typeof value !== "object") return 0; for (const [key, child] of Object.entries(value)) { if (keys.includes(key) && Number.isFinite(Number(child))) return Number(child); } for (const child of Object.values(value)) { const found = findNumber(child, keys); if (found) return found; } return 0; }
