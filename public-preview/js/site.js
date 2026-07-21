@@ -120,7 +120,7 @@
     const category = getCategory(deal);
     const title = text(deal.title || deal.name, "SeasonDeals deal");
     const image = getImage(deal);
-    const price = getNumber(deal.deal_price ?? deal.price);
+    const price = getPositiveNumber(deal.deal_price, deal.price);
     const originalPrice = getNumber(deal.original_price);
     const discount = originalPrice && price < originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
     const remaining = getRemaining(deal);
@@ -191,6 +191,7 @@
   }
 
   function getNumber(value) { const number = typeof value === "string" ? Number(value.replace(",", ".")) : value; return Number.isFinite(number) ? number : null; }
+  function getPositiveNumber(...values) { for (const value of values) { const result = getNumber(value); if (result !== null && result > 0) return result; } return 0; }
   function formatNumber(value) { return new Intl.NumberFormat(CONFIG.locale, { maximumFractionDigits: 0 }).format(value || 0); }
   function formatDecimal(value) { return new Intl.NumberFormat(CONFIG.locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value || 0); }
   function formatCurrency(value) { return new Intl.NumberFormat(CONFIG.locale, { style: "currency", currency: CONFIG.currency, maximumFractionDigits: 2 }).format(value || 0); }
