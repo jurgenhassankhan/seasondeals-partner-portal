@@ -3,7 +3,7 @@
 
   const CONFIG = {
     dealsEndpoint: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/deals",
-    dealPage: "https://www.seasondeals.nl/deal",
+    dealPage: "deal.html",
     locale: "nl-NL",
     currency: "EUR"
   };
