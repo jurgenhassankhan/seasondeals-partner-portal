@@ -39,7 +39,7 @@
     const city = text(deal.city || deal.hotel?.city, "");
     const country = text(deal.country || deal.hotel?.country, "");
     const location = [city, country].filter(Boolean).join(", ");
-    const price = number(deal.deal_price ?? deal.price) || 0;
+    const price = positiveNumber(deal.deal_price, deal.price);
     const original = number(deal.original_price) || price;
     const saving = original > price ? original - price : 0;
     const rating = number(deal.review_score ?? deal.hotel?.review_score);
@@ -149,6 +149,7 @@
   function formatNumber(value){return new Intl.NumberFormat(CONFIG.locale,{maximumFractionDigits:0}).format(value||0);}
   function formatDecimal(value){return new Intl.NumberFormat(CONFIG.locale,{minimumFractionDigits:1,maximumFractionDigits:1}).format(value||0);}
   function number(value){const result=typeof value==="string"?Number(value.replace(",",".")):value;return Number.isFinite(result)?result:null;}
+  function positiveNumber(...values){for(const value of values){const result=number(value);if(result!==null&&result>0)return result;}return 0;}
   function text(value,fallback){return value===null||value===undefined||String(value).trim()===""?fallback:String(value);}
   function formatText(value){return escapeHtml(value).replace(/\n/g,"<br>");}
   function escapeHtml(value){return String(value??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
