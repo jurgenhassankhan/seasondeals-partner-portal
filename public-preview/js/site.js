@@ -175,11 +175,9 @@
   }
 
   function getRemaining(deal) {
-    const direct = getNumber(deal.remaining_inventory ?? deal.available_quantity);
+    const direct = getNumber(deal.remaining_inventory ?? deal.available_quantity ?? deal.inventory);
     if (direct !== null) return Math.max(0, direct);
-    const inventory = getNumber(deal.inventory);
-    if (inventory === null) return null;
-    return Math.max(0, inventory - (getNumber(deal.sold_quantity) || 0));
+    return null;
   }
 
   function updateActiveChip() {
