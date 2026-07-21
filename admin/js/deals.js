@@ -28,8 +28,8 @@
     if (search) query.set("search", search);
     try {
       const data = await core.request(`/deals?${query}`);
-      render(data?.items || []);
-      renderPagination(data?.pagination || {});
+      render(resolveItems(data));
+      renderPagination(data);
     } catch (error) { showError(error.message); }
   }
 
@@ -41,13 +41,14 @@
   }
 
   function renderPagination(pagination) {
-    const total = Number(pagination.total_items) || 0;
-    const pages = Math.max(1, Number(pagination.total_pages) || 1);
-    page = Number(pagination.page) || page;
+    const total = Number(pagination?.itemsTotal ?? pagination?.pagination?.total_items ?? pagination?.total_items) || resolveItems(pagination).length;
+    const pages = Math.max(1, Number(pagination?.pageTotal ?? pagination?.pagination?.total_pages ?? pagination?.total_pages) || 1);
+    page = Number(pagination?.curPage ?? pagination?.pagination?.page ?? pagination?.page) || page;
     document.getElementById("deals-pagination").innerHTML = `<div class="pagination"><span>${total} deal${total === 1 ? "" : "s"} · pagina ${page} van ${pages}</span><div class="pagination-buttons"><button id="previous-page" ${page <= 1 ? "disabled" : ""} aria-label="Vorige pagina">←</button><button id="next-page" ${page >= pages ? "disabled" : ""} aria-label="Volgende pagina">→</button></div></div>`;
     document.getElementById("previous-page")?.addEventListener("click", () => { page -= 1; updateUrl(); load(); });
     document.getElementById("next-page")?.addEventListener("click", () => { page += 1; updateUrl(); load(); });
   }
+  function resolveItems(data) { return [data, data?.items, data?.data, data?.data?.items, data?.result?.items].find(Array.isArray) || []; }
   function updateUrl() {
     const next = new URLSearchParams();
     const status = document.getElementById("status-filter").value;

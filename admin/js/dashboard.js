@@ -8,21 +8,28 @@
       const admin = await core.requireAuth();
       if (!admin) return;
       core.mountShell({ active: "dashboard", title: "Dashboard", subtitle: "Platformoverzicht en de nieuwste deals die op beoordeling wachten." }, admin);
-      const [dashboard, pending] = await Promise.all([
+      const [dashboard, pending, deals, hotels] = await Promise.all([
         core.request("/dashboard"),
-        core.request("/deals?status=pending_approval&page=1&per_page=6")
+        core.request("/deals?status=pending_approval&page=1&per_page=6"),
+        core.request("/deals?page=1&per_page=100"),
+        core.request("/hotels?page=1&per_page=100")
       ]);
-      renderKpis(dashboard, pending);
-      renderPending(pending?.items || []);
+      renderKpis(dashboard, pending, deals, hotels);
+      renderPending(items(pending));
     } catch (error) { renderError(error.message); }
   }
 
-  function renderKpis(data, pending) {
+  function renderKpis(data, pending, deals, hotels) {
+    const allDeals = items(deals);
+    const hotelTotal = total(hotels);
+    const activeTotal = allDeals.filter((deal) => deal.status === "active").length || core.pick(data, ["stats.deals.active", "deals.active", "active_deals"], 0);
+    const pendingTotal = total(pending);
+    const revenue = findNumber(data, ["total_revenue", "revenue_total", "gross_revenue", "paid_revenue", "revenue"]);
     const cards = [
-      ["Hotels", core.pick(data, ["stats.hotels.total", "hotels.total", "total_hotels"]), "Aangesloten accommodaties", ""],
-      ["Actieve deals", core.pick(data, ["stats.deals.active", "deals.active", "active_deals"]), "Zichtbaar voor bezoekers", "green"],
-      ["Te beoordelen", pending?.pagination?.total_items ?? core.pick(data, ["stats.deals.pending_approval", "deals.pending_approval", "pending_deals"]), "Wachten op een besluit", "orange"],
-      ["Omzet", core.money(core.pick(data, ["stats.revenue.total", "revenue.total", "total_revenue"])), "Platformbrede gerealiseerde omzet", ""]
+      ["Hotels", hotelTotal, "Aangesloten accommodaties", ""],
+      ["Actieve deals", activeTotal, "Zichtbaar voor bezoekers", "green"],
+      ["Te beoordelen", pendingTotal, "Wachten op een besluit", "orange"],
+      ["Omzet", core.money(revenue), "Platformbrede gerealiseerde omzet", ""]
     ];
     document.getElementById("dashboard-kpis").innerHTML = cards.map(([label, value, note, tone]) => `<article class="kpi-card"><div class="kpi-top"><span class="kpi-label">${core.escapeHtml(label)}</span><span class="kpi-icon ${tone}">${kpiIcon()}</span></div><strong class="kpi-value">${core.escapeHtml(value)}</strong><span class="kpi-note">${core.escapeHtml(note)}</span></article>`).join("");
   }
@@ -46,4 +53,7 @@
     if (kpis) kpis.innerHTML = `<div class="error-panel">${core.escapeHtml(message)}</div>`;
   }
   function kpiIcon() { return '<svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>'; }
+  function items(data) { return [data, data?.items, data?.data, data?.data?.items, data?.result?.items].find(Array.isArray) || []; }
+  function total(data) { return Number(data?.itemsTotal ?? data?.pagination?.total_items ?? data?.total_items ?? items(data).length) || 0; }
+  function findNumber(value, keys) { if (!value || typeof value !== "object") return 0; for (const [key, child] of Object.entries(value)) { if (keys.includes(key) && Number.isFinite(Number(child))) return Number(child); } for (const child of Object.values(value)) { const found = findNumber(child, keys); if (found) return found; } return 0; }
 })();
