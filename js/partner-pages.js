@@ -12,7 +12,9 @@
   if (!sessionStorage.getItem(TOKEN_KEY)) return redirectToLogin();
   renderShell();
   bindShell();
-  verifySession().then(loadPage).catch(showFatal);
+  // Each page endpoint validates the bearer token itself. Loading directly
+  // prevents a separate Xano /auth/me permission check from blocking the page.
+  loadPage();
 
   function renderShell() {
     const labels = { bookings: ["Boekingen", "Bekijk reserveringen en betaalstatussen van jouw hotel."], vouchers: ["Vouchers", "Zoek vouchers en registreer het gebruik bij aankomst."], settings: ["Hotelinstellingen", "Beheer de gegevens die bij jouw hotelpartneraccount horen."] };
