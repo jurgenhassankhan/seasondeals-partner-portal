@@ -129,7 +129,7 @@
     const hotel = text(deal.hotel_name || deal.hotel?.name, "SeasonDeals partner");
     const rating = getNumber(deal.review_score ?? deal.hotel?.review_score);
     const reviews = getNumber(deal.review_count ?? deal.hotel?.review_count);
-    const detailUrl = `${CONFIG.dealPage}?id=${encodeURIComponent(deal.id)}`;
+    const detailUrl = `${CONFIG.dealPage}?id=${encodeURIComponent(deal.id)}&view=inventory-v2`;
     const card = document.createElement("article");
     card.className = "deal-card";
     card.dataset.category = category;
