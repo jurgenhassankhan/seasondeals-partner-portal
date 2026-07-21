@@ -53,7 +53,9 @@
     const query = document.getElementById("sd-record-search")?.value.trim() || "";
     setLoading();
     try {
-      const data = await request(`/bookings?search=${encodeURIComponent(query)}&page=${currentPage}&per_page=20`);
+      const params = new URLSearchParams({ page: String(currentPage), per_page: "20" });
+      if (query) params.set("search", query);
+      const data = await request(`/bookings?${params.toString()}`);
       const items = resolveItems(data);
       content().innerHTML = `<section class="sd-data-panel"><div class="sd-data-toolbar"><label class="sd-search-field"><span>⌕</span><input id="sd-record-search" type="search" value="${escapeAttribute(query)}" placeholder="Zoek op boeking of klant"></label></div><div class="sd-table-wrap">${items.length?`<table class="sd-data-table"><thead><tr><th>Boeking</th><th>Deal</th><th>Verblijf</th><th>Bedrag</th><th>Status</th></tr></thead><tbody>${items.map(bookingRow).join("")}</tbody></table>`:empty("Geen boekingen gevonden","Nieuwe betaalde boekingen verschijnen hier automatisch.")}</div>${pagination(data)}</section>`;
       bindSearch(loadBookings);bindPagination(loadBookings);
