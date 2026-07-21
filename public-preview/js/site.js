@@ -137,6 +137,7 @@
       <div class="deal-image">
         ${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(title)}" loading="lazy">` : `<div class="deal-image-placeholder"><span>SeasonDeals</span><small>Hot offers, cool prices</small></div>`}
         ${discount ? `<span class="discount">-${discount}%</span>` : ""}
+        ${remaining !== null ? `<span class="stock-badge${remaining <= 5 ? " is-low" : ""}">${remaining === 0 ? "Uitverkocht" : `Nog ${formatNumber(remaining)} beschikbaar`}</span>` : ""}
       </div>
       <div class="deal-card-body">
         <span class="deal-type">${escapeHtml(formatCategory(category))}${city ? ` · ${escapeHtml(city)}` : ""}</span>
@@ -144,7 +145,7 @@
         <div class="deal-partner">${escapeHtml(hotel)}</div>
         ${rating > 0 ? `<div class="rating"><span>★</span> ${escapeHtml(formatDecimal(rating))}${reviews > 0 ? ` · ${escapeHtml(formatNumber(reviews))} beoordelingen` : ""}</div>` : ""}
         <ul>${features.length ? features.map((feature) => `<li>✓ ${escapeHtml(feature)}</li>`).join("") : `<li>Bekijk de deal voor alle details</li>`}</ul>
-        <div class="price-row"><span>${originalPrice > price ? `<del>${escapeHtml(formatCurrency(originalPrice))}</del>` : ""}<strong>${escapeHtml(formatCurrency(price))}</strong><small>${remaining === null ? "Beschikbaarheid op de dealpagina" : `${formatNumber(remaining)} beschikbaar`}</small></span><a href="${escapeAttribute(detailUrl)}">Bekijk deal →</a></div>
+        <div class="price-row"><span>${originalPrice > price ? `<del>${escapeHtml(formatCurrency(originalPrice))}</del>` : ""}<strong>${escapeHtml(formatCurrency(price))}</strong><small>${remaining === null ? "Bekijk de actuele beschikbaarheid" : `Actuele voorraad: ${formatNumber(remaining)}`}</small></span><a href="${escapeAttribute(detailUrl)}">Bekijk deal →</a></div>
       </div>`;
     return card;
   }
