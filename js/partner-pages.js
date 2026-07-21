@@ -4,7 +4,7 @@
   const TOKEN_KEY = "sd_partner_token";
   const USER_KEY = "sd_partner_user";
   const page = document.body.dataset.partnerPage;
-  const root = document.getElementById("sd-portal-page");
+  const root = document.getElementById("sd-partner-app");
   let user = readUser();
   let currentPage = 1;
   let searchTimer;
