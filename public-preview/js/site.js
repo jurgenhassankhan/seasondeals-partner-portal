@@ -1,12 +1,12 @@
 (() => {
   "use strict";
 
-  const CONFIG = {
+  const CONFIG = Object.assign({
     dealsEndpoint: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/deals",
     dealPage: "deal.html",
     locale: "nl-NL",
     currency: "EUR"
-  };
+  }, window.SEASONDEALS_CONFIG || {});
 
   const grid = document.getElementById("deal-grid");
   const message = document.getElementById("deals-message");
