@@ -1,12 +1,13 @@
 (() => {
   "use strict";
 
-  const CONFIG = {
+  const CONFIG = Object.assign({
     dealsEndpoint: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/deals",
     checkoutEndpoint: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/create-checkout-session",
+    homePage: "index.html",
     locale: "nl-NL",
     currency: "EUR"
-  };
+  }, window.SEASONDEALS_CONFIG || {});
   const container = document.getElementById("deal-detail");
   const dealId = new URLSearchParams(window.location.search).get("id");
   let deal = null;
@@ -54,7 +55,7 @@
     document.title = `${title} · SeasonDeals`;
 
     container.innerHTML = `<div class="detail-container">
-      <nav class="detail-breadcrumbs" aria-label="Broodkruimel"><a href="index.html">Home</a><span>›</span><a href="index.html#deals">Deals</a><span>›</span><span>${escapeHtml(title)}</span></nav>
+      <nav class="detail-breadcrumbs" aria-label="Broodkruimel"><a href="${escapeAttribute(CONFIG.homePage)}">Home</a><span>›</span><a href="${escapeAttribute(CONFIG.homePage)}#deals">Deals</a><span>›</span><span>${escapeHtml(title)}</span></nav>
       ${renderGallery(title)}
       <header class="detail-heading"><div><span class="detail-kicker">${escapeHtml(formatCategory(getCategory(deal)))}${location ? ` · ${escapeHtml(location)}` : ""}</span><h1>${escapeHtml(title)}</h1><div class="detail-subline"><strong>${escapeHtml(hotel)}</strong>${rating > 0 ? `<span class="detail-rating">★ ${escapeHtml(formatDecimal(rating))}${reviews > 0 ? ` · ${escapeHtml(formatNumber(reviews))} beoordelingen` : ""}</span>` : ""}${deal.star_rating > 0 ? `<span>${"★".repeat(Math.min(5, Math.round(deal.star_rating)))} hotel</span>` : ""}${remaining !== null ? `<span class="detail-stock${remaining <= 5 ? " is-low" : ""}">● ${remaining === 0 ? "Uitverkocht" : `Actuele voorraad: ${formatNumber(remaining)}`}</span>` : ""}</div></div><div class="detail-heading-actions"><button class="detail-icon-button" id="share-deal" type="button" aria-label="Deal delen">↗</button><button class="detail-icon-button" id="save-deal" type="button" aria-label="Deal opslaan">♡</button></div></header>
       <div class="detail-layout"><article class="detail-content">
@@ -154,5 +155,5 @@
   function escapeAttribute(value){return escapeHtml(value).replace(/`/g,"&#096;");}
   function showBookingMessage(value,type){const el=document.getElementById("booking-message");if(!el)return;el.textContent=value;el.className=`booking-message is-visible is-${type}`;}
   function showToast(value){const toast=document.getElementById("preview-toast");if(!toast)return;toast.textContent=value;toast.classList.add("is-visible");clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.classList.remove("is-visible"),3500);}
-  function showError(title,message){container.innerHTML=`<section class="detail-error"><span>!</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p><a class="button button-primary" href="index.html#deals">Terug naar alle deals <span>→</span></a></section>`;}
+  function showError(title,message){container.innerHTML=`<section class="detail-error"><span>!</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p><a class="button button-primary" href="${escapeAttribute(CONFIG.homePage)}#deals">Terug naar alle deals <span>→</span></a></section>`;}
 })();
