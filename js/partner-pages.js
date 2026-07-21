@@ -55,8 +55,18 @@
     try {
       const params = new URLSearchParams({ page: String(currentPage), per_page: "20" });
       if (query) params.set("search", query);
-      const data = await request(`/bookings?${params.toString()}`);
-      const items = resolveItems(data);
+      let data;
+      let items;
+      try {
+        data = await request(`/bookings?${params.toString()}`);
+        items = resolveItems(data);
+      } catch (error) {
+        if (!String(error.message).includes('orders.deal_id')) throw error;
+        const dashboard = await request("/dashboard");
+        const dashboardItems = resolveBookings(dashboard);
+        items = query ? dashboardItems.filter(item => bookingMatches(item, query)) : dashboardItems;
+        data = { items, curPage: 1, pageTotal: 1, itemsTotal: items.length };
+      }
       content().innerHTML = `<section class="sd-data-panel"><div class="sd-data-toolbar"><label class="sd-search-field"><span>⌕</span><input id="sd-record-search" type="search" value="${escapeAttribute(query)}" placeholder="Zoek op boeking of klant"></label></div><div class="sd-table-wrap">${items.length?`<table class="sd-data-table"><thead><tr><th>Boeking</th><th>Deal</th><th>Verblijf</th><th>Bedrag</th><th>Status</th></tr></thead><tbody>${items.map(bookingRow).join("")}</tbody></table>`:empty("Geen boekingen gevonden","Nieuwe betaalde boekingen verschijnen hier automatisch.")}</div>${pagination(data)}</section>`;
       bindSearch(loadBookings);bindPagination(loadBookings);
     } catch (error) { showPageError(error); }
@@ -65,6 +75,8 @@
     const status=item.payment_status||item.status||"pending", dates=[formatDate(item.checkin),formatDate(item.checkout)].filter(v=>v!=="—").join(" – ");
     return `<tr><td><strong>#${escapeHtml(item.id)}</strong><small>${formatDate(item.created_at,true)}</small></td><td><strong>Deal #${escapeHtml(item.deal_id||"—")}</strong><small>${escapeHtml(item.guests||1)} gast(en)</small></td><td>${escapeHtml(dates||"—")}</td><td><strong>${money(item.total_amount)}</strong><small>${escapeHtml((item.currency||"EUR").toUpperCase())}</small></td><td>${badge(status)}</td></tr>`;
   }
+  function resolveBookings(data){return [data?.recent_bookings,data?.bookings,data?.latest_bookings,data?.dashboard?.recent_bookings,data?.data?.recent_bookings].find(Array.isArray)||[];}
+  function bookingMatches(item,query){const needle=String(query).toLowerCase();return [item.id,item.deal_id,item.customer_email,item.status,item.payment_status].some(value=>String(value??"").toLowerCase().includes(needle));}
 
   async function loadVouchers() {
     const query=document.getElementById("sd-record-search")?.value.trim()||"", status=document.getElementById("sd-status-filter")?.value||"";
