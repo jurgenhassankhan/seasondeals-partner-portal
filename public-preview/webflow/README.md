@@ -12,7 +12,7 @@ Dit is de definitieve hybride inrichting:
 Maak deze pagina's aan:
 
 1. `new-website` — tijdelijke homepage-preview; later wordt dezelfde inhoud naar Webflows Home gekopieerd.
-2. `deal` — dynamische dealpagina; ontvangt de deal via `?id=...`.
+2. `dea` — bestaande dynamische dealpagina; ontvangt de deal via `?id=...`.
 3. `veelgestelde-vragen` — FAQ.
 
 ## Homepage
