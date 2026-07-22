@@ -86,9 +86,10 @@
       const data = normalizeObject(await core.request(`/integrations/${integrationId}/api-keys`)), keys = getItems(data);
       const active = keys.filter(item => item.is_active !== false && !item.revoked_at);
       target.className = "integration-key-manager";
-      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><div class="integration-key-summary-actions"><button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button></div></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
+      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><div class="integration-key-summary-actions"><button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-test-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Testdeal aanmaken</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button></div></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
       document.getElementById("integration-new-key").addEventListener("click", () => createKey(integrationId, active.length));
       document.getElementById("integration-test-key")?.addEventListener("click", () => openConnectionTest(integrationId));
+      document.getElementById("integration-test-deal")?.addEventListener("click", () => openTestDeal(integrationId));
       target.querySelectorAll("[data-revoke-managed-key]").forEach(button => button.addEventListener("click", () => revokeManagedKey(integrationId, button.dataset.revokeManagedKey)));
     } catch (error) { target.className = "error-panel"; target.textContent = error.message; }
   }
@@ -132,6 +133,36 @@
     } catch (error) {
       result.innerHTML = `<div class="integration-test-failure"><strong>Verbinding mislukt</strong><span>${core.escapeHtml(error.message)}</span></div>`;
     } finally { apiKey = null; button.disabled = false; button.textContent = "Opnieuw testen"; }
+  }
+
+  function openTestDeal(integrationId) {
+    const modal = document.getElementById("integration-secret-modal"), now = Date.now();
+    modal.innerHTML = `<div class="integration-dialog integration-test-deal-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">End-to-end test</span><h2>Conceptdeal via API aanmaken</h2><p>Deze deal wordt alleen als concept opgeslagen en gaat niet automatisch live.</p><form id="integration-test-deal-form" class="integration-test-deal-form"><label class="full">Testsleutel<input name="api_key" type="password" autocomplete="off" spellcheck="false" required placeholder="sd_test_…"></label><label class="full">Titel<input name="title" required value="SeasonDeals API testdeal"></label><label>Dealprijs (€)<input name="price" type="number" min="1" step="0.01" required value="199"></label><label>Oorspronkelijke prijs (€)<input name="original_price" type="number" min="1" step="0.01" value="249"></label><label>Voorraad<input name="inventory" type="number" min="0" step="1" required value="5"></label><label>Extern ID<input name="external_id" required value="E2E-${now}"></label><div class="integration-form-note full">Er wordt automatisch een unieke Idempotency-Key gebruikt. Herhaald klikken tijdens de aanvraag kan geen dubbele deal veroorzaken.</div><div class="integration-form-actions full"><button class="secondary-button" data-cancel-test-deal type="button">Annuleren</button><button id="integration-test-deal-submit" class="primary-button" type="submit">Testdeal aanmaken</button></div></form><div id="integration-test-deal-result"></div></div>`;
+    modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+    const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
+    modal.querySelector(".integration-dialog-close").addEventListener("click", close);
+    modal.querySelector("[data-cancel-test-deal]").addEventListener("click", close);
+    modal.querySelector("#integration-test-deal-form").addEventListener("submit", event => submitTestDeal(event, integrationId));
+  }
+
+  async function submitTestDeal(event, integrationId) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget), button = document.getElementById("integration-test-deal-submit"), result = document.getElementById("integration-test-deal-result");
+    let apiKey = String(form.get("api_key") || "").trim();
+    event.currentTarget.elements.api_key.value = "";
+    const idempotencyKey = crypto.randomUUID ? crypto.randomUUID() : `sd-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const body = { external_id: String(form.get("external_id") || "").trim(), title: String(form.get("title") || "").trim(), price: Number(form.get("price")), original_price: Number(form.get("original_price")) || null, inventory: Number(form.get("inventory")), travel_period_start: Date.now() + 86400000, travel_period_end: Date.now() + (90 * 86400000), short_description: "Automatisch aangemaakte testdeal voor de SeasonDeals Integration API.", long_description: "Deze conceptdeal controleert veilig of externe partners deals kunnen aanleveren via de SeasonDeals Integration API.", max_guests: 2, minimum_nights: 1 };
+    button.disabled = true; button.textContent = "Aanmaken…"; result.innerHTML = "";
+    try {
+      const response = await fetch("https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-integration/v1/deals", { method: "POST", mode: "cors", credentials: "omit", headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "Idempotency-Key": idempotencyKey }, body: JSON.stringify(body) });
+      const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
+      if (!response.ok) throw new Error(data.message || data.error || `Aanmaken mislukt (${response.status}).`);
+      const deal = normalizeObject(data?.deal || data?.data || data);
+      result.innerHTML = `<div class="integration-test-success"><strong>Testdeal succesvol aangemaakt</strong><span>HTTP ${response.status} · intern ID ${core.escapeHtml(deal.id || data.id || "—")} · extern ID ${core.escapeHtml(deal.external_id || data.external_id || body.external_id)}</span></div>`;
+      core.toast("De testdeal is via de Integration API aangemaakt.");
+      await loadManagedKeys(integrationId);
+    } catch (error) { result.innerHTML = `<div class="integration-test-failure"><strong>Aanmaken mislukt</strong><span>${core.escapeHtml(error.message)}</span></div>`; }
+    finally { apiKey = null; button.disabled = false; button.textContent = "Opnieuw proberen"; }
   }
 
   async function openCreateIntegration() {
