@@ -58,7 +58,7 @@
     const name = prompt("Naam voor deze testsleutel:", "Testkoppeling");
     if (!name?.trim()) return;
     try {
-      const result = normalizeObject(await core.request(`/integrations/${integrationId}/api-keys`, { method: "POST", body: JSON.stringify({ name: name.trim(), environment: "test", scopes: { deals: { read: true, write: true }, inventory: { write: true }, bookings: { read: true } } }) }));
+      const result = normalizeObject(await core.request(`/integrations/${integrationId}/api-keys`, { method: "POST", body: JSON.stringify({ name: name.trim(), environment: "test", scopes: { "deals.read": true, "deals.write": true, "inventory.write": true, "bookings.read": true } }) }));
       const secret = result.api_key || result.key || result.secret || result.full_key;
       if (!secret) throw new Error("De sleutel is aangemaakt, maar de eenmalige sleutel ontbreekt in de response.");
       showSecret(secret);
