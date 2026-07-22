@@ -29,7 +29,7 @@
         target.className = "table-wrap";
         target.innerHTML = `<table class="data-table"><thead><tr><th>Hotel</th><th>Provider</th><th>Omgeving</th><th>Synchronisatie</th><th>Status</th><th>Laatste resultaat</th><th>Acties</th></tr></thead><tbody>${integrations.map(row).join("")}</tbody></table>`;
         target.querySelectorAll("[data-integration-status]").forEach(select => select.addEventListener("change", () => updateStatus(select)));
-        target.querySelectorAll("[data-create-key]").forEach(button => button.addEventListener("click", () => createKey(button.dataset.createKey)));
+        target.querySelectorAll("[data-manage-keys]").forEach(button => button.addEventListener("click", () => openKeyManager(button.dataset.manageKeys, button.dataset.integrationName)));
       }
       renderPagination(data, integrations.length);
     } catch (error) { showError(error.message); }
@@ -39,7 +39,8 @@
     const hotel = normalizeObject(item.hotel) || {}, provider = normalizeObject(item.provider || item.integration_provider) || {};
     const status = item.status || "pending", environment = item.environment || "test";
     const statuses = ["pending", "testing", "active", "paused", "error", "revoked"];
-    return `<tr><td><div class="integration-cell"><strong>${core.escapeHtml(hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`)}</strong><span>ID ${core.escapeHtml(item.hotel_id || hotel.id || "—")}</span></div></td><td><div class="integration-cell"><strong>${core.escapeHtml(provider.name || item.provider_name || `Provider #${item.provider_id || "—"}`)}</strong><span>${core.escapeHtml(provider.slug || "")}</span></div></td><td>${core.escapeHtml(core.label(environment))}</td><td><div class="integration-cell"><strong>${core.escapeHtml(core.label(item.sync_direction || "bidirectional"))}</strong><span>${item.auto_sync_enabled ? "Automatisch" : "Handmatig"}</span></div></td><td><select class="integration-status-select" data-integration-status="${core.escapeHtml(item.id)}" data-current="${core.escapeHtml(status)}">${statuses.map(value => `<option value="${value}"${value === status ? " selected" : ""}>${core.escapeHtml(core.label(value))}</option>`).join("")}</select></td><td><div class="integration-cell"><strong>${core.escapeHtml(core.date(item.last_success_at || item.last_sync_at, true))}</strong>${item.last_error_message ? `<span class="integration-error">${core.escapeHtml(item.last_error_message)}</span>` : "<span>Geen foutmelding</span>"}</div></td><td><div class="integration-actions"><button class="integration-key-button" type="button" data-create-key="${core.escapeHtml(item.id)}">Testsleutel maken</button></div></td></tr>`;
+    const integrationName = `${hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`} · ${provider.name || item.provider_name || "API"}`;
+    return `<tr><td><div class="integration-cell"><strong>${core.escapeHtml(hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`)}</strong><span>ID ${core.escapeHtml(item.hotel_id || hotel.id || "—")}</span></div></td><td><div class="integration-cell"><strong>${core.escapeHtml(provider.name || item.provider_name || `Provider #${item.provider_id || "—"}`)}</strong><span>${core.escapeHtml(provider.slug || "")}</span></div></td><td>${core.escapeHtml(core.label(environment))}</td><td><div class="integration-cell"><strong>${core.escapeHtml(core.label(item.sync_direction || "bidirectional"))}</strong><span>${item.auto_sync_enabled ? "Automatisch" : "Handmatig"}</span></div></td><td><select class="integration-status-select" data-integration-status="${core.escapeHtml(item.id)}" data-current="${core.escapeHtml(status)}">${statuses.map(value => `<option value="${value}"${value === status ? " selected" : ""}>${core.escapeHtml(core.label(value))}</option>`).join("")}</select></td><td><div class="integration-cell"><strong>${core.escapeHtml(core.date(item.last_success_at || item.last_sync_at, true))}</strong>${item.last_error_message ? `<span class="integration-error">${core.escapeHtml(item.last_error_message)}</span>` : "<span>Geen foutmelding</span>"}</div></td><td><div class="integration-actions"><button class="integration-key-button" type="button" data-manage-keys="${core.escapeHtml(item.id)}" data-integration-name="${core.escapeHtml(integrationName)}">Sleutels beheren</button></div></td></tr>`;
   }
 
   async function updateStatus(select) {
@@ -54,8 +55,9 @@
     finally { select.disabled = false; }
   }
 
-  async function createKey(integrationId) {
+  async function createKey(integrationId, activeCount = 0) {
     if (!core.canReview(admin)) return core.toast("Alleen een superadmin kan API-sleutels aanmaken.", "error");
+    if (activeCount > 0 && !confirm(`Er ${activeCount === 1 ? "is" : "zijn"} al ${activeCount} actieve testsleutel${activeCount === 1 ? "" : "s"}. Toch nog een sleutel aanmaken?`)) return;
     const name = prompt("Naam voor deze testsleutel:", "Testkoppeling");
     if (!name?.trim()) return;
     try {
@@ -63,8 +65,45 @@
       const secret = result.api_key || result.key || result.secret || result.full_key;
       if (!secret) throw new Error("De sleutel is aangemaakt, maar de eenmalige sleutel ontbreekt in de response.");
       showSecret(secret);
+      await loadManagedKeys(integrationId);
     } catch (error) { core.toast(error.message, "error"); }
   }
+
+  async function openKeyManager(integrationId, integrationName = "Hotelintegratie") {
+    const modal = document.getElementById("integration-keys-modal");
+    modal.dataset.integrationId = integrationId; modal.dataset.integrationName = integrationName;
+    modal.innerHTML = `<div class="integration-dialog integration-keys-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">API-toegang</span><h2>${core.escapeHtml(integrationName)}</h2><div id="integration-keys-content" class="loading-state"><div class="spinner"></div>Sleutels ophalen…</div></div>`;
+    modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+    modal.querySelector(".integration-dialog-close").addEventListener("click", () => closeKeyManager(modal));
+    modal.addEventListener("click", event => { if (event.target === modal) closeKeyManager(modal); });
+    await loadManagedKeys(integrationId);
+  }
+
+  async function loadManagedKeys(integrationId) {
+    const modal = document.getElementById("integration-keys-modal"), target = document.getElementById("integration-keys-content");
+    if (!target || String(modal.dataset.integrationId) !== String(integrationId)) return;
+    try {
+      const data = normalizeObject(await core.request(`/integrations/${integrationId}/api-keys`)), keys = getItems(data);
+      const active = keys.filter(item => item.is_active !== false && !item.revoked_at);
+      target.className = "integration-key-manager";
+      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
+      document.getElementById("integration-new-key").addEventListener("click", () => createKey(integrationId, active.length));
+      target.querySelectorAll("[data-revoke-managed-key]").forEach(button => button.addEventListener("click", () => revokeManagedKey(integrationId, button.dataset.revokeManagedKey)));
+    } catch (error) { target.className = "error-panel"; target.textContent = error.message; }
+  }
+
+  function managedKeyRow(integrationId, item) {
+    const active = item.is_active !== false && !item.revoked_at, masked = `${item.key_prefix || "sd_test_"}••••${item.key_last4 || ""}`;
+    return `<div class="integration-managed-key"><div class="integration-managed-key-main"><strong>${core.escapeHtml(item.name || "API-sleutel")}</strong><code>${core.escapeHtml(masked)}</code><span>Aangemaakt ${core.date(item.created_at, true)} · laatst gebruikt ${item.last_used_at ? core.date(item.last_used_at, true) : "nog nooit"}</span></div><div class="integration-managed-key-side"><span class="status-badge status-${active ? "active" : "archived"}"><span></span>${active ? "Actief" : "Ingetrokken"}</span>${active ? `<button class="danger-button" type="button" data-revoke-managed-key="${core.escapeHtml(item.id)}">Intrekken</button>` : ""}</div></div>`;
+  }
+
+  async function revokeManagedKey(integrationId, keyId) {
+    if (!confirm("Deze API-sleutel intrekken? De gekoppelde applicatie verliest direct toegang.")) return;
+    try { await core.request(`/integrations/${integrationId}/api-keys/${keyId}/revoke`, { method: "POST" }); core.toast("API-sleutel is ingetrokken."); await loadManagedKeys(integrationId); }
+    catch (error) { core.toast(error.message, "error"); }
+  }
+
+  function closeKeyManager(modal) { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; delete modal.dataset.integrationId; }
 
   async function openCreateIntegration() {
     if (!core.canReview(admin)) return core.toast("Alleen een superadmin of platformadmin kan koppelingen aanmaken.", "error");
