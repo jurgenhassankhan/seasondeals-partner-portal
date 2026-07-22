@@ -86,8 +86,9 @@
       const data = normalizeObject(await core.request(`/integrations/${integrationId}/api-keys`)), keys = getItems(data);
       const active = keys.filter(item => item.is_active !== false && !item.revoked_at);
       target.className = "integration-key-manager";
-      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
+      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><div class="integration-key-summary-actions"><button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button></div></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
       document.getElementById("integration-new-key").addEventListener("click", () => createKey(integrationId, active.length));
+      document.getElementById("integration-test-key")?.addEventListener("click", () => openConnectionTest(integrationId));
       target.querySelectorAll("[data-revoke-managed-key]").forEach(button => button.addEventListener("click", () => revokeManagedKey(integrationId, button.dataset.revokeManagedKey)));
     } catch (error) { target.className = "error-panel"; target.textContent = error.message; }
   }
@@ -104,6 +105,34 @@
   }
 
   function closeKeyManager(modal) { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; delete modal.dataset.integrationId; }
+
+  function openConnectionTest(integrationId) {
+    const modal = document.getElementById("integration-secret-modal");
+    modal.innerHTML = `<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Veilige test</span><h2>API-verbinding testen</h2><p>Plak de volledige testsleutel. Deze wordt alleen voor deze test gebruikt en nergens opgeslagen.</p><form id="integration-test-form" class="integration-test-form"><label>Testsleutel<input id="integration-test-secret" type="password" autocomplete="off" spellcheck="false" required placeholder="sd_test_…"></label><button id="integration-test-submit" class="primary-button" type="submit">Test verbinding</button></form><div id="integration-test-result"></div></div>`;
+    modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+    const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
+    modal.querySelector(".integration-dialog-close").addEventListener("click", close);
+    modal.querySelector("#integration-test-form").addEventListener("submit", event => testConnection(event, integrationId));
+    modal.querySelector("#integration-test-secret").focus();
+  }
+
+  async function testConnection(event, integrationId) {
+    event.preventDefault();
+    const input = document.getElementById("integration-test-secret"), button = document.getElementById("integration-test-submit"), result = document.getElementById("integration-test-result");
+    let apiKey = input.value.trim();
+    input.value = ""; button.disabled = true; button.textContent = "Testen…"; result.innerHTML = "";
+    try {
+      const response = await fetch("https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-integration/v1/deals?page=1&per_page=20", { method: "GET", mode: "cors", credentials: "omit", headers: { Accept: "application/json", Authorization: `Bearer ${apiKey}` } });
+      const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
+      if (!response.ok) throw new Error(data.message || data.error || `Verbinding mislukt (${response.status}).`);
+      const deals = getItems(normalizeObject(data));
+      result.innerHTML = `<div class="integration-test-success"><strong>Verbinding geslaagd</strong><span>HTTP ${response.status} · ${deals.length} deal${deals.length === 1 ? "" : "s"} ontvangen</span></div>`;
+      core.toast("De Integration API werkt correct.");
+      await loadManagedKeys(integrationId);
+    } catch (error) {
+      result.innerHTML = `<div class="integration-test-failure"><strong>Verbinding mislukt</strong><span>${core.escapeHtml(error.message)}</span></div>`;
+    } finally { apiKey = null; button.disabled = false; button.textContent = "Opnieuw testen"; }
+  }
 
   async function openCreateIntegration() {
     if (!core.canReview(admin)) return core.toast("Alleen een superadmin of platformadmin kan koppelingen aanmaken.", "error");
