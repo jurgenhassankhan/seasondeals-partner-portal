@@ -5,6 +5,16 @@
     const route = routes[link.getAttribute("href")];
     if (route) link.setAttribute("href", route);
   });
+  document.querySelectorAll(".sd-navigation").forEach((nav) => {
+    if (nav.querySelector('a[href="integrations.html"]')) return;
+    const accountLabel = nav.querySelector(".sd-nav-label-secondary");
+    if (!accountLabel) return;
+    const link = document.createElement("a");
+    link.href = "integrations.html";
+    link.className = "sd-nav-item";
+    link.innerHTML = '<span aria-hidden="true">⇄</span><span>Integraties</span>';
+    nav.insertBefore(link, accountLabel);
+  });
   document.querySelectorAll('.sd-icon-button[aria-label="Notifications"]').forEach((button) => {
     button.addEventListener("click", () => {
       const target = document.getElementById("sd-notifications-panel");

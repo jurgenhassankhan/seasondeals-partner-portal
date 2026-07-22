@@ -64,7 +64,8 @@
       ["dashboard", "index.html", "Dashboard", dashboardIcon()],
       ["hotels", "hotels.html", "Hotels", hotelsIcon()],
       ["orders", "orders.html", "Omzet & orders", ordersIcon()],
-      ["deals", "deals.html", "Dealbeoordeling", dealsIcon()]
+      ["deals", "deals.html", "Dealbeoordeling", dealsIcon()],
+      ["integrations", "integrations.html", "Integratiebeheer", integrationsIcon()]
     ];
     const shell = document.createElement("div");
     shell.className = "admin-shell";
@@ -149,6 +150,7 @@
   function dealsIcon() { return '<svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM8 7V4h8v3M8 12h8"/></svg>'; }
   function hotelsIcon() { return '<svg viewBox="0 0 24 24"><path d="M4 20V6h10v14M14 10h6v10M7 9h4M7 13h4M7 17h4M17 13h1M17 16h1"/></svg>'; }
   function ordersIcon() { return '<svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>'; }
+  function integrationsIcon() { return '<svg viewBox="0 0 24 24"><path d="M8 7h8M7 4v6M17 4v6M6 14h12v6H6zM9 14v-4M15 14v-4"/></svg>'; }
   function logoutIcon() { return '<svg viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></svg>'; }
   function menuIcon() { return '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'; }
 
