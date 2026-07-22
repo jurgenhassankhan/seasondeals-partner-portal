@@ -19,9 +19,9 @@
     target.className = "loading-state";
     target.innerHTML = '<div class="spinner"></div>Orders ophalen…';
     const query = new URLSearchParams({ page: String(page), per_page: "25", date_from: String(dateValue("orders-from", 0)), date_to: String(dateValue("orders-to", 4102444799999, true)) });
-    const status = document.getElementById("orders-status").value;
+    const status = document.getElementById("orders-status").value || "paid";
     const search = document.getElementById("orders-search").value.trim();
-    if (status) query.set("status", status);
+    query.set("status", status);
     if (search) query.set("search", search);
     try {
       const response = await core.request(`/orders?${query}`);
