@@ -10,6 +10,7 @@
       admin = await core.requireAuth();
       core.mountShell({ active: "integrations", title: "Integratiebeheer", subtitle: "Beheer externe hotelkoppelingen en veilige API-toegang." }, admin);
       document.getElementById("integrations-refresh").addEventListener("click", load);
+      document.getElementById("integration-create").addEventListener("click", openCreateIntegration);
       await load();
     } catch (error) { showError(error.message); }
   }
@@ -64,6 +65,57 @@
       showSecret(secret);
     } catch (error) { core.toast(error.message, "error"); }
   }
+
+  async function openCreateIntegration() {
+    if (!core.canReview(admin)) return core.toast("Alleen een superadmin of platformadmin kan koppelingen aanmaken.", "error");
+    const modal = document.getElementById("integration-form-modal");
+    modal.innerHTML = '<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Nieuwe integratie</span><h2>Hotel koppelen</h2><div class="loading-state"><div class="spinner"></div>Hotels en providers ophalen…</div></div>';
+    modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+    bindCreateModalClose(modal);
+    try {
+      const [hotelResponse, providerResponse] = await Promise.all([
+        core.request("/hotels?page=1&per_page=100"),
+        core.request("/integration-providers")
+      ]);
+      const hotels = getItems(normalizeObject(hotelResponse));
+      const providers = getItems(normalizeObject(providerResponse));
+      renderCreateForm(modal, hotels, providers);
+    } catch (error) {
+      modal.querySelector(".loading-state").className = "error-panel";
+      modal.querySelector(".error-panel").textContent = error.message;
+    }
+  }
+
+  function renderCreateForm(modal, hotels, providers) {
+    const body = modal.querySelector(".loading-state");
+    if (!hotels.length || !providers.length) {
+      body.className = "error-panel";
+      body.textContent = !hotels.length ? "Er zijn geen hotels beschikbaar om te koppelen." : "Er zijn geen actieve integratieproviders beschikbaar.";
+      return;
+    }
+    const preferred = providers.find(item => item.slug === "seasondeals_api")?.id;
+    body.outerHTML = `<form id="integration-create-form" class="integration-form"><label>Hotel<select name="hotel_id" required><option value="">Kies een hotel…</option>${hotels.map(item => `<option value="${core.escapeHtml(item.id)}">${core.escapeHtml(item.name || `Hotel #${item.id}`)}</option>`).join("")}</select></label><label>Provider<select name="provider_id" required><option value="">Kies een provider…</option>${providers.map(item => `<option value="${core.escapeHtml(item.id)}"${String(item.id) === String(preferred) ? " selected" : ""}>${core.escapeHtml(item.name || item.slug)}</option>`).join("")}</select></label><label>Omgeving<input value="Test" disabled><input name="environment" type="hidden" value="test"></label><label>Synchronisatie<select name="sync_direction"><option value="bidirectional">Tweerichtingsverkeer</option><option value="inbound">Naar SeasonDeals</option><option value="outbound">Vanuit SeasonDeals</option></select></label><label class="full">Extern hotel-ID <span>(optioneel)</span><input name="external_hotel_id" placeholder="Bijvoorbeeld HOTEL-123"></label><div class="integration-form-note">De koppeling wordt veilig in de testomgeving aangemaakt. Productieverkeer blijft uitgeschakeld.</div><div class="integration-form-actions"><button class="secondary-button" data-cancel-integration type="button">Annuleren</button><button id="integration-create-submit" class="primary-button" type="submit">Koppeling aanmaken</button></div></form>`;
+    modal.querySelector("[data-cancel-integration]").addEventListener("click", () => closeCreateModal(modal));
+    modal.querySelector("#integration-create-form").addEventListener("submit", event => submitIntegration(event, modal));
+  }
+
+  async function submitIntegration(event, modal) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget), button = document.getElementById("integration-create-submit");
+    const body = {
+      hotel_id: Number(form.get("hotel_id")), provider_id: Number(form.get("provider_id")), environment: "test",
+      external_hotel_id: String(form.get("external_hotel_id") || "").trim(), sync_direction: String(form.get("sync_direction") || "bidirectional"),
+      auto_sync_enabled: false, webhook_enabled: false
+    };
+    button.disabled = true; button.textContent = "Aanmaken…";
+    try {
+      await core.request("/integrations", { method: "POST", body: JSON.stringify(body) });
+      closeCreateModal(modal); core.toast("Testkoppeling is aangemaakt."); page = 1; await load();
+    } catch (error) { core.toast(error.message, "error"); button.disabled = false; button.textContent = "Koppeling aanmaken"; }
+  }
+
+  function bindCreateModalClose(modal) { modal.querySelector(".integration-dialog-close").addEventListener("click", () => closeCreateModal(modal)); modal.addEventListener("click", event => { if (event.target === modal) closeCreateModal(modal); }); }
+  function closeCreateModal(modal) { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; }
 
   function showSecret(secret) {
     const modal = document.getElementById("integration-secret-modal");
