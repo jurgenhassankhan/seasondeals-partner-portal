@@ -12,27 +12,28 @@
         core.request("/dashboard"),
         core.request("/deals?status=pending_approval&page=1&per_page=6"),
         core.request("/deals?page=1&per_page=100"),
-        core.request("/hotels?page=1&per_page=100")
+        core.request("/hotels?page=1&per_page=100"),
+        core.request("/analytics/growth")
       ]);
-      const [dashboard, pending, deals, hotels] = results.map((result) => result.status === "fulfilled" ? result.value : {});
-      renderKpis(dashboard, pending, deals, hotels);
+      const [dashboard, pending, deals, hotels, growth] = results.map((result) => result.status === "fulfilled" ? result.value : {});
+      renderKpis(dashboard, pending, deals, hotels, growth);
       renderPending(items(pending));
       const failures = results.filter((result) => result.status === "rejected");
       if (failures.length) showDashboardWarning(failures.map((result) => result.reason?.message || "Onbekende API-fout"));
     } catch (error) { renderError(error.message); }
   }
 
-  function renderKpis(data, pending, deals, hotels) {
+  function renderKpis(data, pending, deals, hotels, growth) {
     const allDeals = items(deals);
     const hotelTotal = total(hotels);
     const activeTotal = allDeals.filter((deal) => deal.status === "active").length || core.pick(data, ["stats.deals.active", "deals.active", "active_deals"], 0);
     const pendingTotal = total(pending);
-    const revenue = findNumber(data, ["total_revenue", "revenue_total", "gross_revenue", "paid_revenue", "revenue"]);
+    const revenue = findNumber(data, ["total_revenue", "revenue_total", "gross_revenue", "paid_revenue", "revenue"]) || findNumber(growth?.this_month ?? growth, ["total_revenue", "revenue_total", "gross_revenue", "paid_revenue", "revenue", "total"]);
     const cards = [
       ["Hotels", hotelTotal, "Aangesloten accommodaties", ""],
       ["Actieve deals", activeTotal, "Zichtbaar voor bezoekers", "green"],
       ["Te beoordelen", pendingTotal, "Wachten op een besluit", "orange"],
-      ["Omzet", core.money(revenue), "Platformbrede gerealiseerde omzet", ""]
+      ["Omzet", core.money(revenue), "Gerealiseerde omzet deze maand", ""]
     ];
     document.getElementById("dashboard-kpis").innerHTML = cards.map(([label, value, note, tone]) => `<article class="kpi-card"><div class="kpi-top"><span class="kpi-label">${core.escapeHtml(label)}</span><span class="kpi-icon ${tone}">${kpiIcon()}</span></div><strong class="kpi-value">${core.escapeHtml(value)}</strong><span class="kpi-note">${core.escapeHtml(note)}</span></article>`).join("");
   }
@@ -59,5 +60,5 @@
   function showDashboardWarning(messages) { const target = document.getElementById("pending-content"); if (!target || target.querySelector?.(".dashboard-warning")) return; const warning = document.createElement("div"); warning.className = "notice dashboard-warning"; warning.innerHTML = `<strong>Niet alle dashboardbronnen konden laden.</strong><br>${messages.map((message) => core.escapeHtml(message)).join(" · ")}`; target.prepend(warning); }
   function items(data) { return [data, data?.items, data?.data, data?.data?.items, data?.result?.items].find(Array.isArray) || []; }
   function total(data) { return Number(data?.itemsTotal ?? data?.pagination?.total_items ?? data?.total_items ?? items(data).length) || 0; }
-  function findNumber(value, keys) { if (!value || typeof value !== "object") return 0; for (const [key, child] of Object.entries(value)) { if (keys.includes(key) && Number.isFinite(Number(child))) return Number(child); } for (const child of Object.values(value)) { const found = findNumber(child, keys); if (found) return found; } return 0; }
+  function findNumber(value, keys) { if (typeof value === "string") { try { return findNumber(JSON.parse(value), keys); } catch { return 0; } } if (!value || typeof value !== "object") return 0; for (const [key, child] of Object.entries(value)) { if (keys.includes(key) && Number.isFinite(Number(child))) return Number(child); } for (const child of Object.values(value)) { const found = findNumber(child, keys); if (found) return found; } return 0; }
 })();
