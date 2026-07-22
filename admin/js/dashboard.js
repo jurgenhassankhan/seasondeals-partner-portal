@@ -30,12 +30,12 @@
     const pendingTotal = total(pending);
     const revenue = findNumber(data, ["total_revenue", "revenue_total", "gross_revenue", "paid_revenue", "revenue"]) || findNumber(growth?.this_month ?? growth, ["total_revenue", "revenue_total", "gross_revenue", "paid_revenue", "revenue", "total"]);
     const cards = [
-      ["Hotels", hotelTotal, "Aangesloten accommodaties", ""],
-      ["Actieve deals", activeTotal, "Zichtbaar voor bezoekers", "green"],
-      ["Te beoordelen", pendingTotal, "Wachten op een besluit", "orange"],
-      ["Omzet", core.money(revenue), "Gerealiseerde omzet deze maand", ""]
+      ["Hotels", hotelTotal, "Aangesloten accommodaties", "", "hotels.html"],
+      ["Actieve deals", activeTotal, "Zichtbaar voor bezoekers", "green", "deals.html?status=active"],
+      ["Te beoordelen", pendingTotal, "Wachten op een besluit", "orange", "deals.html?status=pending_approval"],
+      ["Omzet", core.money(revenue), "Gerealiseerde omzet deze maand", "", ""]
     ];
-    document.getElementById("dashboard-kpis").innerHTML = cards.map(([label, value, note, tone]) => `<article class="kpi-card"><div class="kpi-top"><span class="kpi-label">${core.escapeHtml(label)}</span><span class="kpi-icon ${tone}">${kpiIcon()}</span></div><strong class="kpi-value">${core.escapeHtml(value)}</strong><span class="kpi-note">${core.escapeHtml(note)}</span></article>`).join("");
+    document.getElementById("dashboard-kpis").innerHTML = cards.map(([label, value, note, tone, href]) => `${href ? `<a href="${href}" style="color:inherit;text-decoration:none">` : ""}<article class="kpi-card"${href ? ' style="cursor:pointer"' : ""}><div class="kpi-top"><span class="kpi-label">${core.escapeHtml(label)}</span><span class="kpi-icon ${tone}">${kpiIcon()}</span></div><strong class="kpi-value">${core.escapeHtml(value)}</strong><span class="kpi-note">${core.escapeHtml(note)}${href ? " · Bekijken →" : ""}</span></article>${href ? "</a>" : ""}`).join("");
   }
 
   function renderPending(items) {

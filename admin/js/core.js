@@ -62,6 +62,7 @@
     const role = label(admin?.role || "admin");
     const nav = [
       ["dashboard", "index.html", "Dashboard", dashboardIcon()],
+      ["hotels", "hotels.html", "Hotels", hotelsIcon()],
       ["deals", "deals.html", "Dealbeoordeling", dealsIcon()]
     ];
     const shell = document.createElement("div");
@@ -145,6 +146,7 @@
 
   function dashboardIcon() { return '<svg viewBox="0 0 24 24"><path d="M4 4h6v7H4zM14 4h6v4h-6zM14 12h6v8h-6zM4 15h6v5H4z"/></svg>'; }
   function dealsIcon() { return '<svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM8 7V4h8v3M8 12h8"/></svg>'; }
+  function hotelsIcon() { return '<svg viewBox="0 0 24 24"><path d="M4 20V6h10v14M14 10h6v10M7 9h4M7 13h4M7 17h4M17 13h1M17 16h1"/></svg>'; }
   function logoutIcon() { return '<svg viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></svg>'; }
   function menuIcon() { return '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'; }
 
