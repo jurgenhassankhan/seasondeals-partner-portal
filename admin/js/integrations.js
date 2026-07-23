@@ -126,7 +126,9 @@
       const response = await fetch("https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-integration/v1/deals?page=1&per_page=20", { method: "GET", mode: "cors", credentials: "omit", headers: { Accept: "application/json", Authorization: `Bearer ${apiKey}` } });
       const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
       if (!response.ok) throw new Error(data.message || data.error || `Verbinding mislukt (${response.status}).`);
-      const deals = getItems(normalizeObject(data));
+      const payload = unwrapPayload(data), hiddenStatus = Number(payload?.status || 0), hiddenError = payload?.error || payload?.message;
+      if (hiddenError && (hiddenStatus >= 400 || payload?.stage)) throw new Error(`${hiddenError}${payload?.stage ? ` · fase: ${payload.stage}` : ""}`);
+      const deals = getItems(payload);
       result.innerHTML = `<div class="integration-test-success"><strong>Verbinding geslaagd</strong><span>HTTP ${response.status} · ${deals.length} deal${deals.length === 1 ? "" : "s"} ontvangen</span></div>`;
       core.toast("De Integration API werkt correct.");
       await loadManagedKeys(integrationId);
@@ -247,9 +249,9 @@
   }
 
   function normalizeObject(value) { if (typeof value !== "string") return value; try { return JSON.parse(value); } catch { return value; } }
+  function unwrapPayload(value) { let current = normalizeObject(value); for (let depth = 0; depth < 6 && current && typeof current === "object" && current.payload != null; depth++) current = normalizeObject(current.payload); return current; }
   function getItems(data) {
-    let current = normalizeObject(data);
-    for (let depth = 0; depth < 6 && current && typeof current === "object" && current.payload != null; depth++) current = normalizeObject(current.payload);
+    const current = unwrapPayload(data);
     const values = [current, normalizeObject(current?.items), normalizeObject(current?.data), normalizeObject(current?.data?.items), normalizeObject(current?.result), normalizeObject(current?.result?.items)];
     return values.find(Array.isArray) || [];
   }
