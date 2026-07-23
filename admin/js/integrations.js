@@ -247,6 +247,11 @@
   }
 
   function normalizeObject(value) { if (typeof value !== "string") return value; try { return JSON.parse(value); } catch { return value; } }
-  function getItems(data) { const values = [data, normalizeObject(data?.items), data?.data, normalizeObject(data?.data?.items)]; return values.find(Array.isArray) || []; }
+  function getItems(data) {
+    let current = normalizeObject(data);
+    for (let depth = 0; depth < 6 && current && typeof current === "object" && current.payload != null; depth++) current = normalizeObject(current.payload);
+    const values = [current, normalizeObject(current?.items), normalizeObject(current?.data), normalizeObject(current?.data?.items), normalizeObject(current?.result), normalizeObject(current?.result?.items)];
+    return values.find(Array.isArray) || [];
+  }
   function showError(message) { const target = document.getElementById("integrations-content"); if (target) { target.className = "error-panel"; target.textContent = message; } }
 })();
