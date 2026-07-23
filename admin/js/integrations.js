@@ -86,10 +86,11 @@
       const data = normalizeObject(await core.request(`/integrations/${integrationId}/api-keys`)), keys = getItems(data);
       const active = keys.filter(item => item.is_active !== false && !item.revoked_at);
       target.className = "integration-key-manager";
-      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><div class="integration-key-summary-actions"><button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-test-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Testdeal aanmaken</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button></div></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
+      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><div class="integration-key-summary-actions"><button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-test-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Testdeal aanmaken</button><button id="integration-submit-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Indienen voor beoordeling</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button></div></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
       document.getElementById("integration-new-key").addEventListener("click", () => createKey(integrationId, active.length));
       document.getElementById("integration-test-key")?.addEventListener("click", () => openConnectionTest(integrationId));
       document.getElementById("integration-test-deal")?.addEventListener("click", () => openTestDeal(integrationId));
+      document.getElementById("integration-submit-deal")?.addEventListener("click", () => openSubmitDeal(integrationId));
       target.querySelectorAll("[data-revoke-managed-key]").forEach(button => button.addEventListener("click", () => revokeManagedKey(integrationId, button.dataset.revokeManagedKey)));
     } catch (error) { target.className = "error-panel"; target.textContent = error.message; }
   }
@@ -171,9 +172,36 @@
         throw new Error(`${message} · fase: ${stage} · responsevelden: ${fields}`);
       }
       result.innerHTML = `<div class="integration-test-success"><strong>Testdeal succesvol aangemaakt</strong><span>HTTP ${response.status} · intern ID ${core.escapeHtml(dealId)} · extern ID ${core.escapeHtml(deal.external_id || payload.external_id || body.external_id)}</span></div>`;
+      sessionStorage.setItem("sd_last_integration_external_id", deal.external_id || payload.external_id || body.external_id);
       core.toast("De testdeal is via de Integration API aangemaakt.");
       await loadManagedKeys(integrationId);
     } catch (error) { result.innerHTML = `<div class="integration-test-failure"><strong>Aanmaken mislukt</strong><span>${core.escapeHtml(error.message)}</span></div>`; }
+    finally { apiKey = null; button.disabled = false; button.textContent = "Opnieuw proberen"; }
+  }
+
+  function openSubmitDeal(integrationId) {
+    const modal = document.getElementById("integration-secret-modal"), externalId = sessionStorage.getItem("sd_last_integration_external_id") || "E2E-1784797495703";
+    modal.innerHTML = `<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">API-workflowtest</span><h2>Deal indienen voor beoordeling</h2><p>De deal gaat van Concept naar Te beoordelen en wordt niet automatisch actief.</p><form id="integration-submit-deal-form" class="integration-test-deal-form"><label class="full">Testsleutel<input name="api_key" type="password" autocomplete="off" spellcheck="false" required placeholder="sd_test_…"></label><label class="full">Extern deal-ID<input name="external_id" required value="${core.escapeHtml(externalId)}"></label><div class="integration-form-actions full"><button class="secondary-button" data-cancel-submit-deal type="button">Annuleren</button><button id="integration-submit-deal-submit" class="primary-button" type="submit">Indienen voor beoordeling</button></div></form><div id="integration-submit-deal-result"></div></div>`;
+    modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+    const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
+    modal.querySelector(".integration-dialog-close").addEventListener("click", close);
+    modal.querySelector("[data-cancel-submit-deal]").addEventListener("click", close);
+    modal.querySelector("#integration-submit-deal-form").addEventListener("submit", event => submitDealForReview(event, integrationId));
+  }
+
+  async function submitDealForReview(event, integrationId) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget), button = document.getElementById("integration-submit-deal-submit"), result = document.getElementById("integration-submit-deal-result");
+    let apiKey = String(form.get("api_key") || "").trim(); const externalId = String(form.get("external_id") || "").trim();
+    event.currentTarget.elements.api_key.value = ""; button.disabled = true; button.textContent = "Indienen…"; result.innerHTML = "";
+    try {
+      const response = await fetch(`https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-integration/v1/deals/${encodeURIComponent(externalId)}/submit`, { method: "POST", mode: "cors", credentials: "omit", headers: { Accept: "application/json", Authorization: `Bearer ${apiKey}` } });
+      const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
+      const payload = unwrapPayload(data), deal = normalizeObject(payload?.deal || payload?.data?.deal || payload?.data || {}), status = deal?.status || payload?.status;
+      if (!response.ok || status !== "pending_approval") throw new Error(payload?.message || payload?.error || data?.message || data?.error || `Indienen mislukt (${response.status}).`);
+      result.innerHTML = `<div class="integration-test-success"><strong>Deal ingediend voor beoordeling</strong><span>HTTP ${response.status} · ${core.escapeHtml(externalId)} · status Te beoordelen</span></div>`;
+      core.toast("De API-deal staat klaar voor beoordeling."); await loadManagedKeys(integrationId);
+    } catch (error) { result.innerHTML = `<div class="integration-test-failure"><strong>Indienen mislukt</strong><span>${core.escapeHtml(error.message)}</span></div>`; }
     finally { apiKey = null; button.disabled = false; button.textContent = "Opnieuw proberen"; }
   }
 
