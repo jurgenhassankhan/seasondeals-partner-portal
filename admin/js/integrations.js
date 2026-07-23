@@ -225,8 +225,10 @@
       if (!response.ok || status !== "pending_approval") {
         const message = dealValidationMessage(payload, response.status);
         const stage = payload?.stage || payload?.data?.stage || payload?.response?.stage;
+        const currentStatus = payload?.current_status || payload?.data?.current_status || payload?.response?.current_status;
+        const requiredStatus = payload?.required_status || payload?.data?.required_status || payload?.response?.required_status;
         const fields = Object.keys(payload && typeof payload === "object" ? payload : {}).slice(0, 8).join(", ") || "geen";
-        throw new Error(`${message}${stage ? ` · fase: ${stage}` : ""} · ontvangen status: ${status || "ontbreekt"} · responsevelden: ${fields}`);
+        throw new Error(`${message}${stage ? ` · fase: ${stage}` : ""}${currentStatus ? ` · huidige dealstatus: ${currentStatus}` : ""}${requiredStatus ? ` · vereiste status: ${requiredStatus}` : ""} · ontvangen responsestatus: ${status || "ontbreekt"} · responsevelden: ${fields}`);
       }
       result.innerHTML = `<div class="integration-test-success"><strong>Deal ingediend voor beoordeling</strong><span>HTTP ${response.status} · ${core.escapeHtml(externalId)} · status Te beoordelen</span></div>`;
       core.toast("De API-deal staat klaar voor beoordeling."); await loadManagedKeys(integrationId);
