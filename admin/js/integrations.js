@@ -157,8 +157,15 @@
       const response = await fetch("https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-integration/v1/deals", { method: "POST", mode: "cors", credentials: "omit", headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "Idempotency-Key": idempotencyKey }, body: JSON.stringify(body) });
       const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
       if (!response.ok) throw new Error(data.message || data.error || `Aanmaken mislukt (${response.status}).`);
-      const deal = normalizeObject(data?.deal || data?.data || data);
-      result.innerHTML = `<div class="integration-test-success"><strong>Testdeal succesvol aangemaakt</strong><span>HTTP ${response.status} · intern ID ${core.escapeHtml(deal.id || data.id || "—")} · extern ID ${core.escapeHtml(deal.external_id || data.external_id || body.external_id)}</span></div>`;
+      const payload = normalizeObject(data), deal = normalizeObject(payload?.deal || payload?.data?.deal || payload?.response?.deal || payload?.result?.deal || payload?.data || payload?.response || payload?.result || {});
+      const dealId = Number(deal?.id || payload?.id || 0);
+      if (!Number.isInteger(dealId) || dealId <= 0) {
+        const stage = payload?.stage || payload?.data?.stage || payload?.response?.stage || "onbekend";
+        const message = payload?.message || payload?.error || payload?.data?.message || payload?.response?.message || "Xano retourneerde HTTP 200 zonder opgeslagen deal-ID";
+        const fields = Object.keys(payload && typeof payload === "object" ? payload : {}).slice(0, 8).join(", ") || "geen";
+        throw new Error(`${message} · fase: ${stage} · responsevelden: ${fields}`);
+      }
+      result.innerHTML = `<div class="integration-test-success"><strong>Testdeal succesvol aangemaakt</strong><span>HTTP ${response.status} · intern ID ${core.escapeHtml(dealId)} · extern ID ${core.escapeHtml(deal.external_id || payload.external_id || body.external_id)}</span></div>`;
       core.toast("De testdeal is via de Integration API aangemaakt.");
       await loadManagedKeys(integrationId);
     } catch (error) { result.innerHTML = `<div class="integration-test-failure"><strong>Aanmaken mislukt</strong><span>${core.escapeHtml(error.message)}</span></div>`; }
