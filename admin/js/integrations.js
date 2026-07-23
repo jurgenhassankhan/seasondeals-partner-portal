@@ -140,7 +140,8 @@
 
   function openTestDeal(integrationId) {
     const modal = document.getElementById("integration-secret-modal"), now = Date.now();
-    modal.innerHTML = `<div class="integration-dialog integration-test-deal-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">End-to-end test</span><h2>Conceptdeal via API aanmaken</h2><p>Deze deal wordt alleen als concept opgeslagen en gaat niet automatisch live.</p><form id="integration-test-deal-form" class="integration-test-deal-form"><label class="full">Testsleutel<input name="api_key" type="password" autocomplete="off" spellcheck="false" required placeholder="sd_test_…"></label><label class="full">Titel<input name="title" required value="SeasonDeals API testdeal"></label><label>Dealprijs (€)<input name="price" type="number" min="1" step="0.01" required value="199"></label><label>Oorspronkelijke prijs (€)<input name="original_price" type="number" min="1" step="0.01" value="249"></label><label>Voorraad<input name="inventory" type="number" min="0" step="1" required value="5"></label><label>Extern ID<input name="external_id" required value="E2E-${now}"></label><div class="integration-form-note full">Er wordt automatisch een unieke Idempotency-Key gebruikt. Herhaald klikken tijdens de aanvraag kan geen dubbele deal veroorzaken.</div><div class="integration-form-actions full"><button class="secondary-button" data-cancel-test-deal type="button">Annuleren</button><button id="integration-test-deal-submit" class="primary-button" type="submit">Testdeal aanmaken</button></div></form><div id="integration-test-deal-result"></div></div>`;
+    const start = new Date(now + 86400000).toISOString().slice(0, 10), end = new Date(now + (90 * 86400000)).toISOString().slice(0, 10);
+    modal.innerHTML = `<div class="integration-dialog integration-test-deal-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">End-to-end test</span><h2>Complete conceptdeal via API</h2><p>Alle verplichte gegevens worden gevalideerd voordat Xano de deal opslaat.</p><form id="integration-test-deal-form" class="integration-test-deal-form"><label class="full">Testsleutel<input name="api_key" type="password" autocomplete="off" spellcheck="false" required placeholder="sd_test_…"></label><label class="full">Titel<input name="title" maxlength="120" required value="SeasonDeals API testdeal"></label><label>Dealprijs (€)<input name="price" type="number" min="1" step="0.01" required value="199"></label><label>Oorspronkelijke prijs (€)<input name="original_price" type="number" min="1" step="0.01" required value="249"></label><label>Voorraad<input name="inventory" type="number" min="1" step="1" required value="5"></label><label>Extern ID<input name="external_id" required value="E2E-${now}"></label><label>Minimum aantal nachten<input name="minimum_nights" type="number" min="1" max="30" step="1" required value="1"></label><label>Maximum aantal gasten<input name="max_guests" type="number" min="1" max="20" step="1" required value="2"></label><label>Geldig vanaf<input name="travel_period_start" type="date" required value="${start}"></label><label>Geldig tot en met<input name="travel_period_end" type="date" required value="${end}"></label><label class="full">Afbeeldings-URL (HTTPS)<input name="image_url" type="url" pattern="https://.*" required value="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&amp;fit=crop&amp;w=1600&amp;q=85"></label><label class="full">Korte omschrijving<textarea name="short_description" maxlength="240" required>Een complete testdeal die via de SeasonDeals Integration API is aangeleverd.</textarea></label><label class="full">Uitgebreide omschrijving<textarea name="long_description" maxlength="3000" required>Deze conceptdeal controleert de volledige keten: geldige invoer, veilige opslag, beoordeling door SeasonDeals en publicatie na goedkeuring.</textarea></label><label class="full">Annuleringsvoorwaarden<textarea name="cancellation_policy" maxlength="1500" required>Annuleren is mogelijk volgens de voorwaarden van het aangesloten hotel. De definitieve voorwaarden staan op de voucher en boekingsbevestiging.</textarea></label><div class="integration-form-note full">Er wordt automatisch een unieke Idempotency-Key gebruikt. Herhaald klikken tijdens de aanvraag kan geen dubbele deal veroorzaken.</div><div class="integration-form-actions full"><button class="secondary-button" data-cancel-test-deal type="button">Annuleren</button><button id="integration-test-deal-submit" class="primary-button" type="submit">Complete testdeal aanmaken</button></div></form><div id="integration-test-deal-result"></div></div>`;
     modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
     const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
     modal.querySelector(".integration-dialog-close").addEventListener("click", close);
@@ -154,12 +155,32 @@
     let apiKey = String(form.get("api_key") || "").trim();
     event.currentTarget.elements.api_key.value = "";
     const idempotencyKey = crypto.randomUUID ? crypto.randomUUID() : `sd-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const body = { idempotency_key: idempotencyKey, external_id: String(form.get("external_id") || "").trim(), title: String(form.get("title") || "").trim(), price: Number(form.get("price")), original_price: Number(form.get("original_price")) || null, inventory: Number(form.get("inventory")), travel_period_start: Date.now() + 86400000, travel_period_end: Date.now() + (90 * 86400000), short_description: "Automatisch aangemaakte testdeal voor de SeasonDeals Integration API.", long_description: "Deze conceptdeal controleert veilig of externe partners deals kunnen aanleveren via de SeasonDeals Integration API.", max_guests: 2, minimum_nights: 1 };
+    const body = {
+      idempotency_key: idempotencyKey,
+      external_id: String(form.get("external_id") || "").trim(),
+      title: String(form.get("title") || "").trim(),
+      price: Number(form.get("price")),
+      original_price: Number(form.get("original_price")),
+      inventory: Number(form.get("inventory")),
+      travel_period_start: new Date(`${form.get("travel_period_start")}T00:00:00`).getTime(),
+      travel_period_end: new Date(`${form.get("travel_period_end")}T23:59:59`).getTime(),
+      short_description: String(form.get("short_description") || "").trim(),
+      long_description: String(form.get("long_description") || "").trim(),
+      cancellation_policy: String(form.get("cancellation_policy") || "").trim(),
+      image_urls: [String(form.get("image_url") || "").trim()],
+      max_guests: Number(form.get("max_guests")),
+      minimum_nights: Number(form.get("minimum_nights")),
+      includes_breakfast: false,
+      includes_wifi: true,
+      includes_parking: false,
+      includes_late_checkout: false,
+      includes_welcome_drink: false
+    };
     button.disabled = true; button.textContent = "Aanmaken…"; result.innerHTML = "";
     try {
       const response = await fetch("https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-integration/v1/deals", { method: "POST", mode: "cors", credentials: "omit", headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "Idempotency-Key": idempotencyKey }, body: JSON.stringify(body) });
       const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
-      if (!response.ok) throw new Error(data.message || data.error || `Aanmaken mislukt (${response.status}).`);
+      if (!response.ok) throw new Error(dealValidationMessage(data, response.status));
       const root = normalizeObject(data); let payload = root;
       for (let depth = 0; depth < 6 && payload && typeof payload === "object" && payload.payload != null && !payload.deal && !payload.id; depth++) payload = normalizeObject(payload.payload);
       const deal = normalizeObject(payload?.deal || payload?.data?.deal || payload?.response?.deal || payload?.result?.deal || payload?.data || payload?.response || payload?.result || {});
@@ -282,6 +303,17 @@
     const current = unwrapPayload(data);
     const values = [current, normalizeObject(current?.items), normalizeObject(current?.deals), normalizeObject(current?.deals?.items), normalizeObject(current?.data), normalizeObject(current?.data?.items), normalizeObject(current?.data?.deals), normalizeObject(current?.result), normalizeObject(current?.result?.items), normalizeObject(current?.result?.deals)];
     return values.find(Array.isArray) || [];
+  }
+  function dealValidationMessage(data, status) {
+    const payload = unwrapPayload(data) || {};
+    const missing = Array.isArray(payload.missing_fields) ? payload.missing_fields.filter(Boolean) : [];
+    const errors = Array.isArray(payload.validation_errors) ? payload.validation_errors : [];
+    const details = [
+      ...missing.map(field => `${field}: ontbreekt`),
+      ...errors.map(item => typeof item === "string" ? item : `${item.field || "veld"}: ${item.message || item.code || "ongeldige waarde"}`)
+    ];
+    const message = payload.message || payload.error || `Aanmaken mislukt (${status}).`;
+    return details.length ? `${message} — ${details.join(" · ")}` : message;
   }
   function showError(message) { const target = document.getElementById("integrations-content"); if (target) { target.className = "error-panel"; target.textContent = message; } }
 })();
