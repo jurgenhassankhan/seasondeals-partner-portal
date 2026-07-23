@@ -218,8 +218,16 @@
     try {
       const response = await fetch(`https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-integration/v1/deals/${encodeURIComponent(externalId)}/submit`, { method: "POST", mode: "cors", credentials: "omit", headers: { Accept: "application/json", Authorization: `Bearer ${apiKey}` } });
       const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
-      const payload = unwrapPayload(data), deal = normalizeObject(payload?.deal || payload?.data?.deal || payload?.data || {}), status = deal?.status || payload?.status;
-      if (!response.ok || status !== "pending_approval") throw new Error(payload?.message || payload?.error || data?.message || data?.error || `Indienen mislukt (${response.status}).`);
+      const root = normalizeObject(data); let payload = root;
+      for (let depth = 0; depth < 6 && payload && typeof payload === "object" && payload.payload != null && !payload.deal; depth++) payload = normalizeObject(payload.payload);
+      const deal = normalizeObject(payload?.deal || payload?.data?.deal || payload?.response?.deal || payload?.result?.deal || payload?.data || payload?.response || payload?.result || {});
+      const status = String(deal?.status || payload?.deal_status || (typeof payload?.status === "string" ? payload.status : "") || "").toLowerCase();
+      if (!response.ok || status !== "pending_approval") {
+        const message = dealValidationMessage(payload, response.status);
+        const stage = payload?.stage || payload?.data?.stage || payload?.response?.stage;
+        const fields = Object.keys(payload && typeof payload === "object" ? payload : {}).slice(0, 8).join(", ") || "geen";
+        throw new Error(`${message}${stage ? ` · fase: ${stage}` : ""} · ontvangen status: ${status || "ontbreekt"} · responsevelden: ${fields}`);
+      }
       result.innerHTML = `<div class="integration-test-success"><strong>Deal ingediend voor beoordeling</strong><span>HTTP ${response.status} · ${core.escapeHtml(externalId)} · status Te beoordelen</span></div>`;
       core.toast("De API-deal staat klaar voor beoordeling."); await loadManagedKeys(integrationId);
     } catch (error) { result.innerHTML = `<div class="integration-test-failure"><strong>Indienen mislukt</strong><span>${core.escapeHtml(error.message)}</span></div>`; }
