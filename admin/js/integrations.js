@@ -157,12 +157,14 @@
       const response = await fetch("https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-integration/v1/deals", { method: "POST", mode: "cors", credentials: "omit", headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "Idempotency-Key": idempotencyKey }, body: JSON.stringify(body) });
       const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
       if (!response.ok) throw new Error(data.message || data.error || `Aanmaken mislukt (${response.status}).`);
-      const root = normalizeObject(data), payload = normalizeObject(root?.payload) || root;
+      const root = normalizeObject(data); let payload = root;
+      for (let depth = 0; depth < 6 && payload && typeof payload === "object" && payload.payload != null && !payload.deal && !payload.id; depth++) payload = normalizeObject(payload.payload);
       const deal = normalizeObject(payload?.deal || payload?.data?.deal || payload?.response?.deal || payload?.result?.deal || payload?.data || payload?.response || payload?.result || {});
       const dealId = Number(deal?.id || payload?.id || 0);
       if (!Number.isInteger(dealId) || dealId <= 0) {
         const stage = payload?.stage || payload?.data?.stage || payload?.response?.stage || root?.stage || "onbekend";
-        const message = payload?.message || payload?.error || payload?.data?.message || payload?.response?.message || root?.message || root?.error || "Xano retourneerde HTTP 200 zonder opgeslagen deal-ID";
+        const statement = payload?.statement || root?.statement;
+        const message = payload?.message || payload?.error || payload?.data?.message || payload?.response?.message || root?.message || root?.error || (statement ? String(statement).slice(0, 280) : "Xano retourneerde HTTP 200 zonder opgeslagen deal-ID");
         const fields = Object.keys(payload && typeof payload === "object" ? payload : {}).slice(0, 8).join(", ") || "geen";
         throw new Error(`${message} · fase: ${stage} · responsevelden: ${fields}`);
       }
