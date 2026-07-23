@@ -252,7 +252,7 @@
   function unwrapPayload(value) { let current = normalizeObject(value); for (let depth = 0; depth < 6 && current && typeof current === "object" && current.payload != null; depth++) current = normalizeObject(current.payload); return current; }
   function getItems(data) {
     const current = unwrapPayload(data);
-    const values = [current, normalizeObject(current?.items), normalizeObject(current?.data), normalizeObject(current?.data?.items), normalizeObject(current?.result), normalizeObject(current?.result?.items)];
+    const values = [current, normalizeObject(current?.items), normalizeObject(current?.deals), normalizeObject(current?.deals?.items), normalizeObject(current?.data), normalizeObject(current?.data?.items), normalizeObject(current?.data?.deals), normalizeObject(current?.result), normalizeObject(current?.result?.items), normalizeObject(current?.result?.deals)];
     return values.find(Array.isArray) || [];
   }
   function showError(message) { const target = document.getElementById("integrations-content"); if (target) { target.className = "error-panel"; target.textContent = message; } }
