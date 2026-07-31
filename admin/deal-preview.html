@@ -2,44 +2,15 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <title>Beveiligde testpreview · SeasonDeals Admin</title>
-  <link rel="stylesheet" href="../public-preview/css/site.css?v=20260731-preview-1">
-  <link rel="stylesheet" href="../public-preview/css/deal.css?v=20260731-preview-1">
-  <link rel="stylesheet" href="css/deal-preview.css?v=20260731-preview-1">
+  <title>Testpreview openen · SeasonDeals</title>
 </head>
-<body class="detail-page admin-preview-page">
-  <div class="preview-security-bar">
-    <div>
-      <strong>TESTPREVIEW · NIET PUBLIEK</strong>
-      <span>Alleen zichtbaar voor ingelogde SeasonDeals-beheerders</span>
-    </div>
-    <a id="preview-back-top" href="deals.html">← Terug naar beoordeling</a>
-  </div>
-
-  <header class="preview-site-header">
-    <a class="preview-brand" href="index.html" aria-label="Naar het admindashboard">
-      <span>SeasonDeals</span>
-      <small><em>Hot offers,</em> cool prices</small>
-    </a>
-    <span class="preview-admin-pill">Beveiligde adminweergave</span>
-  </header>
-
-  <main id="deal-preview" class="detail-shell" aria-live="polite">
-    <div class="preview-loading">
-      <span class="preview-spinner" aria-hidden="true"></span>
-      Testpreview laden…
-    </div>
-  </main>
-
-  <footer class="preview-footer">
-    <span>SeasonDeals testpreview</span>
-    <span>Boeken en betalen zijn uitgeschakeld.</span>
-  </footer>
-
-  <script src="js/config.js?v=20260721-1"></script>
-  <script src="js/core.js?v=20260721-1"></script>
-  <script src="js/deal-preview.js?v=20260731-preview-1"></script>
+<body>
+  <p>De beveiligde testpreview wordt geopend…</p>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    params.set("portal", "admin");
+    window.location.replace("../deal-preview.html?" + params.toString());
+  </script>
 </body>
 </html>
