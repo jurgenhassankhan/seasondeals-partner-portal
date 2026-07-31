@@ -44,17 +44,6 @@
   color: #ffb08d;
 }
 
-.preview-header-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 15px;
-  color: #052f27;
-  background: #e5f4ee;
-  border-radius: 999px;
-  font-size: .75rem;
-  font-weight: 900;
-}
-
 .shared-preview-page .booking-card {
   border-top: 4px solid #ff5a16;
 }
@@ -96,7 +85,4 @@
     gap: 3px;
   }
 
-  .preview-header-pill {
-    display: none;
-  }
 }

@@ -84,6 +84,9 @@
       const link = document.getElementById(id);
       if (link) link.href = portalBack;
     });
+    document.querySelectorAll(".preview-portal-link").forEach((link) => {
+      link.href = portalBack;
+    });
   }
 
   function renderDeal() {
