@@ -17,11 +17,132 @@
   let activeFilter = "all";
   let locationQuery = "";
 
+  initTechnicalSeo();
   bindNavigation();
   bindPreviewControls();
   if (grid) {
     bindDealControls();
     loadDeals();
+  }
+
+  function initTechnicalSeo() {
+    document.documentElement.lang = "nl";
+
+    setMeta("description", "Ontdek exclusieve deals voor hotels, wellness, massages, evenementen en attracties. Boek veilig online en ontvang direct je SeasonDeals-voucher.");
+    setMeta("og:type", "website", "property");
+    setMeta("og:locale", "nl_NL", "property");
+    setMeta("og:site_name", "SeasonDeals", "property");
+    setMeta("og:description", "Ontdek exclusieve deals voor hotels, wellness, massages, evenementen en attracties bij SeasonDeals.", "property");
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:description", "Hot offers, cool prices voor hotels, wellness, massages, evenementen en attracties.");
+
+    const path = window.location.pathname.replace(/\/+$/, "") || "/";
+    const isDevelopmentPage = path === "/new-website" || path.includes("/public-preview");
+
+    if (isDevelopmentPage) {
+      setMeta("robots", "noindex, nofollow");
+      return;
+    }
+
+    if (path === "/") {
+      setMeta("robots", "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
+      setCanonical("https://www.seasondeals.nl/");
+      setStructuredData("seasondeals-site-schema", {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.seasondeals.nl/#organization",
+            name: "SeasonDeals",
+            url: "https://www.seasondeals.nl/",
+            email: "info@seasondeals.nl"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.seasondeals.nl/#website",
+            url: "https://www.seasondeals.nl/",
+            name: "SeasonDeals",
+            inLanguage: "nl-NL",
+            publisher: { "@id": "https://www.seasondeals.nl/#organization" }
+          }
+        ]
+      });
+    }
+  }
+
+  function updateDealStructuredData(publicDeals) {
+    const path = window.location.pathname.replace(/\/+$/, "") || "/";
+    if (path !== "/" || !Array.isArray(publicDeals) || !publicDeals.length) return;
+
+    const items = publicDeals.slice(0, 20).map((deal, index) => {
+      const price = getPositiveNumber(deal.deal_price, deal.price);
+      const remaining = getRemaining(deal);
+      const image = getImage(deal);
+      const url = new URL(CONFIG.dealPage, window.location.origin);
+      url.searchParams.set("id", deal.id);
+      url.searchParams.set("view", "inventory-v2");
+
+      const product = {
+        "@type": "Product",
+        name: text(deal.title || deal.name, "SeasonDeals deal"),
+        url: url.href
+      };
+
+      if (image) product.image = [image];
+      if (price > 0) {
+        product.offers = {
+          "@type": "Offer",
+          priceCurrency: CONFIG.currency,
+          price: String(price),
+          url: url.href,
+          availability: remaining === 0 ? "https://schema.org/SoldOut" : "https://schema.org/InStock"
+        };
+      }
+
+      return {
+        "@type": "ListItem",
+        position: index + 1,
+        item: product
+      };
+    });
+
+    setStructuredData("seasondeals-deals-schema", {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Actuele SeasonDeals",
+      itemListElement: items
+    });
+  }
+
+  function setMeta(key, value, attribute = "name") {
+    let element = document.head.querySelector(`meta[${attribute}="${key}"]`);
+    if (!element) {
+      element = document.createElement("meta");
+      element.setAttribute(attribute, key);
+      document.head.appendChild(element);
+    }
+    element.setAttribute("content", value);
+  }
+
+  function setCanonical(url) {
+    let element = document.head.querySelector('link[rel="canonical"]');
+    if (!element) {
+      element = document.createElement("link");
+      element.setAttribute("rel", "canonical");
+      document.head.appendChild(element);
+    }
+    element.setAttribute("href", url);
+  }
+
+  function setStructuredData(id, data) {
+    let element = document.getElementById(id);
+    if (!element) {
+      element = document.createElement("script");
+      element.id = id;
+      element.type = "application/ld+json";
+      document.head.appendChild(element);
+    }
+    element.textContent = JSON.stringify(data);
   }
 
   function bindNavigation() {
@@ -80,6 +201,7 @@
       if (!response.ok) throw new Error(`Xano gaf status ${response.status}.`);
       const data = await response.json();
       deals = resolveDeals(data).filter(isPublicDeal);
+      updateDealStructuredData(deals);
       renderDeals();
     } catch (error) {
       console.error("SeasonDeals public deals failed:", error);
