@@ -49,6 +49,8 @@
       const data = await request(CONFIG.endpoint, { method: "GET" });
       currentDeal = resolveDeals(data).find((item) => Number(item.id) === dealId);
       if (!currentDeal) throw new Error("Deze deal is niet gevonden binnen je hotelaccount.");
+      const previewLink = document.getElementById("sd-preview-deal");
+      if (previewLink) previewLink.href = `deal-preview.html?portal=partner&id=${encodeURIComponent(dealId)}`;
       populate(currentDeal);
       setEditing(false);
       showMessage(`Deal #${dealId} is geladen.`, "info");
