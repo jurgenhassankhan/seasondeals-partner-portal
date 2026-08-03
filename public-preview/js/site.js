@@ -28,11 +28,11 @@
   function initTechnicalSeo() {
     document.documentElement.lang = "nl";
 
-    setMeta("description", "Ontdek exclusieve deals voor hotels, wellness, massages, evenementen en attracties. Boek veilig online en ontvang direct je SeasonDeals-voucher.");
+    setMetaIfMissing("description", "Ontdek exclusieve deals voor hotels, wellness, massages, evenementen en attracties. Boek veilig online en ontvang direct je SeasonDeals-voucher.");
     setMeta("og:type", "website", "property");
     setMeta("og:locale", "nl_NL", "property");
     setMeta("og:site_name", "SeasonDeals", "property");
-    setMeta("og:description", "Ontdek exclusieve deals voor hotels, wellness, massages, evenementen en attracties bij SeasonDeals.", "property");
+    setMetaIfMissing("og:description", "Ontdek exclusieve deals voor hotels, wellness, massages, evenementen en attracties bij SeasonDeals.", "property");
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:description", "Hot offers, cool prices voor hotels, wellness, massages, evenementen en attracties.");
 
@@ -122,6 +122,10 @@
       document.head.appendChild(element);
     }
     element.setAttribute("content", value);
+  }
+
+  function setMetaIfMissing(key, value, attribute = "name") {
+    if (!document.head.querySelector(`meta[${attribute}="${key}"]`)) setMeta(key, value, attribute);
   }
 
   function setCanonical(url) {

@@ -14,6 +14,22 @@ Maak deze pagina's aan:
 1. `new-website` — tijdelijke homepage-preview; later wordt dezelfde inhoud naar Webflows Home gekopieerd.
 2. `dea` — bestaande dynamische dealpagina; ontvangt de deal via `?id=...`.
 3. `veelgestelde-vragen` — FAQ.
+4. `over-ons` — merkverhaal en werkwijze.
+5. `partner-worden` — informatie en contact voor aanbieders.
+6. `inspiratie` — SEO-landingspagina met ideeën en interne links.
+7. `werken-bij` — open sollicitaties en samenwerking.
+8. `privacy` — privacyverklaring.
+9. `algemene-voorwaarden` — consumentenvoorwaarden.
+10. `cookies` — cookiebeleid en voorkeuren.
+
+Voor pagina 4 t/m 10:
+
+1. Gebruik de `<body>`-inhoud uit het gelijknamige HTML-bestand in `public-preview`.
+2. Vervang relatieve `.html`-links door de Webflow-routes zonder extensie.
+3. Plaats `content-head.html` in **Inside head tag**.
+4. Plaats `content-before-body.html` in **Before body tag**.
+5. Vul per pagina de SEO-titel, meta description en canonical uit het betreffende HTML-bestand in Webflow in.
+6. Laat Privacy en Algemene voorwaarden pas live gaan nadat de officiële bedrijfsgegevens zijn ingevuld en juridisch zijn gecontroleerd.
 
 ## Homepage
 
