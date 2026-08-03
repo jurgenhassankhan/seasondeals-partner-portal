@@ -17,12 +17,11 @@ Maak deze pagina's aan:
 4. `over-ons` — merkverhaal en werkwijze.
 5. `partner-worden` — informatie en contact voor aanbieders.
 6. `inspiratie` — SEO-landingspagina met ideeën en interne links.
-7. `werken-bij` — open sollicitaties en samenwerking.
-8. `privacy` — privacyverklaring.
-9. `algemene-voorwaarden` — consumentenvoorwaarden.
-10. `cookies` — cookiebeleid en voorkeuren.
+7. `privacy` — privacyverklaring.
+8. `algemene-voorwaarden` — consumentenvoorwaarden.
+9. `cookies` — cookiebeleid en voorkeuren.
 
-Voor pagina 4 t/m 10:
+Voor pagina 4 t/m 9:
 
 1. Gebruik de `<body>`-inhoud uit het gelijknamige HTML-bestand in `public-preview`.
 2. Vervang relatieve `.html`-links door de Webflow-routes zonder extensie.
