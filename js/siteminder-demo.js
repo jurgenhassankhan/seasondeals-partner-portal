@@ -94,7 +94,7 @@
     const modal = document.createElement("div");
     modal.className = "sd-booking-modal is-open";
     modal.innerHTML = `<div class="sd-booking-dialog sd-sm-dialog"><button class="sd-modal-close" type="button" aria-label="Sluiten">×</button><span class="sd-page-eyebrow">Voorbeeld uit demo-adapter</span><h2>Conceptdeal-kandidaat</h2><div class="sd-sm-dialog-grid"><div><span>Titel</span><strong>Deluxe City Escape</strong></div><div><span>Kamertype</span><strong>Deluxe Room</strong></div><div><span>Externe code</span><strong>SM-DELUXE</strong></div><div><span>Voor gasten</span><strong>2 personen</strong></div><div><span>Originele prijs</span><strong>${money(159)}</strong></div><div><span>Voorstel dealprijs</span><strong>${money(129)}</strong></div><div><span>Voorbeeldvoorraad</span><strong>5 kamers</strong></div><div><span>Status</span><strong>Niet opgeslagen</strong></div></div><p>Deze gegevens tonen alleen wat de connector aan SeasonDeals kan aanleveren. Er is geen conceptdeal aangemaakt en niets is gepubliceerd.</p><button class="sd-primary-button" type="button" data-sm-close>Sluiten</button></div>`;
-    document.body.appendChild(modal);
+    (document.getElementById("sd-partner-app") || document.body).appendChild(modal);
     const close = function () { modal.remove(); };
     modal.querySelector(".sd-modal-close").addEventListener("click", close);
     modal.querySelector("[data-sm-close]").addEventListener("click", close);
