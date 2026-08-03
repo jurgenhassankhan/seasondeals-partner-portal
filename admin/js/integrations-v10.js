@@ -3,6 +3,7 @@
   const core = window.AdminCore;
   let page = 1;
   let admin;
+  let currentIntegrations = [];
   init();
 
   async function init() {
@@ -23,6 +24,8 @@
       const raw = await core.request(`/integrations?page=${page}&per_page=25`);
       const data = normalizeObject(raw);
       const integrations = getItems(data);
+      currentIntegrations = integrations;
+      renderConnectorOverview(integrations);
       if (!integrations.length) {
         target.innerHTML = '<div class="empty-state"><strong>Nog geen integraties</strong><span>Nieuwe hotelintegraties verschijnen hier zodra ze zijn aangemaakt.</span></div>';
       } else {
@@ -30,6 +33,7 @@
         target.innerHTML = `<table class="data-table"><thead><tr><th>Hotel</th><th>Provider</th><th>Omgeving</th><th>Synchronisatie</th><th>Status</th><th>Laatste resultaat</th><th>Acties</th></tr></thead><tbody>${integrations.map(row).join("")}</tbody></table>`;
         target.querySelectorAll("[data-integration-status]").forEach(select => select.addEventListener("change", () => updateStatus(select)));
         target.querySelectorAll("[data-manage-keys]").forEach(button => button.addEventListener("click", () => openKeyManager(button.dataset.manageKeys, button.dataset.integrationName)));
+        target.querySelectorAll("[data-manage-connector]").forEach(button => button.addEventListener("click", () => openConnectorManager(button.dataset.manageConnector)));
       }
       renderPagination(data, integrations.length);
     } catch (error) { showError(error.message); }
@@ -40,7 +44,38 @@
     const status = item.status || "pending", environment = item.environment || "test";
     const statuses = ["pending", "testing", "active", "paused", "error", "revoked"];
     const integrationName = `${hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`} · ${provider.name || item.provider_name || "API"}`;
-    return `<tr><td><div class="integration-cell"><strong>${core.escapeHtml(hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`)}</strong><span>ID ${core.escapeHtml(item.hotel_id || hotel.id || "—")}</span></div></td><td><div class="integration-cell"><strong>${core.escapeHtml(provider.name || item.provider_name || `Provider #${item.provider_id || "—"}`)}</strong><span>${core.escapeHtml(provider.slug || "")}</span></div></td><td>${core.escapeHtml(core.label(environment))}</td><td><div class="integration-cell"><strong>${core.escapeHtml(core.label(item.sync_direction || "bidirectional"))}</strong><span>${item.auto_sync_enabled ? "Automatisch" : "Handmatig"}</span></div></td><td><select class="integration-status-select" data-integration-status="${core.escapeHtml(item.id)}" data-current="${core.escapeHtml(status)}">${statuses.map(value => `<option value="${value}"${value === status ? " selected" : ""}>${core.escapeHtml(core.label(value))}</option>`).join("")}</select></td><td><div class="integration-cell"><strong>${core.escapeHtml(core.date(item.last_success_at || item.last_sync_at, true))}</strong>${item.last_error_message ? `<span class="integration-error">${core.escapeHtml(item.last_error_message)}</span>` : "<span>Geen foutmelding</span>"}</div></td><td><div class="integration-actions"><button class="integration-key-button" type="button" data-manage-keys="${core.escapeHtml(item.id)}" data-integration-name="${core.escapeHtml(integrationName)}">Sleutels beheren</button></div></td></tr>`;
+    return `<tr><td><div class="integration-cell"><strong>${core.escapeHtml(hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`)}</strong><span>ID ${core.escapeHtml(item.hotel_id || hotel.id || "—")}</span></div></td><td><div class="integration-cell"><strong>${core.escapeHtml(provider.name || item.provider_name || `Provider #${item.provider_id || "—"}`)}</strong><span>${core.escapeHtml(provider.slug || "")}</span></div></td><td>${core.escapeHtml(core.label(environment))}</td><td><div class="integration-cell"><strong>${core.escapeHtml(core.label(item.sync_direction || "bidirectional"))}</strong><span>${item.auto_sync_enabled ? "Automatisch" : "Handmatig"}</span></div></td><td><select class="integration-status-select" data-integration-status="${core.escapeHtml(item.id)}" data-current="${core.escapeHtml(status)}">${statuses.map(value => `<option value="${value}"${value === status ? " selected" : ""}>${core.escapeHtml(core.label(value))}</option>`).join("")}</select></td><td><div class="integration-cell"><strong>${core.escapeHtml(core.date(item.last_success_at || item.last_sync_at, true))}</strong>${item.last_error_message ? `<span class="integration-error">${core.escapeHtml(item.last_error_message)}</span>` : "<span>Geen foutmelding</span>"}</div></td><td><div class="integration-actions"><button class="integration-key-button integration-connector-button" type="button" data-manage-connector="${core.escapeHtml(item.id)}">Connector bekijken</button><button class="integration-key-button" type="button" data-manage-keys="${core.escapeHtml(item.id)}" data-integration-name="${core.escapeHtml(integrationName)}">Sleutels beheren</button></div></td></tr>`;
+  }
+
+  function renderConnectorOverview(integrations) {
+    const target = document.getElementById("connector-overview");
+    if (!target) return;
+    const active = integrations.filter(item => String(item.status || "").toLowerCase() === "active").length;
+    const testing = integrations.filter(item => String(item.environment || "test").toLowerCase() === "test").length;
+    const attention = integrations.filter(item => item.last_error_message || ["error", "revoked"].includes(String(item.status || "").toLowerCase())).length;
+    target.innerHTML = `<div class="connector-overview-head"><div><span class="eyebrow">Connector Framework</span><h3>Centraal connectorbeheer</h3><p>Technisch overzicht van alle hotelkoppelingen. Credentials worden hier nooit getoond.</p></div><span class="connector-framework-state"><i></i>Framework gepubliceerd</span></div><div class="connector-stats"><div><span>Totaal</span><strong>${integrations.length}</strong><small>hotelintegraties</small></div><div><span>Actief</span><strong>${active}</strong><small>beschikbare koppelingen</small></div><div><span>Testomgeving</span><strong>${testing}</strong><small>zonder productieverkeer</small></div><div class="${attention ? "has-attention" : ""}"><span>Aandacht nodig</span><strong>${attention}</strong><small>${attention ? "controleer fouten" : "geen fouten gemeld"}</small></div></div>`;
+  }
+
+  function openConnectorManager(integrationId) {
+    const item = currentIntegrations.find(integration => String(integration.id) === String(integrationId));
+    if (!item) return core.toast("Connectorgegevens zijn niet meer beschikbaar. Vernieuw de pagina.", "error");
+    const hotel = normalizeObject(item.hotel) || {}, provider = normalizeObject(item.provider || item.integration_provider) || {};
+    const hotelName = hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`;
+    const providerName = provider.name || item.provider_name || `Provider #${item.provider_id || "—"}`;
+    const status = String(item.status || "pending").toLowerCase();
+    const roomMappings = item.room_mapping_count ?? item.room_mappings_count ?? item.mapped_room_types;
+    const rateMappings = item.rate_mapping_count ?? item.rate_mappings_count ?? item.mapped_rate_plans;
+    const modal = document.getElementById("integration-connector-modal");
+    modal.innerHTML = `<div class="integration-dialog connector-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><div class="connector-dialog-head"><div><span class="eyebrow">Connectorbeheer</span><h2>${core.escapeHtml(hotelName)}</h2><p>${core.escapeHtml(providerName)} · integratie #${core.escapeHtml(item.id)}</p></div><span class="connector-status connector-status-${core.escapeHtml(status)}"><i></i>${core.escapeHtml(core.label(status))}</span></div><div class="connector-detail-grid">${connectorDetail("Omgeving", core.label(item.environment || "test"))}${connectorDetail("Extern hotel-ID", item.external_hotel_id || "Nog niet ingesteld")}${connectorDetail("Synchronisatierichting", core.label(item.sync_direction || "bidirectional"))}${connectorDetail("Automatische sync", item.auto_sync_enabled ? "Ingeschakeld" : "Uitgeschakeld")}${connectorDetail("Webhook", item.webhook_enabled ? "Ingeschakeld" : "Uitgeschakeld")}${connectorDetail("Laatste succesvolle sync", core.date(item.last_success_at || item.last_sync_at, true))}</div><div class="connector-management-grid"><section><span class="eyebrow">Mappings</span><h3>Kamer- en tariefkoppeling</h3><div class="connector-mapping-row"><div><strong>Kamertypes</strong><span>SiteMinder → SeasonDeals</span></div><b>${roomMappings == null ? "Nog niet beschikbaar" : `${core.escapeHtml(roomMappings)} gekoppeld`}</b></div><div class="connector-mapping-row"><div><strong>Tariefplannen</strong><span>Providerprijs → dealprijs</span></div><b>${rateMappings == null ? "Nog niet beschikbaar" : `${core.escapeHtml(rateMappings)} gekoppeld`}</b></div></section><section><span class="eyebrow">Activiteit en fouten</span><h3>Laatste connectorresultaat</h3>${item.last_error_message ? `<div class="connector-error-box"><strong>Fout gemeld</strong><span>${core.escapeHtml(item.last_error_message)}</span></div>` : `<div class="connector-ok-box"><strong>Geen foutmelding</strong><span>De integratie heeft geen actuele connectorfout gerapporteerd.</span></div>`}<p class="connector-log-note">Volledige request- en responsgegevens blijven beveiligd in de Xano-integratielogs.</p></section></div><div class="connector-dialog-actions"><span>Status wijzigen kan direct vanuit de integratietabel.</span><button class="primary-button" type="button" data-close-connector>Sluiten</button></div></div>`;
+    modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+    const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
+    modal.querySelector(".integration-dialog-close").addEventListener("click", close);
+    modal.querySelector("[data-close-connector]").addEventListener("click", close);
+    modal.addEventListener("click", event => { if (event.target === modal) close(); });
+  }
+
+  function connectorDetail(label, value) {
+    return `<div><span>${core.escapeHtml(label)}</span><strong>${core.escapeHtml(value || "—")}</strong></div>`;
   }
 
   async function updateStatus(select) {
