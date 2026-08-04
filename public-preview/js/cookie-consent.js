@@ -2,7 +2,7 @@
   "use strict";
   const KEY = "sd_cookie_consent_v1";
   const VERSION = 1;
-  const COOKIE_POLICY_URL = /(^|\.)seasondeals\.nl$/i.test(location.hostname) ? "/cookies" : "cookies.html";
+  const COOKIE_POLICY_URL = /github\.io$/i.test(location.hostname) ? "cookies.html" : "/cookies";
   let consent = readConsent();
   applyConsent(consent);
   if (!consent) showBanner();
