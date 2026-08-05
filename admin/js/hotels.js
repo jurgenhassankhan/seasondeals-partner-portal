@@ -10,7 +10,9 @@
       if (!admin) return;
       core.mountShell({ active: "hotels", title: "Hotels", subtitle: "Bekijk aangesloten hotelpartners en beheer hun status." }, admin);
       document.getElementById("hotels-refresh")?.addEventListener("click", load);
+      bindCreateHotel();
       load();
+      if (new URLSearchParams(location.search).get("action") === "new") openCreateHotel();
     } catch (error) { showError(error.message); }
   }
 
@@ -45,6 +47,114 @@
     try { await core.request(`/hotels/${select.dataset.hotelStatus}/status`, { method: "PATCH", body: JSON.stringify({ status }) }); core.toast("Hotelstatus is bijgewerkt."); await load(); }
     catch (error) { select.value = select.dataset.current; core.toast(error.message, "error"); }
     finally { select.disabled = false; }
+  }
+
+  function bindCreateHotel() {
+    document.getElementById("hotel-create")?.addEventListener("click", openCreateHotel);
+    document.getElementById("hotel-create-close")?.addEventListener("click", closeCreateHotel);
+    document.getElementById("hotel-create-cancel")?.addEventListener("click", closeCreateHotel);
+    document.getElementById("hotel-create-modal")?.addEventListener("click", (event) => { if (event.target.id === "hotel-create-modal") closeCreateHotel(); });
+    document.getElementById("hotel-create-form")?.addEventListener("submit", submitCreateHotel);
+    document.getElementById("hotel-password-generate")?.addEventListener("click", generatePassword);
+    document.getElementById("hotel-password-toggle")?.addEventListener("click", togglePassword);
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeCreateHotel(); });
+  }
+
+  function openCreateHotel() {
+    const modal = document.getElementById("hotel-create-modal");
+    hideCreateError();
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("has-modal");
+    history.replaceState({}, "", location.pathname);
+    setTimeout(() => document.getElementById("hotel-name")?.focus(), 0);
+  }
+
+  function closeCreateHotel() {
+    const modal = document.getElementById("hotel-create-modal");
+    const submit = document.getElementById("hotel-create-submit");
+    if (submit?.disabled) return;
+    modal?.classList.remove("is-open");
+    modal?.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("has-modal");
+    hideCreateError();
+  }
+
+  async function submitCreateHotel(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const submit = document.getElementById("hotel-create-submit");
+    const payload = Object.fromEntries(new FormData(form).entries());
+    payload.hotel_name = payload.hotel_name.trim();
+    payload.hotel_email = payload.hotel_email.trim().toLowerCase();
+    payload.user_name = payload.user_name.trim();
+    payload.user_email = payload.user_email.trim().toLowerCase();
+    if (!payload.hotel_name || !payload.hotel_email || !payload.user_name || !payload.user_email) return showCreateError("Vul alle verplichte velden in.");
+    if (payload.user_password.length < 12) return showCreateError("Het tijdelijke wachtwoord moet minimaal 12 tekens bevatten.");
+    submit.disabled = true;
+    submit.textContent = "Aanmaken…";
+    hideCreateError();
+    try {
+      await core.request("/partners/create", { method: "POST", body: JSON.stringify(payload) });
+      form.reset();
+      document.getElementById("hotel-user-password").type = "password";
+      document.getElementById("hotel-password-toggle").textContent = "Tonen";
+      closeCreateHotelAfterSubmit();
+      core.toast("Hotel en beheerder zijn aangemaakt.");
+      page = 1;
+      await load();
+    } catch (error) {
+      showCreateError(error.message || "Het hotel kon niet worden aangemaakt.");
+    } finally {
+      submit.disabled = false;
+      submit.textContent = "Hotel en beheerder aanmaken";
+    }
+  }
+
+  function closeCreateHotelAfterSubmit() {
+    const modal = document.getElementById("hotel-create-modal");
+    modal?.classList.remove("is-open");
+    modal?.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("has-modal");
+    hideCreateError();
+  }
+
+  function generatePassword() {
+    const input = document.getElementById("hotel-user-password");
+    const groups = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "!@#$%&*-_+"];
+    const all = groups.join("");
+    const randomIndex = (length) => crypto.getRandomValues(new Uint32Array(1))[0] % length;
+    const value = groups.map((group) => group[randomIndex(group.length)]);
+    while (value.length < 16) value.push(all[randomIndex(all.length)]);
+    for (let index = value.length - 1; index > 0; index--) {
+      const swap = randomIndex(index + 1);
+      [value[index], value[swap]] = [value[swap], value[index]];
+    }
+    input.value = value.join("");
+    input.type = "text";
+    document.getElementById("hotel-password-toggle").textContent = "Verbergen";
+    input.focus();
+    input.select();
+  }
+
+  function togglePassword() {
+    const input = document.getElementById("hotel-user-password");
+    const button = document.getElementById("hotel-password-toggle");
+    input.type = input.type === "password" ? "text" : "password";
+    button.textContent = input.type === "password" ? "Tonen" : "Verbergen";
+  }
+
+  function showCreateError(message) {
+    const target = document.getElementById("hotel-create-error");
+    target.textContent = message;
+    target.classList.add("is-visible");
+  }
+
+  function hideCreateError() {
+    const target = document.getElementById("hotel-create-error");
+    target.textContent = "";
+    target.classList.remove("is-visible");
   }
 
   function pagination(data) {

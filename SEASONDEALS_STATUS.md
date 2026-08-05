@@ -97,6 +97,14 @@ Belangrijk: de automatische voorraadverlaging werkt. Een eerdere vermelding dat 
 
 ## 2. Gebouwd maar nog te verifiëren
 
+### Hotelonboarding vanuit het adminportaal
+
+- Op het admindashboard en de pagina Hotels is de actie **Nieuw hotel** toegevoegd.
+- Het formulier maakt via het bestaande beveiligde Xano-endpoint `POST /partners/create` in één flow een hotel en de eerste gekoppelde hotelbeheerder aan.
+- De invoer gebruikt exact de bestaande API-velden voor hotelnaam, hotel-e-mail, naam/e-mail van de beheerder en een tijdelijk wachtwoord.
+- Frontendvalidatie, veilige wachtwoordgenerator, foutmeldingen en verversing van het hoteloverzicht zijn toegevoegd.
+- JavaScript-syntax en de API-specificatie zijn gecontroleerd; er is bewust nog geen testhotel aangemaakt. De end-to-end praktijktest gebeurt met de eerste echte hotelpartner.
+
 ### Stripe-productieconfiguratie
 
 - De testomgeving en testbetaling zijn bewezen werkend.
@@ -212,4 +220,5 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 | Datum | Wijziging |
 |---|---|
+| 2026-08-05 | Adminflow **Nieuw hotel** gebouwd op het bestaande Xano-endpoint `/partners/create`; dashboardactie, formulier, gekoppelde hotelbeheerder, validatie en veilige wachtwoordgenerator toegevoegd. Nog te testen met de eerste echte partner. |
 | 2026-08-05 | Eerste centrale statusbestand aangemaakt. Voorraadverlaging en Connector Framework als gebouwd/werkend gecorrigeerd; Stripe-liveconfiguratie, echte partner/deal en echte SiteMinder-koppeling als open punten vastgelegd. |
