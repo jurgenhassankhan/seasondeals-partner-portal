@@ -2,7 +2,7 @@
 
 > **Vaste bron van waarheid voor de technische voortgang van SeasonDeals**
 >
-> Laatst inhoudelijk geverifieerd: **5 augustus 2026**
+> Laatst inhoudelijk geverifieerd: **10 augustus 2026**
 >
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
@@ -86,6 +86,22 @@ Belangrijk: de automatische voorraadverlaging werkt. Een eerdere vermelding dat 
 - Dashboard, orders, hotels en dealbeheer zijn aanwezig.
 - Het Integraties-overzicht met hotel-detailvenster voor mapping-, sync-, webhook- en foutstatus is gebouwd en gepubliceerd op `main`.
 
+### Hotelonboarding en API-sleutelbeheer
+
+De volgende interne testflow is end-to-end uitgevoerd en geslaagd:
+
+1. Vanuit het adminportaal een nieuw testhotel en de eerste gekoppelde hotelbeheerder aanmaken.
+2. Het nieuwe hotel terugzien in het hoteloverzicht.
+3. Met het aangemaakte beheerderaccount inloggen in het partnerportaal.
+4. Vanuit Integratiebeheer een testintegratie aan het juiste hotel koppelen.
+5. De integratie in het partnerportaal van het testhotel terugzien.
+6. Een API-testsleutel aanmaken.
+7. De verbinding met die sleutel succesvol testen.
+8. De sleutel intrekken en bevestigen dat deze daarna niet meer actief is.
+9. In het adminportaal terugzien dat er **0 actieve sleutels** zijn en dat de eerdere sleutel als **Ingetrokken** bewaard blijft, inclusief aanmaak- en laatst-gebruiktijd.
+
+Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`, het beheer van hotelintegraties en de levenscyclus van API-sleutels technisch bewezen. Dit bewijst nog niet de uitnodigings-/activatieflow voor echte beheerders of een echte verbinding met SiteMinder.
+
 ### Connector Framework
 
 - Het generieke Connector Framework is gebouwd.
@@ -96,14 +112,6 @@ Belangrijk: de automatische voorraadverlaging werkt. Een eerdere vermelding dat 
 ---
 
 ## 2. Gebouwd maar nog te verifiëren
-
-### Hotelonboarding vanuit het adminportaal
-
-- Op het admindashboard en de pagina Hotels is de actie **Nieuw hotel** toegevoegd.
-- Het formulier maakt via het bestaande beveiligde Xano-endpoint `POST /partners/create` in één flow een hotel en de eerste gekoppelde hotelbeheerder aan.
-- De invoer gebruikt exact de bestaande API-velden voor hotelnaam, hotel-e-mail, naam/e-mail van de beheerder en een tijdelijk wachtwoord.
-- Frontendvalidatie, veilige wachtwoordgenerator, foutmeldingen en verversing van het hoteloverzicht zijn toegevoegd.
-- JavaScript-syntax en de API-specificatie zijn gecontroleerd; er is bewust nog geen testhotel aangemaakt. De end-to-end praktijktest gebeurt met de eerste echte hotelpartner.
 
 ### Stripe-productieconfiguratie
 
@@ -148,6 +156,18 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 ---
 
 ## 3. Nog te doen
+
+### Productierijpe hotelonboarding
+
+- Na het aanmaken van een hotel de eerste beheerder als `pending` registreren.
+- Een eenmalige, aflopende activatielink genereren.
+- Via Resend automatisch een SeasonDeals-uitnodigingsmail naar de beheerder versturen.
+- De beheerder via de activatielink zelf een wachtwoord laten instellen.
+- Het account pas na geldige activatie op `active` zetten.
+- Opnieuw uitnodigen en verlopen/gebruikte activatielinks veilig afhandelen.
+- Het vrije veld voor extern hotel-ID uit de normale aanmaakflow halen.
+- Voor de demo automatisch een herkenbaar demo-ID op basis van het SeasonDeals-hotel opslaan.
+- Bij een echte SiteMinder-verbinding het externe hotel-ID automatisch bij SiteMinder ophalen; bij meerdere gevonden hotels een gecontroleerde keuze tonen en het gekozen ID daarna alleen-lezen opslaan.
 
 ### Voor de eerste echte partner
 
@@ -220,5 +240,6 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 | Datum | Wijziging |
 |---|---|
+| 2026-08-10 | Interne hotelonboarding end-to-end getest: hotel en beheerder aangemaakt, partnerlogin geslaagd, integratie gekoppeld, API-sleutel aangemaakt en getest, sleutel ingetrokken en ingetrokken status in admin bevestigd. Uitnodigingsmail/activatielink, automatisch extern hotel-ID, echte hotelpartner en echte SiteMinder-verbinding blijven openstaan. |
 | 2026-08-05 | Adminflow **Nieuw hotel** gebouwd op het bestaande Xano-endpoint `/partners/create`; dashboardactie, formulier, gekoppelde hotelbeheerder, validatie en veilige wachtwoordgenerator toegevoegd. Nog te testen met de eerste echte partner. |
 | 2026-08-05 | Eerste centrale statusbestand aangemaakt. Voorraadverlaging en Connector Framework als gebouwd/werkend gecorrigeerd; Stripe-liveconfiguratie, echte partner/deal en echte SiteMinder-koppeling als open punten vastgelegd. |
