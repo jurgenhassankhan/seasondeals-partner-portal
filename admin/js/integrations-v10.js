@@ -124,7 +124,7 @@
       const provider = normalizeObject(integration.provider || integration.integration_provider) || {};
       const isTest = String(integration.environment || "test").toLowerCase() === "test";
       const canGoLive = isSuperadmin() && isTest && provider.slug !== "seasondeals_demo";
-      const testActions = isTest ? `<button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-test-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Testdeal aanmaken</button><button id="integration-submit-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Indienen voor beoordeling</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button>${canGoLive ? '<button id="integration-go-live" class="primary-button" type="button">Koppeling live zetten</button>' : ""}` : '<span class="status-badge status-active"><span></span>Productiekoppeling actief</span>';
+      const testActions = isTest ? `<button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-test-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Testdeal aanmaken</button><button id="integration-submit-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Indienen voor beoordeling</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button>${canGoLive ? '<button id="integration-go-live" class="primary-button" type="button">Goedgekeurde deals live zetten</button>' : ""}` : '<span class="status-badge status-active"><span></span>Productiekoppeling actief</span>';
       target.className = "integration-key-manager";
       target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><div class="integration-key-summary-actions">${testActions}</div></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
       document.getElementById("integration-new-key")?.addEventListener("click", () => createKey(integrationId, active.length));
@@ -141,18 +141,20 @@
   }
 
   async function openGoLive(integrationId) {
-    if (!isSuperadmin()) return core.toast("Alleen een superadmin kan een koppeling live zetten.", "error");
+    if (!isSuperadmin()) return core.toast("Alleen een superadmin kan goedgekeurde testdeals publiceren.", "error");
     const modal = document.getElementById("integration-secret-modal");
-    modal.innerHTML = '<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Test naar live</span><h2>Livegang voorbereiden</h2><div class="loading-state"><div class="spinner"></div>Testdeals controleren…</div></div>';
+    modal.innerHTML = '<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Test naar live</span><h2>Publicatie voorbereiden</h2><div class="loading-state"><div class="spinner"></div>Goedgekeurde testdeals controleren…</div></div>';
     modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
     const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
     modal.querySelector(".integration-dialog-close").addEventListener("click", close);
     try {
       const raw = normalizeObject(await core.request(`/integrations/${integrationId}/go-live-preview`));
       const payload = unwrapPayload(raw) || {};
-      const deals = getItems(payload.deals || payload).filter(item => ["draft", "pending_approval"].includes(String(item.status || "").toLowerCase()));
-      if (!deals.length) throw new Error("Er zijn geen testdeals die naar live kunnen worden meegenomen.");
-      modal.querySelector(".integration-dialog").innerHTML = `<button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Test naar live</span><h2>Koppeling live zetten</h2><p>Selecteer de geteste deals die zonder opnieuw aanleveren naar de live-beoordeling gaan.</p><form id="integration-go-live-form" class="integration-test-deal-form"><label class="full">Naam live sleutel<input name="name" required value="Livekoppeling"></label><div class="full integration-managed-keys">${deals.map(item => `<label class="integration-managed-key"><input type="checkbox" name="deal_ids" value="${core.escapeHtml(item.id)}" checked><span class="integration-managed-key-main"><strong>${core.escapeHtml(item.title || item.external_id || `Deal #${item.id}`)}</strong><span>${core.escapeHtml(item.external_id || `Intern ID ${item.id}`)} · ${core.escapeHtml(core.label(item.status || "draft"))}</span></span></label>`).join("")}</div><label class="full"><input type="checkbox" name="confirm" required> Ik begrijp dat de testsleutels worden ingetrokken en dat iedere gekozen deal opnieuw handmatig moet worden goedgekeurd.</label><div class="integration-form-note full">Orders, betalingen en vouchers uit de testomgeving worden niet meegenomen. De nieuwe live sleutel wordt één keer getoond.</div><div class="integration-form-actions full"><button class="secondary-button" data-cancel-go-live type="button">Annuleren</button><button id="integration-go-live-submit" class="primary-button" type="submit">Live zetten en sleutel maken</button></div></form><div id="integration-go-live-result"></div>`;
+      const deals = getItems(payload.deals || payload).filter(item => String(item.status || "").toLowerCase() === "active" && item.is_active !== true);
+      if (!deals.length) throw new Error("Er zijn nog geen goedgekeurde testdeals die naar live kunnen.");
+      const hasLiveKey = Number(payload.active_production_key_count || 0) > 0;
+      const keyField = hasLiveKey ? '<input name="name" type="hidden" value="Bestaande livekoppeling">' : '<label class="full">Naam live sleutel<input name="name" required value="Livekoppeling"></label>';
+      modal.querySelector(".integration-dialog").innerHTML = `<button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Definitieve publicatie</span><h2>Goedgekeurde testdeals live zetten</h2><p>Selecteer alleen deals die in de testomgeving volledig zijn gecontroleerd. Jouw bevestiging publiceert ze direct.</p><form id="integration-go-live-form" class="integration-test-deal-form">${keyField}<div class="full integration-managed-keys">${deals.map(item => `<label class="integration-managed-key"><input type="checkbox" name="deal_ids" value="${core.escapeHtml(item.id)}" checked><span class="integration-managed-key-main"><strong>${core.escapeHtml(item.title || item.external_id || `Deal #${item.id}`)}</strong><span>${core.escapeHtml(item.external_id || `Intern ID ${item.id}`)} · Goedgekeurd in test</span></span></label>`).join("")}</div><label class="full"><input type="checkbox" name="confirm" required> Ik begrijp dat de gekozen deals na deze bevestiging direct actief en publiek zichtbaar zijn.</label><div class="integration-form-note full">De testkoppeling en testsleutel blijven actief. Andere testdeals kunnen later in een volgende selectie naar dezelfde live-integratie. ${hasLiveKey ? "De bestaande live sleutel wordt hergebruikt." : "De nieuwe live sleutel wordt één keer getoond."}</div><div class="integration-form-actions full"><button class="secondary-button" data-cancel-go-live type="button">Annuleren</button><button id="integration-go-live-submit" class="primary-button" type="submit">Selectie direct publiceren</button></div></form><div id="integration-go-live-result"></div>`;
       modal.querySelector(".integration-dialog-close").addEventListener("click", close);
       modal.querySelector("[data-cancel-go-live]").addEventListener("click", close);
       modal.querySelector("#integration-go-live-form").addEventListener("submit", event => submitGoLive(event, integrationId));
@@ -166,9 +168,9 @@
     event.preventDefault();
     const form = event.currentTarget;
     const dealIds = [...form.querySelectorAll('[name="deal_ids"]:checked')].map(input => Number(input.value)).filter(Number.isInteger);
-    if (!dealIds.length) return core.toast("Selecteer minimaal één testdeal.", "error");
+    if (!dealIds.length) return core.toast("Selecteer minimaal één goedgekeurde testdeal.", "error");
     const button = document.getElementById("integration-go-live-submit");
-    button.disabled = true; button.textContent = "Live zetten…";
+    button.disabled = true; button.textContent = "Publiceren…";
     try {
       const raw = normalizeObject(await core.request(`/integrations/${integrationId}/go-live`, {
         method: "POST",
@@ -179,17 +181,28 @@
         })
       }));
       const payload = unwrapPayload(raw) || {};
-      const liveKey = normalizeObject(payload.live_key || raw.live_key || payload) || {};
+      const liveKeyCreated = payload.live_key_created === true;
+      const liveKey = normalizeObject(payload.live_key || raw.live_key || {}) || {};
       const secret = liveKey.api_key || liveKey.key || liveKey.secret || liveKey.full_key;
-      if (!secret) throw new Error("De koppeling staat live, maar de eenmalige live sleutel ontbreekt in de response.");
+      if (liveKeyCreated && !secret) throw new Error("De deals zijn gepubliceerd, maar de eenmalige live sleutel ontbreekt in de response.");
       closeKeyManager(document.getElementById("integration-keys-modal"));
-      showSecret(secret, "production");
-      core.toast(`${dealIds.length} deal${dealIds.length === 1 ? "" : "s"} staan klaar voor live goedkeuring.`);
+      if (liveKeyCreated) showSecret(secret, "production");
+      else showGoLiveSuccess(dealIds.length);
+      core.toast(`${dealIds.length} deal${dealIds.length === 1 ? "" : "s"} direct live gepubliceerd.`);
       await load();
     } catch (error) {
       core.toast(error.message, "error");
-      button.disabled = false; button.textContent = "Live zetten en sleutel maken";
+      button.disabled = false; button.textContent = "Selectie direct publiceren";
     }
+  }
+
+  function showGoLiveSuccess(count) {
+    const modal = document.getElementById("integration-secret-modal");
+    modal.innerHTML = `<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Publicatie voltooid</span><h2>${count} deal${count === 1 ? "" : "s"} live gezet</h2><p>De bestaande live-integratie en live sleutel zijn hergebruikt. De overige deals blijven beschikbaar in de testomgeving.</p><button class="primary-button" type="button" data-close-live-success>Sluiten</button></div>`;
+    modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+    const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
+    modal.querySelector(".integration-dialog-close").addEventListener("click", close);
+    modal.querySelector("[data-close-live-success]").addEventListener("click", close);
   }
 
   function managedKeyRow(integrationId, item) {
@@ -387,7 +400,7 @@
   function showSecret(secret, environment = "test") {
     const live = environment === "production";
     const modal = document.getElementById("integration-secret-modal");
-    modal.innerHTML = `<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Eenmalig zichtbaar</span><h2>Bewaar deze ${live ? "live sleutel" : "testsleutel"} nu</h2><p>De volledige sleutel wordt niet opgeslagen en kan na het sluiten niet opnieuw worden bekeken.${live ? " De gekozen deals staan nu op Te beoordelen en zijn nog niet actief." : ""}</p><div class="integration-secret"><code>${core.escapeHtml(secret)}</code><button class="primary-button" type="button">Kopiëren</button></div></div>`;
+    modal.innerHTML = `<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Eenmalig zichtbaar</span><h2>Bewaar deze ${live ? "live sleutel" : "testsleutel"} nu</h2><p>De volledige sleutel wordt niet opgeslagen en kan na het sluiten niet opnieuw worden bekeken.${live ? " De gekozen deals zijn direct actief en publiek zichtbaar. De testkoppeling blijft beschikbaar voor volgende deals." : ""}</p><div class="integration-secret"><code>${core.escapeHtml(secret)}</code><button class="primary-button" type="button">Kopiëren</button></div></div>`;
     modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
     const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
     modal.querySelector(".integration-dialog-close").addEventListener("click", close);
