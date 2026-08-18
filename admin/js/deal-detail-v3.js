@@ -36,12 +36,7 @@
     titleRow?.insertAdjacentHTML("beforeend", environmentBadge(environment));
     if (isTestDeal) {
       const reviewCard = target.querySelector(".review-card");
-      reviewCard?.insertAdjacentHTML("afterbegin", '<p class="notice environment-warning"><strong>TESTDEAL</strong><br>Deze deal kan worden gecontroleerd, maar nooit publiek worden geactiveerd.</p>');
-      const approveButton = document.getElementById("approve-deal");
-      if (approveButton) {
-        approveButton.disabled = true;
-        approveButton.textContent = "Niet activeerbaar";
-      }
+      reviewCard?.insertAdjacentHTML("afterbegin", '<p class="notice environment-warning"><strong>TESTDEAL</strong><br>Goedkeuren zet deze deal op Actief + Test. De deal blijft buiten de publieke website totdat je hem via Koppeling live zetten publiceert.</p>');
     }
     document.getElementById("approve-deal")?.addEventListener("click", approve);
     document.getElementById("reject-deal")?.addEventListener("click", reject);
@@ -49,7 +44,12 @@
 
   function reviewSummary() {
     if (deal.status === "rejected") return `<p class="notice"><strong>Afgewezen op ${core.date(deal.rejected_at, true)}</strong><br>${core.escapeHtml(deal.rejection_reason || "Geen reden opgeslagen.")}</p>${deal.review_notes ? `<div class="deal-copy"><h3>Interne notitie</h3><p>${core.escapeHtml(deal.review_notes)}</p></div>` : ""}`;
-    if (deal.status === "active") return `<p class="notice"><strong>Goedgekeurd op ${core.date(deal.approved_at, true)}</strong><br>Deze deal is actief en zichtbaar voor bezoekers.</p>${deal.review_notes ? `<div class="deal-copy"><h3>Interne notitie</h3><p>${core.escapeHtml(deal.review_notes)}</p></div>` : ""}`;
+    if (deal.status === "active") {
+      const visibility = String(deal.integration_environment || "").toLowerCase() === "test"
+        ? "Deze deal is Actief + Test en blijft buiten de publieke website totdat je hem live zet."
+        : "Deze deal is actief en zichtbaar voor bezoekers.";
+      return `<p class="notice"><strong>Goedgekeurd op ${core.date(deal.approved_at, true)}</strong><br>${visibility}</p>${deal.review_notes ? `<div class="deal-copy"><h3>Interne notitie</h3><p>${core.escapeHtml(deal.review_notes)}</p></div>` : ""}`;
+    }
     return `<p class="notice">Deze deal heeft status ${core.escapeHtml(core.statusLabel(deal.status))} en kan vanuit deze status niet worden goedgekeurd of afgewezen.</p>`;
   }
   function environmentBadge(environment) {
@@ -58,8 +58,12 @@
   }
 
   async function approve() {
-    if (!confirm(`Weet je zeker dat je “${deal.title}” wilt goedkeuren en live wilt zetten?`)) return;
-    await updateStatus("active", "Deal goedgekeurd en geactiveerd.");
+    const isTestDeal = String(deal.integration_environment || "").toLowerCase() === "test";
+    const question = isTestDeal
+      ? `Weet je zeker dat je “${deal.title}” wilt goedkeuren als Actief + Test? De deal wordt nog niet publiek.`
+      : `Weet je zeker dat je “${deal.title}” wilt goedkeuren en live wilt zetten?`;
+    if (!confirm(question)) return;
+    await updateStatus("active", isTestDeal ? "Testdeal goedgekeurd als Actief + Test." : "Deal goedgekeurd en geactiveerd.");
   }
   async function reject() {
     const reason = document.getElementById("rejection-reason").value.trim();
