@@ -150,7 +150,7 @@
     try {
       const raw = normalizeObject(await core.request(`/integrations/${integrationId}/go-live-preview`));
       const payload = unwrapPayload(raw) || {};
-      const deals = getItems(payload.deals || payload).filter(item => String(item.status || "").toLowerCase() === "active" && item.is_active !== true);
+      const deals = getItems(payload.deals || payload).filter(item => String(item.status || "").toLowerCase() === "active");
       if (!deals.length) throw new Error("Er zijn nog geen goedgekeurde testdeals die naar live kunnen.");
       const hasLiveKey = Number(payload.active_production_key_count || 0) > 0;
       const keyField = hasLiveKey ? '<input name="name" type="hidden" value="Bestaande livekoppeling">' : '<label class="full">Naam live sleutel<input name="name" required value="Livekoppeling"></label>';
