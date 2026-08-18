@@ -80,9 +80,8 @@
     if (reason) body.rejection_reason = reason;
     try {
       const response = await core.request(`/deals/${encodeURIComponent(dealId)}/status`, { method: "PATCH", body: JSON.stringify(body) });
-      deal = response?.deal || response;
       core.toast(response?.message || success);
-      render();
+      await load();
     } catch (error) { core.toast(error.message, "error"); buttons.forEach((button) => { if (button) button.disabled = false; }); }
   }
   function showError(message) { const target = document.getElementById("deal-detail"); if (target) { target.className = "error-panel"; target.textContent = message; } }
