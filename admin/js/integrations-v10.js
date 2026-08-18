@@ -42,7 +42,7 @@
   function row(item) {
     const hotel = normalizeObject(item.hotel) || {}, provider = normalizeObject(item.provider || item.integration_provider) || {};
     const status = item.status || "pending", environment = item.environment || "test";
-    const statuses = ["pending", "testing", "active", "paused", "error", "revoked"];
+    const statuses = environment === "test" ? ["pending", "testing", "paused", "error", "revoked"] : ["pending", "testing", "active", "paused", "error", "revoked"];
     const integrationName = `${hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`} · ${provider.name || item.provider_name || "API"}`;
     return `<tr><td><div class="integration-cell"><strong>${core.escapeHtml(hotel.name || item.hotel_name || `Hotel #${item.hotel_id || "—"}`)}</strong><span>ID ${core.escapeHtml(item.hotel_id || hotel.id || "—")}</span></div></td><td><div class="integration-cell"><strong>${core.escapeHtml(provider.name || item.provider_name || `Provider #${item.provider_id || "—"}`)}</strong><span>${core.escapeHtml(provider.slug || "")}</span></div></td><td>${core.escapeHtml(core.label(environment))}</td><td><div class="integration-cell"><strong>${core.escapeHtml(core.label(item.sync_direction || "bidirectional"))}</strong><span>${item.auto_sync_enabled ? "Automatisch" : "Handmatig"}</span></div></td><td><select class="integration-status-select" data-integration-status="${core.escapeHtml(item.id)}" data-current="${core.escapeHtml(status)}">${statuses.map(value => `<option value="${value}"${value === status ? " selected" : ""}>${core.escapeHtml(core.label(value))}</option>`).join("")}</select></td><td><div class="integration-cell"><strong>${core.escapeHtml(core.date(item.last_success_at || item.last_sync_at, true))}</strong>${item.last_error_message ? `<span class="integration-error">${core.escapeHtml(item.last_error_message)}</span>` : "<span>Geen foutmelding</span>"}</div></td><td><div class="integration-actions"><button class="integration-key-button integration-connector-button" type="button" data-manage-connector="${core.escapeHtml(item.id)}">Connector bekijken</button><button class="integration-key-button" type="button" data-manage-keys="${core.escapeHtml(item.id)}" data-integration-name="${core.escapeHtml(integrationName)}">Sleutels beheren</button></div></td></tr>`;
   }
@@ -120,18 +120,80 @@
     try {
       const data = normalizeObject(await core.request(`/integrations/${integrationId}/api-keys`)), keys = getItems(data);
       const active = keys.filter(item => item.is_active !== false && !item.revoked_at);
+      const integration = currentIntegrations.find(item => String(item.id) === String(integrationId)) || {};
+      const provider = normalizeObject(integration.provider || integration.integration_provider) || {};
+      const isTest = String(integration.environment || "test").toLowerCase() === "test";
+      const canGoLive = isSuperadmin() && isTest && provider.slug !== "seasondeals_demo";
+      const testActions = isTest ? `<button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-test-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Testdeal aanmaken</button><button id="integration-submit-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Indienen voor beoordeling</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button>${canGoLive ? '<button id="integration-go-live" class="primary-button" type="button">Koppeling live zetten</button>' : ""}` : '<span class="status-badge status-active"><span></span>Productiekoppeling actief</span>';
       target.className = "integration-key-manager";
-      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><div class="integration-key-summary-actions"><button id="integration-test-key" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Verbinding testen</button><button id="integration-test-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Testdeal aanmaken</button><button id="integration-submit-deal" class="secondary-button" type="button"${active.length ? "" : " disabled"}>Indienen voor beoordeling</button><button id="integration-new-key" class="primary-button" type="button">Nieuwe testsleutel</button></div></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
-      document.getElementById("integration-new-key").addEventListener("click", () => createKey(integrationId, active.length));
+      target.innerHTML = `<div class="integration-key-summary"><div><strong>${active.length}</strong><span>Actieve sleutel${active.length === 1 ? "" : "s"}</span></div><div class="integration-key-summary-actions">${testActions}</div></div>${keys.length ? `<div class="integration-managed-keys">${keys.map(item => managedKeyRow(integrationId, item)).join("")}</div>` : '<div class="integration-key-empty">Er zijn nog geen API-sleutels voor deze koppeling.</div>'}`;
+      document.getElementById("integration-new-key")?.addEventListener("click", () => createKey(integrationId, active.length));
       document.getElementById("integration-test-key")?.addEventListener("click", () => openConnectionTest(integrationId));
       document.getElementById("integration-test-deal")?.addEventListener("click", () => openTestDeal(integrationId));
       document.getElementById("integration-submit-deal")?.addEventListener("click", () => openSubmitDeal(integrationId));
+      document.getElementById("integration-go-live")?.addEventListener("click", () => openGoLive(integrationId));
       target.querySelectorAll("[data-revoke-managed-key]").forEach(button => button.addEventListener("click", () => revokeManagedKey(integrationId, button.dataset.revokeManagedKey)));
     } catch (error) { target.className = "error-panel"; target.textContent = error.message; }
   }
 
+  function isSuperadmin() {
+    return String(admin?.role || "").toLowerCase() === "superadmin";
+  }
+
+  async function openGoLive(integrationId) {
+    if (!isSuperadmin()) return core.toast("Alleen een superadmin kan een koppeling live zetten.", "error");
+    const modal = document.getElementById("integration-secret-modal");
+    modal.innerHTML = '<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Test naar live</span><h2>Livegang voorbereiden</h2><div class="loading-state"><div class="spinner"></div>Testdeals controleren…</div></div>';
+    modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+    const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
+    modal.querySelector(".integration-dialog-close").addEventListener("click", close);
+    try {
+      const raw = normalizeObject(await core.request(`/integrations/${integrationId}/go-live-preview`));
+      const payload = unwrapPayload(raw) || {};
+      const deals = getItems(payload.deals || payload).filter(item => ["draft", "pending_approval"].includes(String(item.status || "").toLowerCase()));
+      if (!deals.length) throw new Error("Er zijn geen testdeals die naar live kunnen worden meegenomen.");
+      modal.querySelector(".integration-dialog").innerHTML = `<button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Test naar live</span><h2>Koppeling live zetten</h2><p>Selecteer de geteste deals die zonder opnieuw aanleveren naar de live-beoordeling gaan.</p><form id="integration-go-live-form" class="integration-test-deal-form"><label class="full">Naam live sleutel<input name="name" required value="Livekoppeling"></label><div class="full integration-managed-keys">${deals.map(item => `<label class="integration-managed-key"><input type="checkbox" name="deal_ids" value="${core.escapeHtml(item.id)}" checked><span class="integration-managed-key-main"><strong>${core.escapeHtml(item.title || item.external_id || `Deal #${item.id}`)}</strong><span>${core.escapeHtml(item.external_id || `Intern ID ${item.id}`)} · ${core.escapeHtml(core.label(item.status || "draft"))}</span></span></label>`).join("")}</div><label class="full"><input type="checkbox" name="confirm" required> Ik begrijp dat de testsleutels worden ingetrokken en dat iedere gekozen deal opnieuw handmatig moet worden goedgekeurd.</label><div class="integration-form-note full">Orders, betalingen en vouchers uit de testomgeving worden niet meegenomen. De nieuwe live sleutel wordt één keer getoond.</div><div class="integration-form-actions full"><button class="secondary-button" data-cancel-go-live type="button">Annuleren</button><button id="integration-go-live-submit" class="primary-button" type="submit">Live zetten en sleutel maken</button></div></form><div id="integration-go-live-result"></div>`;
+      modal.querySelector(".integration-dialog-close").addEventListener("click", close);
+      modal.querySelector("[data-cancel-go-live]").addEventListener("click", close);
+      modal.querySelector("#integration-go-live-form").addEventListener("submit", event => submitGoLive(event, integrationId));
+    } catch (error) {
+      const loading = modal.querySelector(".loading-state");
+      if (loading) { loading.className = "error-panel"; loading.textContent = error.message; }
+    }
+  }
+
+  async function submitGoLive(event, integrationId) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const dealIds = [...form.querySelectorAll('[name="deal_ids"]:checked')].map(input => Number(input.value)).filter(Number.isInteger);
+    if (!dealIds.length) return core.toast("Selecteer minimaal één testdeal.", "error");
+    const button = document.getElementById("integration-go-live-submit");
+    button.disabled = true; button.textContent = "Live zetten…";
+    try {
+      const raw = normalizeObject(await core.request(`/integrations/${integrationId}/go-live`, {
+        method: "POST",
+        body: JSON.stringify({
+          deal_ids: dealIds,
+          name: String(new FormData(form).get("name") || "Livekoppeling").trim(),
+          scopes: { "deals.read": true, "deals.write": true, "inventory.write": true, "bookings.read": true }
+        })
+      }));
+      const payload = unwrapPayload(raw) || {};
+      const liveKey = normalizeObject(payload.live_key || raw.live_key || payload) || {};
+      const secret = liveKey.api_key || liveKey.key || liveKey.secret || liveKey.full_key;
+      if (!secret) throw new Error("De koppeling staat live, maar de eenmalige live sleutel ontbreekt in de response.");
+      closeKeyManager(document.getElementById("integration-keys-modal"));
+      showSecret(secret, "production");
+      core.toast(`${dealIds.length} deal${dealIds.length === 1 ? "" : "s"} staan klaar voor live goedkeuring.`);
+      await load();
+    } catch (error) {
+      core.toast(error.message, "error");
+      button.disabled = false; button.textContent = "Live zetten en sleutel maken";
+    }
+  }
+
   function managedKeyRow(integrationId, item) {
-    const active = item.is_active !== false && !item.revoked_at, masked = `${item.key_prefix || "sd_test_"}••••${item.key_last4 || ""}`;
+    const active = item.is_active !== false && !item.revoked_at, masked = `${item.key_prefix || (item.environment === "production" ? "sd_live_" : "sd_test_")}••••${item.key_last4 || ""}`;
     return `<div class="integration-managed-key"><div class="integration-managed-key-main"><strong>${core.escapeHtml(item.name || "API-sleutel")}</strong><code>${core.escapeHtml(masked)}</code><span>Aangemaakt ${core.date(item.created_at, true)} · laatst gebruikt ${item.last_used_at ? core.date(item.last_used_at, true) : "nog nooit"}</span></div><div class="integration-managed-key-side"><span class="status-badge status-${active ? "active" : "archived"}"><span></span>${active ? "Actief" : "Ingetrokken"}</span>${active ? `<button class="danger-button" type="button" data-revoke-managed-key="${core.escapeHtml(item.id)}">Intrekken</button>` : ""}</div></div>`;
   }
 
@@ -322,9 +384,10 @@
   function bindCreateModalClose(modal) { modal.querySelector(".integration-dialog-close").addEventListener("click", () => closeCreateModal(modal)); modal.addEventListener("click", event => { if (event.target === modal) closeCreateModal(modal); }); }
   function closeCreateModal(modal) { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; }
 
-  function showSecret(secret) {
+  function showSecret(secret, environment = "test") {
+    const live = environment === "production";
     const modal = document.getElementById("integration-secret-modal");
-    modal.innerHTML = `<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Eenmalig zichtbaar</span><h2>Bewaar deze testsleutel nu</h2><p>De volledige sleutel wordt niet opgeslagen en kan na het sluiten niet opnieuw worden bekeken.</p><div class="integration-secret"><code>${core.escapeHtml(secret)}</code><button class="primary-button" type="button">Kopiëren</button></div></div>`;
+    modal.innerHTML = `<div class="integration-dialog"><button class="integration-dialog-close" type="button" aria-label="Sluiten">×</button><span class="eyebrow">Eenmalig zichtbaar</span><h2>Bewaar deze ${live ? "live sleutel" : "testsleutel"} nu</h2><p>De volledige sleutel wordt niet opgeslagen en kan na het sluiten niet opnieuw worden bekeken.${live ? " De gekozen deals staan nu op Te beoordelen en zijn nog niet actief." : ""}</p><div class="integration-secret"><code>${core.escapeHtml(secret)}</code><button class="primary-button" type="button">Kopiëren</button></div></div>`;
     modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
     const close = () => { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); modal.innerHTML = ""; };
     modal.querySelector(".integration-dialog-close").addEventListener("click", close);
