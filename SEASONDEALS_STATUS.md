@@ -2,7 +2,7 @@
 
 > **Vaste bron van waarheid voor de technische voortgang van SeasonDeals**
 >
-> Laatst inhoudelijk geverifieerd: **10 augustus 2026**
+> Laatst inhoudelijk geverifieerd: **5 oktober 2026**
 >
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
@@ -109,9 +109,31 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 - De architectuur ondersteunt availability, reservering aanmaken/annuleren, beschikbaarheids- en prijssynchronisatie en foutlogging.
 - Het adminportaal toont connector- en hotelintegratiestatus.
 
+### Veiligheidsback-ups vóór Nuitee-werk
+
+- GitHub-terugvalbranch `backup/pre-nuitee-live-2026-10-05` is vanaf de toenmalige `main` vastgelegd.
+- Webflow-back-up **Pre-Nuitee & Livegang – 5 oktober 2026** is aangemaakt en gecontroleerd (27 pagina's, 146 stijlen, 396 elementen).
+- Xano-ontwikkelbranch `nuitee-integration-2026-10-05` is aangemaakt; wijzigingen worden daar voorbereid en niet rechtstreeks gepubliceerd.
+- Xano-logicaclone **SeasonDeals Backup Pre Nuitee - 20261005** is aangemaakt met de tabellen, API-groepen, API-query's, functies, addons en taken van de hoofdworkspace.
+- Tijdens deze back-upstap zijn geen deals, sleutels of productieconfiguraties gepubliceerd of geactiveerd.
+
 ---
 
 ## 2. Gebouwd maar nog te verifiëren
+
+### Nuitee-connector en voorraadroute
+
+- De bestaande SeasonDeals-basis en het generieke Connector Framework blijven het uitgangspunt; er wordt geen nieuw los boekingssysteem naast gebouwd.
+- De Nuitee-koppeling wordt toegevoegd als echte provideradapter binnen het bestaande framework.
+- De connector moet in het adminportaal zichtbaar worden met providerstatus, accommodaties/mappings, boekingen, betalingen, annuleringen, logs en reconciliatie.
+- SEO-landingspagina's en dealweergave mogen pas op echte Nuitee-data worden aangesloten nadat prijs, beschikbaarheid, voorwaarden en boekingsflow aantoonbaar zijn getest.
+- Er wordt niets naar productie gepubliceerd voordat de testflow, financiële controle en terugvalmogelijkheid zijn geverifieerd.
+
+### Xano-recordexport
+
+- De hoofdworkspace bevatte bij start **34 tabellen en 714 records**.
+- Omdat een Xano-workspaceclone bewust geen tabelrecords kopieert, is op 5 oktober 2026 aanvullend een volledige data-export zonder media gestart.
+- De exportjob is aangemaakt; voltooiing en download moeten nog worden bevestigd voordat dit punt als volledig afgerond geldt.
 
 ### Stripe-productieconfiguratie
 
@@ -189,6 +211,16 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 - Order, voorraadverlaging, voucher, QR-code en alle e-mails controleren.
 - Indien van toepassing de testbetaling terugbetalen en voucher-invalidatie controleren.
 
+### Nuitee-productie-integratie
+
+- Nuitee-bedrijfsaccount en het passende commerciële model definitief vastleggen zonder vaste aansluitkosten, indien Nuitee dit accepteert.
+- Test- en productiecredentials veilig in Xano-omgevingsvariabelen plaatsen.
+- Authenticatie, hotel/content search, beschikbaarheid, quote/prebook, booking, retrieval en cancellation volgens de officiële Nuitee-documentatie implementeren.
+- Supplier reference, netto/bruto bedragen, marge, valuta, belastingen, annuleringstermijnen en betaalstatus volledig opslaan.
+- Idempotency, retries, time-outs, rate limits en foutlogging testen.
+- Nuitee zichtbaar maken in het adminportaal en minimaal één end-to-end testboeking plus annulering uitvoeren.
+- Pas daarna echte Nuitee-voorraad en SEO-landingspagina's publiceren.
+
 ### Eerste echte hotel-systeemkoppeling
 
 - Officiële SiteMinder-toegang en documentatie verkrijgen.
@@ -226,13 +258,14 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 ## Eerstvolgende aanbevolen mijlpaal
 
-**Productieklaar maken zonder al publiek live te gaan:**
+**Nuitee als eerste schaalbare voorraadbron veilig aansluiten:**
 
-1. Stripe test/live-scheiding en productie-secrets controleren.
-2. Alle Webflow-routes en juridische placeholders nalopen.
-3. Eerste echte hotelpartner en echte deal door de volledige partnerflow laten gaan.
-4. Kleine livebetaling end-to-end testen.
-5. Daarna de definitieve livegangchecklist afwerken.
+1. Nuitee-account, commercieel model en API-toegang definitief bevestigen.
+2. Provideradapter in de bestaande Xano-connectorarchitectuur bouwen op de ontwikkelbranch.
+3. Nuitee-status, mappings, boekingen, financiële gegevens, annuleringen en logs in het adminportaal tonen.
+4. Zoek-, prijs-, beschikbaarheids-, boekings- en annuleringsflow end-to-end testen.
+5. Stripe-liveconfiguratie en SEO/livegangchecklist afronden.
+6. Pas na een go/no-go de gecontroleerde Nuitee-voorraad publiceren.
 
 ---
 
@@ -240,6 +273,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 | Datum | Wijziging |
 |---|---|
+| 2026-10-05 | Voor Nuitee-werk veiligheidsback-ups vastgelegd: GitHub-terugvalbranch, Webflow-back-up, Xano-ontwikkelbranch en Xano-logicaclone. Aparte Xano-recordexport van 714 records gestart. Nuitee-scope en productieblokkade in status vastgelegd. |
 | 2026-08-10 | Interne hotelonboarding end-to-end getest: hotel en beheerder aangemaakt, partnerlogin geslaagd, integratie gekoppeld, API-sleutel aangemaakt en getest, sleutel ingetrokken en ingetrokken status in admin bevestigd. Uitnodigingsmail/activatielink, automatisch extern hotel-ID, echte hotelpartner en echte SiteMinder-verbinding blijven openstaan. |
 | 2026-08-05 | Adminflow **Nieuw hotel** gebouwd op het bestaande Xano-endpoint `/partners/create`; dashboardactie, formulier, gekoppelde hotelbeheerder, validatie en veilige wachtwoordgenerator toegevoegd. Nog te testen met de eerste echte partner. |
 | 2026-08-05 | Eerste centrale statusbestand aangemaakt. Voorraadverlaging en Connector Framework als gebouwd/werkend gecorrigeerd; Stripe-liveconfiguratie, echte partner/deal en echte SiteMinder-koppeling als open punten vastgelegd. |
