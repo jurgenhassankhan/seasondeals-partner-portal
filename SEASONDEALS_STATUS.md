@@ -117,6 +117,15 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 - Xano-logicaclone **SeasonDeals Backup Pre Nuitee - 20261005** is aangemaakt met de tabellen, API-groepen, API-query's, functies, addons en taken van de hoofdworkspace.
 - Tijdens deze back-upstap zijn geen deals, sleutels of productieconfiguraties gepubliceerd of geactiveerd.
 
+### Nuitée-sandboxauthenticatie en hoteldata
+
+- Het bestaande Nuitée-account is gecontroleerd: de sandboxkey is actief en productie blijft vergrendeld.
+- De correcte volledige sandboxkey is als afgeschermde Xano-workspacevariabele `NUITEE_SANDBOX_API_KEY` opgeslagen; de sleutel komt niet in frontendcode, logs of responses.
+- Op Xano-branch `nuitee-integration-2026-10-05` is de alleen-lezen adapterfunctie `connector/adapters/nuitee/list_hotels` gebouwd.
+- De functie gebruikt uitsluitend de officiële gratis Hotel Data API, valideert invoer, laat lege optionele parameters weg en geeft gestandaardiseerde succes- en foutresponses terug.
+- Een echte sandboxaanroep voor `NL / Amsterdam` is op 5 oktober 2026 geslaagd: **5 hotels** ontvangen in circa **310 ms**, inclusief provider-ID, naam, adres, coördinaten, sterren, reviews, foto-URL's, faciliteiten en valuta.
+- Tijdens deze test zijn geen database-records aangemaakt of gewijzigd, geen boeking/prebook uitgevoerd, geen betaald endpoint gebruikt en geen productiefunctionaliteit geactiveerd.
+
 ---
 
 ## 2. Gebouwd maar nog te verifiëren
@@ -124,7 +133,8 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 ### Nuitee-connector en voorraadroute
 
 - De bestaande SeasonDeals-basis en het generieke Connector Framework blijven het uitgangspunt; er wordt geen nieuw los boekingssysteem naast gebouwd.
-- De Nuitee-koppeling wordt toegevoegd als echte provideradapter binnen het bestaande framework.
+- De eerste echte Nuitée-provideradapter is gebouwd en voor alleen-lezen hotelmetadata in sandbox getest.
+- Prijs/beschikbaarheid, prebook, booking, retrieval en cancellation moeten nog als afzonderlijke functies worden gebouwd en end-to-end getest voordat publicatie mogelijk is.
 - De connector moet in het adminportaal zichtbaar worden met providerstatus, accommodaties/mappings, boekingen, betalingen, annuleringen, logs en reconciliatie.
 - SEO-landingspagina's en dealweergave mogen pas op echte Nuitee-data worden aangesloten nadat prijs, beschikbaarheid, voorwaarden en boekingsflow aantoonbaar zijn getest.
 - Er wordt niets naar productie gepubliceerd voordat de testflow, financiële controle en terugvalmogelijkheid zijn geverifieerd.
@@ -273,6 +283,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 | Datum | Wijziging |
 |---|---|
+| 2026-10-05 | Nuitée-sandboxauthenticatie hersteld en geverifieerd. Veilige Xano-variabele bijgewerkt; alleen-lezen functie `connector/adapters/nuitee/list_hotels` gebouwd en succesvol getest met 5 Amsterdamse hotels in circa 310 ms. Geen boeking, kosten, databasewijziging of productieactivatie uitgevoerd. |
 | 2026-10-05 | Voor Nuitee-werk veiligheidsback-ups vastgelegd: GitHub-terugvalbranch, Webflow-back-up, Xano-ontwikkelbranch en Xano-logicaclone. Aparte Xano-recordexport van 714 records gestart. Nuitee-scope en productieblokkade in status vastgelegd. |
 | 2026-08-10 | Interne hotelonboarding end-to-end getest: hotel en beheerder aangemaakt, partnerlogin geslaagd, integratie gekoppeld, API-sleutel aangemaakt en getest, sleutel ingetrokken en ingetrokken status in admin bevestigd. Uitnodigingsmail/activatielink, automatisch extern hotel-ID, echte hotelpartner en echte SiteMinder-verbinding blijven openstaan. |
 | 2026-08-05 | Adminflow **Nieuw hotel** gebouwd op het bestaande Xano-endpoint `/partners/create`; dashboardactie, formulier, gekoppelde hotelbeheerder, validatie en veilige wachtwoordgenerator toegevoegd. Nog te testen met de eerste echte partner. |
