@@ -126,7 +126,8 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 - Een echte sandboxaanroep voor `NL / Amsterdam` is op 5 oktober 2026 geslaagd: **5 hotels** ontvangen in circa **310 ms**, inclusief provider-ID, naam, adres, coördinaten, sterren, reviews, foto-URL's, faciliteiten en valuta.
 - De alleen-lezen adapterfunctie `connector/adapters/nuitee/search_rates` is gebouwd en getest met hotel `lp225fcf`, twee volwassenen en één nacht: **1 hotel met boekbare rate** ontvangen in circa **2,13 s**, inclusief kamer- en rate-ID, `offerId`, kostprijs, aanbevolen verkoopprijs, belastingen/toeslagen, betaaltype en annuleringsstatus.
 - Voor de geteste rate gaf Nuitée onder meer €116,12 retail, €116,35 aanbevolen verkoopprijs, €12,60 niet-inbegrepen toeslagen en status `NRFN`; deze bedragen zijn uitsluitend testdata en mogen nog niet op de publieke website worden gepubliceerd.
-- Tijdens deze test zijn geen database-records aangemaakt of gewijzigd, geen boeking/prebook uitgevoerd, geen betaald endpoint gebruikt en geen productiefunctionaliteit geactiveerd.
+- De sandboxfunctie `connector/adapters/nuitee/prebook` is gebouwd en op 5 oktober 2026 succesvol uitgevoerd met hetzelfde aanbod. Nuitée bevestigde de kamer, €116,12 prijs, €116,35 aanbevolen verkoopprijs, €12,60 niet-inbegrepen toeslag, `NRFN` en betaalmogelijkheden in circa 850 ms.
+- De prebook gebruikt verplicht `usePaymentSdk=false`; er is geen Stripe PaymentIntent, definitieve boeking, betaling of database-record aangemaakt en geen productiefunctionaliteit geactiveerd.
 
 ---
 
@@ -137,7 +138,7 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 - De bestaande SeasonDeals-basis en het generieke Connector Framework blijven het uitgangspunt; er wordt geen nieuw los boekingssysteem naast gebouwd.
 - De eerste echte Nuitée-provideradapter is gebouwd en voor alleen-lezen hotelmetadata in sandbox getest.
 - Hotelmetadata en prijs/beschikbaarheid zijn als afzonderlijke alleen-lezen functies gebouwd en in sandbox getest.
-- Quote/prebook, booking, retrieval en cancellation moeten nog als afzonderlijke functies worden gebouwd en end-to-end getest voordat publicatie mogelijk is.
+- Quote/prebook is in sandbox gebouwd en getest. Booking, retrieval en cancellation moeten nog als afzonderlijke functies worden gebouwd en end-to-end getest voordat publicatie mogelijk is.
 - De connector moet in het adminportaal zichtbaar worden met providerstatus, accommodaties/mappings, boekingen, betalingen, annuleringen, logs en reconciliatie.
 - SEO-landingspagina's en dealweergave mogen pas op echte Nuitee-data worden aangesloten nadat prijs, beschikbaarheid, voorwaarden en boekingsflow aantoonbaar zijn getest.
 - Er wordt niets naar productie gepubliceerd voordat de testflow, financiële controle en terugvalmogelijkheid zijn geverifieerd.
@@ -228,7 +229,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 - Nuitee-bedrijfsaccount en het passende commerciële model definitief vastleggen zonder vaste aansluitkosten, indien Nuitee dit accepteert.
 - Test- en productiecredentials veilig in Xano-omgevingsvariabelen plaatsen.
-- Authenticatie, hotel/content search, beschikbaarheid, quote/prebook, booking, retrieval en cancellation volgens de officiële Nuitee-documentatie implementeren.
+- Booking, retrieval en cancellation volgens de officiële Nuitee-documentatie implementeren; authenticatie, hoteldata, prijs/beschikbaarheid en quote/prebook zijn in sandbox bewezen.
 - Supplier reference, netto/bruto bedragen, marge, valuta, belastingen, annuleringstermijnen en betaalstatus volledig opslaan.
 - Idempotency, retries, time-outs, rate limits en foutlogging testen.
 - Nuitee zichtbaar maken in het adminportaal en minimaal één end-to-end testboeking plus annulering uitvoeren.
@@ -286,6 +287,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 | Datum | Wijziging |
 |---|---|
+| 2026-10-05 | Nuitée-functie `connector/adapters/nuitee/prebook` gebouwd en succesvol getest met `usePaymentSdk=false`: prijs, toeslagen, annuleringsstatus en betaalmogelijkheden bevestigd in circa 850 ms. Geen definitieve boeking, betaling, Stripe PaymentIntent, databasewijziging of productieactivatie uitgevoerd. |
 | 2026-10-05 | Nuitée-functie `connector/adapters/nuitee/search_rates` gebouwd en succesvol getest: één Amsterdamse hotelrate met offer-ID, prijzen, toeslagen, betaaltype en annuleringsstatus ontvangen in circa 2,13 s. Geen prebook, boeking, betaling of productieactivatie uitgevoerd. |
 | 2026-10-05 | Nuitée-sandboxauthenticatie hersteld en geverifieerd. Veilige Xano-variabele bijgewerkt; alleen-lezen functie `connector/adapters/nuitee/list_hotels` gebouwd en succesvol getest met 5 Amsterdamse hotels in circa 310 ms. Geen boeking, kosten, databasewijziging of productieactivatie uitgevoerd. |
 | 2026-10-05 | Voor Nuitee-werk veiligheidsback-ups vastgelegd: GitHub-terugvalbranch, Webflow-back-up, Xano-ontwikkelbranch en Xano-logicaclone. Aparte Xano-recordexport van 714 records gestart. Nuitee-scope en productieblokkade in status vastgelegd. |
