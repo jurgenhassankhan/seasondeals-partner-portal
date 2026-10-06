@@ -55,7 +55,7 @@
     const params = new URLSearchParams({ page: String(supplierPage), per_page: "25" });
     ["provider_slug", "environment", "booking_status", "search"].forEach(key => {
       const value = String(values.get(key) || "").trim();
-      if (value) params.set(key, value);
+      params.set(key, value);
     });
     try {
       const data = normalizeObject(await core.request(`/supplier-bookings?${params.toString()}`));
