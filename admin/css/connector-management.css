@@ -6,3 +6,41 @@
 .connector-management-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.connector-management-grid>section{padding:17px;border:1px solid var(--line);border-radius:12px}.connector-management-grid h3{margin:5px 0 12px;color:var(--green);font:700 20px 'Cormorant Garamond',serif}.connector-mapping-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--line)}.connector-mapping-row:last-child{border-bottom:0}.connector-mapping-row div{display:grid;gap:3px}.connector-mapping-row strong{color:var(--green);font-size:10px}.connector-mapping-row span{color:var(--muted);font-size:9px}.connector-mapping-row b{color:#53655f;font-size:9px;text-align:right}.connector-ok-box,.connector-error-box{display:grid;gap:5px;padding:13px;border-radius:10px;background:#eaf7f1;color:#08735c;font-size:10px}.connector-error-box{background:#fff0ee;color:var(--danger)}.connector-ok-box span,.connector-error-box span{font-size:9px;line-height:1.5}.connector-log-note{margin-bottom:0!important;font-size:9px!important}.connector-dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:17px}.connector-dialog-actions>span{color:var(--muted);font-size:9px}
 @media(max-width:800px){.connector-stats,.connector-detail-grid{grid-template-columns:1fr 1fr}.connector-stats>div:nth-child(2){border-right:0}.connector-management-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.connector-overview-head,.connector-dialog-head,.connector-dialog-actions{align-items:stretch;flex-direction:column}.connector-stats,.connector-detail-grid{grid-template-columns:1fr}.connector-stats>div{border-right:0;border-bottom:1px solid #e3ebe6}.connector-stats>div:last-child{border-bottom:0}.connector-dialog-actions .primary-button{width:100%}}
+
+
+/* Nuitée supplier booking control */
+.supplier-bookings-panel{margin-top:24px}
+.supplier-bookings-panel .panel-header{align-items:flex-start}
+.supplier-bookings-panel .eyebrow{display:block;margin-bottom:6px;color:#138765;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.supplier-bookings-filters{display:grid;grid-template-columns:minmax(150px,190px) minmax(190px,230px) minmax(260px,1fr) auto;gap:12px;align-items:end;margin:20px 0}
+.supplier-bookings-filters label{display:flex;flex-direction:column;gap:7px;color:#52606d;font-size:.8rem;font-weight:700}
+.supplier-bookings-filters input,.supplier-bookings-filters select{min-height:42px;border:1px solid #d8e0e7;border-radius:10px;background:#fff;padding:0 12px;color:#16212b;font:inherit}
+.supplier-bookings-filters input:focus,.supplier-bookings-filters select:focus{outline:2px solid rgba(19,135,101,.16);border-color:#138765}
+.supplier-bookings-summary{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:18px}
+.supplier-bookings-summary>div{min-width:0}
+.supplier-bookings-summary strong{font-size:1.18rem;overflow-wrap:anywhere}
+.supplier-margin-card{background:linear-gradient(135deg,#f1fbf7,#fff);border-color:#bfe7d8!important}
+.supplier-bookings-table td{vertical-align:middle}
+.supplier-bookings-table th:nth-child(1){min-width:190px}
+.supplier-bookings-table th:nth-child(2){min-width:210px}
+.supplier-bookings-table th:nth-child(3){min-width:180px}
+.supplier-bookings-table th:nth-child(6){min-width:210px}
+.supplier-booking-status,.supplier-environment{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 10px;font-size:.75rem;font-weight:800;white-space:nowrap}
+.supplier-booking-status{background:#eef3f7;color:#405163}
+.supplier-booking-status i{width:7px;height:7px;border-radius:50%;background:#75879a}
+.supplier-booking-status.status-confirmed{background:#eaf8f2;color:#087a58}
+.supplier-booking-status.status-confirmed i{background:#10a878}
+.supplier-booking-status.status-cancelled_with_charges,.supplier-booking-status.status-cancelled{background:#fff1ef;color:#b53a2f}
+.supplier-booking-status.status-cancelled_with_charges i,.supplier-booking-status.status-cancelled i{background:#d85145}
+.supplier-environment-sandbox{background:#fff5dc;color:#8f6500}
+.supplier-environment-production{background:#eaf8f2;color:#087a58}
+
+@media (max-width:1100px){
+  .supplier-bookings-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .supplier-bookings-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .supplier-bookings-filters .primary-button{justify-self:start}
+}
+@media (max-width:680px){
+  .supplier-bookings-filters,.supplier-bookings-summary{grid-template-columns:1fr}
+  .supplier-bookings-filters .primary-button{width:100%}
+}

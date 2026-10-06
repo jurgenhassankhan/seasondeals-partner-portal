@@ -2,6 +2,7 @@
   "use strict";
   const core = window.AdminCore;
   let page = 1;
+  let supplierPage = 1;
   let admin;
   let currentIntegrations = [];
   init();
@@ -12,7 +13,10 @@
       core.mountShell({ active: "integrations", title: "Integratiebeheer", subtitle: "Beheer externe hotelkoppelingen en veilige API-toegang." }, admin);
       document.getElementById("integrations-refresh").addEventListener("click", load);
       document.getElementById("integration-create").addEventListener("click", openCreateIntegration);
-      await load();
+      document.getElementById("supplier-bookings-refresh")?.addEventListener("click", () => { supplierPage = 1; loadSupplierBookings(); });
+      document.getElementById("supplier-bookings-filters")?.addEventListener("submit", event => { event.preventDefault(); supplierPage = 1; loadSupplierBookings(); });
+      document.querySelectorAll("#supplier-bookings-filters select").forEach(select => select.addEventListener("change", () => { supplierPage = 1; loadSupplierBookings(); }));
+      await Promise.all([load(), loadSupplierBookings()]);
     } catch (error) { showError(error.message); }
   }
 
@@ -37,6 +41,85 @@
       }
       renderPagination(data, integrations.length);
     } catch (error) { showError(error.message); }
+  }
+
+
+  async function loadSupplierBookings() {
+    const target = document.getElementById("supplier-bookings-content");
+    const summaryTarget = document.getElementById("supplier-bookings-summary");
+    if (!target || !summaryTarget) return;
+    target.className = "loading-state";
+    target.innerHTML = '<div class="spinner"></div>Leveranciersboekingen ophalen…';
+    const form = document.getElementById("supplier-bookings-filters");
+    const values = new FormData(form);
+    const params = new URLSearchParams({ page: String(supplierPage), per_page: "25" });
+    ["provider_slug", "environment", "booking_status", "search"].forEach(key => {
+      const value = String(values.get(key) || "").trim();
+      if (value) params.set(key, value);
+    });
+    try {
+      const data = normalizeObject(await core.request(`/supplier-bookings?${params.toString()}`));
+      const items = getItems(data);
+      renderSupplierSummary(normalizeObject(data.summary) || {});
+      if (!items.length) {
+        target.className = "empty-state";
+        target.innerHTML = "<strong>Geen leveranciersboekingen gevonden</strong><span>Pas de filters aan of voer eerst een gecontroleerde sandboxboeking uit.</span>";
+      } else {
+        target.className = "table-wrap";
+        target.innerHTML = `<table class="data-table supplier-bookings-table"><thead><tr><th>Hotel</th><th>Referentie</th><th>Verblijf</th><th>Status</th><th>Omgeving</th><th>Financieel</th><th>Bijgewerkt</th></tr></thead><tbody>${items.map(supplierBookingRow).join("")}</tbody></table>`;
+      }
+      renderSupplierPagination(data, items.length);
+    } catch (error) {
+      summaryTarget.innerHTML = "";
+      target.className = "error-panel";
+      target.textContent = error.message;
+    }
+  }
+
+  function renderSupplierSummary(summary) {
+    const target = document.getElementById("supplier-bookings-summary");
+    if (!target) return;
+    target.innerHTML = `
+      <div><span>Totaal</span><strong>${Number(summary.total_count || 0)}</strong><small>leveranciersboekingen</small></div>
+      <div><span>Sandbox</span><strong>${Number(summary.sandbox_count || 0)}</strong><small>zonder echte betaling</small></div>
+      <div><span>Productie</span><strong>${Number(summary.production_count || 0)}</strong><small>live boekingen</small></div>
+      <div><span>Verkoopwaarde</span><strong>${core.money(summary.total_selling_price)}</strong><small>bruto klantprijs</small></div>
+      <div class="supplier-margin-card"><span>SeasonDeals-marge</span><strong>${core.money(summary.total_seasondeals_margin)}</strong><small>voor reconciliatie</small></div>
+      <div class="${Number(summary.total_cancellation_fee || 0) > 0 ? "has-attention" : ""}"><span>Annuleringskosten</span><strong>${core.money(summary.total_cancellation_fee)}</strong><small>${Number(summary.cancelled_count || 0)} geannuleerd</small></div>`;
+  }
+
+  function supplierBookingRow(item) {
+    const environment = String(item.environment || "sandbox").toLowerCase();
+    const status = String(item.booking_status || "unknown").toLowerCase();
+    const stay = `${formatStayDate(item.checkin)} – ${formatStayDate(item.checkout)}`;
+    return `<tr>
+      <td><div class="integration-cell"><strong>${core.escapeHtml(item.hotel_name || item.hotel_external_id || "Onbekend hotel")}</strong><span>${core.escapeHtml(item.hotel_external_id || "Geen extern ID")}</span></div></td>
+      <td><div class="integration-cell"><strong>${core.escapeHtml(item.client_reference || item.external_booking_id || "—")}</strong><span>${core.escapeHtml(item.external_booking_id || "—")}</span></div></td>
+      <td><div class="integration-cell"><strong>${core.escapeHtml(stay)}</strong><span>${Number(item.guest_count || 0)} gast${Number(item.guest_count || 0) === 1 ? "" : "en"} · ${core.escapeHtml(item.refundable_tag || "—")}</span></div></td>
+      <td><span class="supplier-booking-status status-${core.escapeHtml(status)}"><i></i>${core.escapeHtml(core.label(status))}</span></td>
+      <td><span class="supplier-environment supplier-environment-${core.escapeHtml(environment)}">${core.escapeHtml(core.label(environment))}</span></td>
+      <td><div class="integration-cell"><strong>${core.money(item.selling_price)}</strong><span>Inkoop ${core.money(item.supplier_amount)} · marge ${core.money(item.seasondeals_margin)}</span></div></td>
+      <td>${core.escapeHtml(core.date(item.updated_at || item.last_synced_at, true))}</td>
+    </tr>`;
+  }
+
+  function formatStayDate(value) {
+    if (!value) return "—";
+    const parsed = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) return String(value);
+    return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(parsed);
+  }
+
+  function renderSupplierPagination(data, visibleCount) {
+    const target = document.getElementById("supplier-bookings-pagination");
+    if (!target) return;
+    const current = Number(data.page || supplierPage) || 1;
+    const pages = Math.max(1, Number(data.total_pages || 1) || 1);
+    const total = Number(data.total || visibleCount) || visibleCount;
+    supplierPage = current;
+    target.innerHTML = `<div class="pagination"><span>${total} boekingen · pagina ${current} van ${pages}</span><div class="pagination-buttons"><button id="supplier-bookings-prev" ${current <= 1 ? "disabled" : ""}>←</button><button id="supplier-bookings-next" ${current >= pages ? "disabled" : ""}>→</button></div></div>`;
+    document.getElementById("supplier-bookings-prev")?.addEventListener("click", () => { supplierPage--; loadSupplierBookings(); });
+    document.getElementById("supplier-bookings-next")?.addEventListener("click", () => { supplierPage++; loadSupplierBookings(); });
   }
 
   function row(item) {
