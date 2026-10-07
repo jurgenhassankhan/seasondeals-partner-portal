@@ -2,7 +2,7 @@
 
 > **Vaste bron van waarheid voor de technische voortgang van SeasonDeals**
 >
-> Laatst inhoudelijk geverifieerd: **6 oktober 2026**
+> Laatst inhoudelijk geverifieerd: **7 oktober 2026**
 >
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
@@ -142,6 +142,23 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 ---
 
 ## 2. Gebouwd maar nog te verifiëren
+
+### Nuitée-conceptdeal en prijsregels — ontwikkelwerk 7 oktober 2026
+
+- Xano-branch `nuitee-deal-import-2026-10-07` bevat de nieuwe tabel `supplier_deals` (#104) en conceptendpoints `POST /supplier-deals/import` (#782), `GET /supplier-deals/{deal_id}` (#783) en `PATCH /supplier-deals/{deal_id}/pricing` (#784). Deze wijzigingen zijn niet naar `v1` gemerged.
+- De eerdere importtest gebruikte fictieve sandboxmapping en maakte uitsluitend deal #16 (`draft`, `is_active=false`) plus supplier_deal #1 aan. Dit bewijst databaseopslag, niet de volledige import van een echte Nuitée-offer met foto's en voorwaarden.
+- GET #783 is op 7 oktober met een bevoegde beheerder getest: volledige deal plus gekoppeld Nuitée-record worden per deal-ID teruggegeven.
+- PATCH #784 gebruikt admin/guard, een extra controle op `superadmin`/`platform_admin`, uitsluitend conceptdeals, native prijsberekening en een database-transactie voor prijsregels + `price`/`deal_price`. Inkoop en leveranciersmapping worden niet bijgewerkt.
+- Geslaagde opslagtest: €100 fictieve inkoop, 35% opslag, €1,30 processingreserve, 3% + €0,25 Stripe-reserve en €20 minimummarge → €135 verkoopprijs en €29,40 geschatte marge. Daarna opnieuw via GET bevestigd: deal #16 blijft `draft`, `is_active=false`, prijs €135.
+- Negatieve test: vaste verkoopprijs €100 bij dezelfde kosten/minimummarge is geweigerd vóór de databasewrite. De opgeslagen prijs bleef €135.
+- De eerste Lambda-versie gaf een serverfout en is vervangen door native Xano-functies. De geslaagde tests hierboven gelden voor die native versie.
+- Portalrelease PR #9: prijseditor, read-only inkoop, inhoud wijzigen, indienen, sandboxgoedkeuring en terugzetten naar concept. JavaScript-syntaxis gecontroleerd. Featureflag ingeschakeld met vernieuwde assetversies.
+- Nieuwe privéroute #785 `PATCH supplier-deals/{deal_id}/workflow`: admin/guard + expliciete superadmin/platform_admin-rol, controle op supplier-link, sandboxomgeving en geldige statusovergang. Opslaan van inhoud uitsluitend in concept. Indienen/goedkeuren vereist omschrijvingen, annuleringsvoorwaarden en voldoende marge. Auditlog per actie.
+- Nieuwe workflowtested op gefabriceerde sandboxdeal #16: onvolledige inhoud geweigerd; inhoud opslaan geslaagd; indienen → `pending_approval`; goedkeuren → `active` met `is_active=false`. Geen echte voorraad of reservering.
+- Alleen de drie portalroutes #783/#784/#785 worden naar v1 overgezet met automatische bestemmingsbackup. Import #782 en de tien afwijkende bestaande endpoints/middleware zijn uitgesloten; bestaande hotelgoedkeuring blijft ongewijzigd.
+- Portalweergave en browseropslag na deployment worden hieronder nog als geverifieerd vastgelegd. Overige prijsmodi/afrondingen en rollen zonder wijzigingsrechten zijn niet opnieuw getest.
+- Import #782 blijft ongepubliceerd: volledige Nuitée-contentmapping, offercontrole, admin/guard en dubbele-importbescherming zijn nog open. Productiepublicatie en dynamische livequote vallen buiten deze portalrelease.
+- Let op: de Xano-ontwikkelbranch gebruikt datasource `live`; alleen fictieve sandboxdeal #16 is gebruikt voor deze workflowtest.
 
 ### Nuitee-connector en voorraadroute
 
@@ -297,6 +314,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 | Datum | Wijziging |
 |---|---|
+| 2026-10-07 | Nuitée-conceptdeal hervat: uitlezen, native prijsberekening, atomaire opslag en te lage prijs getest op fictieve sandboxdeal #16. Prijseditor op ontwikkelbranch gebouwd achter uitgeschakelde featureflag; portal-end-to-end, complete import en goedkeuring nog open. Geen merge naar v1/main of productiepublicatie. |
 | 2026-10-06 | Gecontroleerde Nuitée-release afgerond: uitsluitend 9 nieuwe Xano-onderdelen naar `v1` gemerged; 10 afwijkende bestaande endpoints en middleware uitgesloten. Privé endpoint live getest met 1 sandboxboeking en 0 productieboekingen. Adminweergave via PR #7 gepubliceerd; filterfout hersteld via PR #8 en aanvullende lege-parametercorrectie. Gepubliceerde Integratiebeheerpagina visueel getest met €143,50 verkoop, €116,12 inkoop, €21,52 marge en €116,12 annuleringskosten. Geen echte boeking, betaling, refund of productievoorraad geactiveerd. |
 | 2026-10-05 | Nieuwe tabel `supplier_bookings` toegevoegd op de Xano-ontwikkelbranch, zonder bestaande orders of deals te wijzigen. Veilige prijsfunctie getest met Nuitée-bedragen (€143,50 verkoopprijs en €21,52 geschatte marge) en privacyveilige upsertfunctie getest op create + update zonder duplicaat. Eén duidelijk gemarkeerd sandboxrecord opgeslagen; geen gast- of kaartgegevens en geen productiepublicatie. |
 | 2026-10-05 | Volledige Nuitée-sandboxketen uitgevoerd: prebook, testboeking via `ACC_CREDIT_CARD`, booking retrieval en cancellation. Boeking bevestigd en opgehaald; niet-restitueerbare annulering gaf correct €116,12 kosten en €0 refund. Ook €1,30 processing fee vastgesteld. Geen echte betaling, klantgegevens, databasewrite of productieactivatie uitgevoerd. |
