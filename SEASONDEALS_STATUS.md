@@ -152,10 +152,13 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 - Geslaagde opslagtest: €100 fictieve inkoop, 35% opslag, €1,30 processingreserve, 3% + €0,25 Stripe-reserve en €20 minimummarge → €135 verkoopprijs en €29,40 geschatte marge. Daarna opnieuw via GET bevestigd: deal #16 blijft `draft`, `is_active=false`, prijs €135.
 - Negatieve test: vaste verkoopprijs €100 bij dezelfde kosten/minimummarge is geweigerd vóór de databasewrite. De opgeslagen prijs bleef €135.
 - De eerste Lambda-versie gaf een serverfout en is vervangen door native Xano-functies. De geslaagde tests hierboven gelden voor die native versie.
-- GitHub-branch `nuitee-admin-pricing-2026-10-07` bevat een prijseditor in `admin/js/deal-detail-v5.js`: read-only inkoop/mapping, percentage/vaste opslag/verkoopprijs, korting, kostenreserve, minimummarge, afronding en prijsvoorbeeld. JavaScript-syntaxis gecontroleerd. De functie staat achter `supplierDealsEnabled`, dat nog niet is ingeschakeld. Het gepubliceerde adminportaal gebruikt dit dus nog niet.
-- Nog te verifiëren: overige prijsmodi/afrondingen, ontbrekende en ongeldige velden, rollen zonder wijzigingsrechten, end-to-end portalweergave en opslaan via browser. Import #782 moet vóór publicatie nog de expliciete admin/guard, volledige contentmapping, offercontrole en dubbele-importbescherming krijgen.
-- Nog te bouwen: indienen via bestaande dealgoedkeuring, servercontrole die sandboxpublicatie blokkeert, dynamische live-quote op basis van actuele Nuitée-prijzen. Tot die controles is Nuitée-goedkeuring in de nieuwe frontendweergave geblokkeerd.
-- Let op: de Xano-ontwikkelbranch gebruikt datasource `live`; logicawijzigingen zijn geïsoleerd, testrecords staan in de gedeelde database. Geen echte deal gepubliceerd of echte boeking/betaling uitgevoerd in deze stap.
+- Portalrelease PR #9: prijseditor, read-only inkoop, inhoud wijzigen, indienen, sandboxgoedkeuring en terugzetten naar concept. JavaScript-syntaxis gecontroleerd. Featureflag ingeschakeld met vernieuwde assetversies.
+- Nieuwe privéroute #785 `PATCH supplier-deals/{deal_id}/workflow`: admin/guard + expliciete superadmin/platform_admin-rol, controle op supplier-link, sandboxomgeving en geldige statusovergang. Opslaan van inhoud uitsluitend in concept. Indienen/goedkeuren vereist omschrijvingen, annuleringsvoorwaarden en voldoende marge. Auditlog per actie.
+- Nieuwe workflowtested op gefabriceerde sandboxdeal #16: onvolledige inhoud geweigerd; inhoud opslaan geslaagd; indienen → `pending_approval`; goedkeuren → `active` met `is_active=false`. Geen echte voorraad of reservering.
+- Alleen de drie portalroutes #783/#784/#785 worden naar v1 overgezet met automatische bestemmingsbackup. Import #782 en de tien afwijkende bestaande endpoints/middleware zijn uitgesloten; bestaande hotelgoedkeuring blijft ongewijzigd.
+- Portalweergave en browseropslag na deployment worden hieronder nog als geverifieerd vastgelegd. Overige prijsmodi/afrondingen en rollen zonder wijzigingsrechten zijn niet opnieuw getest.
+- Import #782 blijft ongepubliceerd: volledige Nuitée-contentmapping, offercontrole, admin/guard en dubbele-importbescherming zijn nog open. Productiepublicatie en dynamische livequote vallen buiten deze portalrelease.
+- Let op: de Xano-ontwikkelbranch gebruikt datasource `live`; alleen fictieve sandboxdeal #16 is gebruikt voor deze workflowtest.
 
 ### Nuitee-connector en voorraadroute
 
