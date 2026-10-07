@@ -2,7 +2,7 @@
 
 > **Vaste bron van waarheid voor de technische voortgang van SeasonDeals**
 >
-> Laatst inhoudelijk geverifieerd: **6 oktober 2026**
+> Laatst inhoudelijk geverifieerd: **7 oktober 2026**
 >
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
@@ -138,6 +138,11 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 - De negen nieuwe Nuitée-functies en het private admin-endpoint zijn gecontroleerd naar Xano-branch `v1` samengevoegd. Tien afwijkende bestaande endpoints en de middleware-instelling zijn bewust uitgesloten van de merge.
 - `GET /supplier-bookings` is op `v1` live getest: 1 sandboxrecord, 0 productierecords, €143,50 verkoopwaarde, €116,12 leverancier, €21,52 marge en €116,12 annuleringskosten.
 - Het adminportaal toont op `main` onder Integratiebeheer de Nuitée-boeking en margecontrole. De gepubliceerde pagina is op 6 oktober 2026 ingelogd en visueel getest; gast-, kaart- en ruwe providergegevens worden niet getoond.
+- De nieuwe leverancierscheckout is op 7 oktober 2026 end-to-end in sandbox getest: server-side prebook en prijsberekening, testorder `97`, Stripe-testbetaling van €579,49, werkelijke Stripe-fee €19,08, Nuitée-boeking en opslag van externe boekingsreferentie `8yAyZt0BQ`.
+- De definitieve werkelijke marge is €86,35 (14,9%) bij €474,06 leverancierskosten. De financiële reconciliatie staat op `reconciled`.
+- De order staat `paid`, de leverancierssync staat `confirmed`, de checkout-intentie staat `booked` en gast-/holdergegevens zijn na de boeking uit de tijdelijke intentie gewist.
+- De succesvolle retry gebruikte dezelfde betaalde order en maakte geen tweede Stripe-betaling. Omdat `deal_id` leeg is, is geen bestaande SeasonDeals-dealvoorraad geraakt.
+- De foutafhandeling is getest en gecorrigeerd: een betaalde order blijft bij een leveranciersfout op een geldige status staan, terwijl `provider_sync_status=error` en de fouttekst afzonderlijk worden opgeslagen.
 
 ---
 
@@ -152,9 +157,9 @@ Daarmee zijn de interne aanmaakflow voor hotels, de koppeling met `hotel_users`,
 - De basisweergave voor Nuitée-boekingen en margecontrole is gepubliceerd en visueel getest. Providerstatus, accommodatiemappings, connectorlogs, volledige reconciliatie en koppeling aan echte SeasonDeals-orders moeten nog verder worden uitgewerkt.
 - Op Xano-ontwikkelbranch `nuitee-checkout-orchestration-2026-10-06` zijn de tabel `supplier_checkout_intents`, de functies `connector/nuitee/upsert_checkout_intent`, `connector/stripe/get_payment_fee` en `connector/nuitee/complete_paid_order`, plus `POST /supplier-checkout` en de leveranciersroute in de Stripe-webhook gebouwd.
 - De checkout-orchestratie prebookt en prijst server-side, maakt een SeasonDeals-order en privacy-afgeschermde checkout-intent aan, koppelt uitsluitend een Stripe-testsessie en voorkomt dat de bestaande dealvoorraadroute een leveranciersorder verwerkt.
-- Een sandboxrun op 6 oktober 2026 is geslaagd tot en met Stripe Checkout: hotel `lp1897`, €474,06 leveranciersprijs, €579,49 berekende verkoopprijs, €86,93 geschatte marge, testorder `97`, intent `2` en een `cs_test_…` sessie. Er is niet betaald en er is geen hotelboeking gemaakt.
+- De checkout-orchestratie is inmiddels inclusief Stripe-testbetaling, werkelijke fee/marge, Nuitée-sandboxboeking, idempotente retry en foutpad bewezen. De concepten staan nog uitsluitend op Xano-ontwikkelbranch `nuitee-checkout-orchestration-2026-10-06` en zijn niet gepubliceerd.
 - De correcte bestaande Xano-testsleutelvariabele `STRIPE_SECRET_KEY_test` is alleen in de nieuwe ontwikkelconcepten gebruikt voor checkout, feereconciliatie en sessieverificatie. Productieconfiguratie is niet gepubliceerd of gewijzigd.
-- Nog te verifiëren: betaling met een Stripe-testkaart, webhook-idempotency, werkelijke Stripe-fee, definitieve marge, Nuitée-sandboxboeking na betaling, foutpad na betaling en de uiteindelijke adminweergave.
+- Nog te verifiëren vóór publicatie: de leveranciersroute via de daadwerkelijk gepubliceerde Stripe-webhook, de uiteindelijke adminweergave van order 97 en boeking 4, en een geldige Webflow-bedankpagina. De huidige succes-URL `/boeking-gelukt` geeft nog een 404.
 
 - SEO-landingspagina's en dealweergave mogen pas op echte Nuitee-data worden aangesloten nadat prijs, beschikbaarheid, voorwaarden en boekingsflow aantoonbaar zijn getest.
 - Er wordt nog geen echte Nuitée-voorraad, productieboeking of betaling geactiveerd voordat de volledige order-, betaal- en annuleringsflow is geverifieerd.
@@ -303,6 +308,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 | Datum | Wijziging |
 |---|---|
+| 2026-10-07 | Leverancierscheckout end-to-end in sandbox afgerond voor order 97: Stripe-testbetaling €579,49, Nuitée-boeking bevestigd als `8yAyZt0BQ`, werkelijke Stripe-fee €19,08, werkelijke marge €86,35 (14,9%), financiële status `reconciled`, order `paid`, providersync `confirmed` en intent `booked`. Gastgegevens daarna gewist. Foutpad hersteld zodat een betaalde order bij leveranciersproblemen geldig blijft. Open punten: gepubliceerde webhookroute, adminweergave en ontbrekende `/boeking-gelukt`-pagina. Geen productiepublicatie uitgevoerd. |
 | 2026-10-06 | Nieuwe leverancierscheckout op de ontwikkelbranch succesvol getest tot en met een Stripe-testsessie: server-side prebook, conservatieve prijs/marge, testorder 97, checkout-intent 2 en `cs_test_…` aangemaakt. Leveranciersprijs €474,06, verkoopprijs €579,49 en geschatte marge €86,93. Ongeldige orderstatus en verkeerde testsleutelnaam tijdens de test hersteld. Geen betaling, Nuitée-boeking, publicatie of productieactivatie uitgevoerd. |
 | 2026-10-06 | Gecontroleerde Nuitée-release afgerond: uitsluitend 9 nieuwe Xano-onderdelen naar `v1` gemerged; 10 afwijkende bestaande endpoints en middleware uitgesloten. Privé endpoint live getest met 1 sandboxboeking en 0 productieboekingen. Adminweergave via PR #7 gepubliceerd; filterfout hersteld via PR #8 en aanvullende lege-parametercorrectie. Gepubliceerde Integratiebeheerpagina visueel getest met €143,50 verkoop, €116,12 inkoop, €21,52 marge en €116,12 annuleringskosten. Geen echte boeking, betaling, refund of productievoorraad geactiveerd. |
 | 2026-10-05 | Nieuwe tabel `supplier_bookings` toegevoegd op de Xano-ontwikkelbranch, zonder bestaande orders of deals te wijzigen. Veilige prijsfunctie getest met Nuitée-bedragen (€143,50 verkoopprijs en €21,52 geschatte marge) en privacyveilige upsertfunctie getest op create + update zonder duplicaat. Eén duidelijk gemarkeerd sandboxrecord opgeslagen; geen gast- of kaartgegevens en geen productiepublicatie. |
