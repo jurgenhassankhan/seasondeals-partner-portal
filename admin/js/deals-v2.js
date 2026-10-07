@@ -42,7 +42,7 @@
       const cell = row.children[1];
       if (!cell) return;
       cell.classList.add("deal-status-stack");
-      cell.insertAdjacentHTML("beforeend", environmentBadge(items[index]?.integration_environment));
+      cell.insertAdjacentHTML("beforeend", environmentBadge(items[index]?.integration_environment, items[index]?.source));
     });
   }
 
@@ -62,7 +62,8 @@
     if (status) next.set("status", status); if (search) next.set("search", search); if (page > 1) next.set("page", page);
     history.replaceState({}, "", `${location.pathname}${next.size ? `?${next}` : ""}`);
   }
-  function environmentBadge(environment) {
+  function environmentBadge(environment, source) {
+    if (source === "provider_sync") return '<span class="environment-badge environment-test">LEVERANCIER</span>';
     if (!environment) return '<span class="environment-badge environment-manual">HANDMATIG</span>';
     const value = String(environment).toLowerCase();
     return `<span class="environment-badge environment-${core.escapeHtml(value)}">${value === "production" ? "PRODUCTIE" : "TEST"}</span>`;
