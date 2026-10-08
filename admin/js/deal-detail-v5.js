@@ -34,8 +34,10 @@
 
   function render() {
     const target = document.getElementById("deal-detail");
-    const hotel = deal.hotel || {};
-    const image = core.imageUrl(deal.images);
+    const supplierHotel = supplierDeal?.supplier_content?.hotel;
+    const hotel = supplierHotel || deal.hotel || {};
+    const supplierImage = supplierHotel?.images?.[0];
+    const image = core.imageUrl(deal.images) || (typeof supplierImage === "string" && supplierImage.startsWith("https://") ? supplierImage : "");
     const inclusions = [["includes_breakfast", "Ontbijt"], ["includes_wifi", "Wifi"], ["includes_parking", "Parkeren"], ["includes_late_checkout", "Late check-out"], ["includes_welcome_drink", "Welkomstdrankje"]].filter(([field]) => deal[field]).map(([, text]) => `<span class="inclusion">✓ ${text}</span>`).join("");
     const environment = String(deal.integration_environment || "").toLowerCase();
     const isTestDeal = environment === "test";
