@@ -74,7 +74,16 @@ function evaluateAvailability(deal, supplier, search, now = Date.now()) {
   const monetary = (value) => value && value.currency==='EUR' && typeof value.amount==='number' && Number.isFinite(value.amount) && value.amount>0;
   const safe = compatible.filter(o=>monetary(o.offerRetailRate) && o.rates.every(r=>Array.isArray(r.retailRate?.taxesAndFees) && r.retailRate.taxesAndFees.every(t=>typeof t.included==='boolean' && t.currency==='EUR' && typeof t.amount==='number' && Number.isFinite(t.amount) && t.amount>=0)));
   if (!safe.length) return fail('unknown','De actuele prijs of lokale kosten zijn onvolledig. Boeken is geblokkeerd.');
-  const candidate = safe.sort((a,b)=>a.offerRetailRate.amount-b.offerRetailRate.amount)[0];
+  const oldFees = old.retailRate?.taxesAndFees;
+  const feeSignature = values => canonical(values.filter(t=>t.included===false).map(t=>({description:t.description,amount:t.amount,currency:t.currency})).sort((a,b)=>canonical(a).localeCompare(canonical(b))));
+  if (!Array.isArray(oldFees)) return fail('mapping_required','De goedgekeurde lokale kosten zijn onvolledig.');
+  const unchanged = safe.filter(o=>feeSignature(oldFees)===feeSignature(o.rates[0].retailRate.taxesAndFees));
+  if (!unchanged.length) {
+    const changed = safe.slice().sort((a,b)=>a.offerRetailRate.amount-b.offerRetailRate.amount)[0];
+    const local = changed.rates.flatMap(r=>r.retailRate.taxesAndFees).filter(t=>!t.included).map(t=>({description:t.description,amount:t.amount,currency:t.currency,pay_at_property:true}));
+    return {...fail('conditions_changed','De lokale kosten zijn gewijzigd sinds goedkeuring. Controleer de deal opnieuw.'),local_fees:local,local_fees_total:local.reduce((a,t)=>a+Math.round(t.amount*100),0)/100};
+  }
+  const candidate = unchanged.slice().sort((a,b)=>a.offerRetailRate.amount-b.offerRetailRate.amount)[0];
   const cents = v=>Math.round(v*100);
   const config = supplier.pricing_config;
   const price = cents(deal.price);
@@ -85,9 +94,6 @@ function evaluateAvailability(deal, supplier, search, now = Date.now()) {
   const margin = price-cost-processing-stripe;
   if (margin<Math.ceil(config.min_margin_amount*100-1e-8)) return fail('price_blocked','Dit aanbod haalt de ingestelde minimummarge niet tegen de goedgekeurde verkoopprijs.');
   const local = candidate.rates.flatMap(r=>r.retailRate.taxesAndFees).filter(t=>!t.included).map(t=>({description:t.description,amount:t.amount,currency:t.currency,pay_at_property:true}));
-  const oldFees = old.retailRate?.taxesAndFees;
-  const feeSignature = values => canonical(values.filter(t=>t.included===false).map(t=>({description:t.description,amount:t.amount,currency:t.currency})).sort((a,b)=>canonical(a).localeCompare(canonical(b))));
-  if (!Array.isArray(oldFees) || feeSignature(oldFees)!==feeSignature(candidate.rates[0].retailRate.taxesAndFees)) return {...fail('conditions_changed','De lokale kosten zijn gewijzigd sinds goedkeuring. Controleer de deal opnieuw.'),local_fees:local,local_fees_total:local.reduce((a,t)=>a+cents(t.amount),0)/100};
   return {...base,status:'available',available:true,message:'Actueel beschikbaar voor dit verblijf. Sandboxcontrole; betaling blijft uitgeschakeld.',supplier_amount:cost/100,processing_reserve:processing/100,stripe_reserve:stripe/100,margin_after_reserve:margin/100,local_fees:local,local_fees_total:local.reduce((a,t)=>a+cents(t.amount),0)/100,cancellation_policies:candidate.rates[0].cancellationPolicies,offer_id:candidate.offerId,room_name:candidate.rates[0].name,board_name:candidate.rates[0].boardName};
 }
 return evaluateAvailability($var.deal, $var.supplier, $var.rates);
