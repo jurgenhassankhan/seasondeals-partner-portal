@@ -19,6 +19,9 @@
   const container = document.getElementById("deal-detail");
   const dealId = new URLSearchParams(window.location.search).get("id");
   let deal = null;
+  let supplier = null;
+  const availabilityPreview = isAdmin && window.SEASONDEALS_AVAILABILITY_PREVIEW === true;
+  const availabilityBranch = 'nuitee-availability-2026-10-08';
   let gallery = [];
   let activePhoto = 0;
 
@@ -68,11 +71,18 @@
         deal = resolveDeals(data).find((item) => String(item?.id) === String(dealId));
       }
 
+      if (availabilityPreview) {
+        const supplierResponse = await fetch(`${CONFIG.adminEndpoint}/supplier-deals/${encodeURIComponent(dealId)}`, {headers:{Accept:'application/json',Authorization:`Bearer ${token}`,'X-Branch':availabilityBranch},cache:'no-store'});
+        if (!supplierResponse.ok) throw new Error('Leveranciersmapping kon niet worden geladen.');
+        supplier = (await supplierResponse.json()).supplier_deal;
+        if (!supplier || supplier.provider !== 'nuitee' || supplier.environment !== 'sandbox') throw new Error('Deze preview is alleen voor Nuitée-sandboxdeals.');
+      }
       if (!deal) return showError("Deze deal is niet beschikbaar", "De deal is niet gevonden binnen jouw beveiligde portaal.");
       gallery = getImages(deal);
       renderDeal();
       bindDealEvents();
       bindPreviewNavigation();
+      if (availabilityPreview) window.SeasonDealsSupplierAvailability.mount({form:document.getElementById('booking-form'),endpoint:`${CONFIG.adminEndpoint}/supplier-deals/${encodeURIComponent(dealId)}/availability`,tokenKey:CONFIG.tokenKey,branch:availabilityBranch,defaults:supplier.supplier_mapping?.request});
     } catch (error) {
       console.error("SeasonDeals preview failed:", error);
       showError("De testpreview kon niet worden geladen", error?.message || "Probeer het opnieuw vanuit het portaal.");
@@ -148,7 +158,7 @@
     document.querySelector(".lightbox-next")?.addEventListener("click", () => movePhoto(1));
     document.getElementById("deal-lightbox")?.addEventListener("click", (event) => { if (event.target.id === "deal-lightbox") closePhoto(); });
     document.addEventListener("keydown", handleKeyboard);
-    document.getElementById("booking-form")?.addEventListener("submit", startCheckout);
+    if (!availabilityPreview) document.getElementById("booking-form")?.addEventListener("submit", startCheckout);
     document.getElementById("share-deal")?.addEventListener("click", shareDeal);
     document.getElementById("save-deal")?.addEventListener("click", () => showToast("Deze favorietenfunctie koppelen we later aan je account."));
   }
@@ -181,7 +191,7 @@
   function getImages(item) { const values=[...(Array.isArray(item.images)?item.images:[]),item.image,item.cover_image,item.image_url]; return [...new Set(values.map((value)=>typeof value==="string"?value:value?.url).filter(Boolean))]; }
   function getAmenities(item) { return [[item.includes_breakfast,"☕","Ontbijt inbegrepen","Begin de dag ontspannen"],[item.includes_wifi,"⌁","Wifi inbegrepen","Blijf zorgeloos verbonden"],[item.includes_parking,"P","Parkeren inbegrepen","Comfortabel aankomen"],[item.includes_late_checkout,"◷","Late check-out","Nog iets langer genieten"],[item.includes_welcome_drink,"◇","Welkomstdrankje","Een warm welkom"]].filter(([active])=>active); }
   function renderAmenity([,icon,title,subtitle]) { return `<div class="amenity"><span class="amenity-icon">${icon}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle)}</small></div></div>`; }
-  function getRemaining(item) { const direct=number(item.remaining_inventory??item.available_quantity??item.inventory); return direct===null?null:Math.max(0,direct); }
+  function getRemaining(item) { if (availabilityPreview) return null; const direct=number(item.remaining_inventory??item.available_quantity??item.inventory); return direct===null?null:Math.max(0,direct); }
   function getCategory(item) { const raw=[item.category_slug,item.category?.slug,item.category?.name,item.category,item.deal_type,item.package_type,item.type].filter(v=>typeof v==="string").join(" ").toLowerCase(); if(/wellness|spa|sauna/.test(raw))return"wellness";if(/massage|beauty|behandeling/.test(raw))return"massage";if(/ticket|event|concert|festival/.test(raw))return"tickets";if(/attract|uitje|park|museum|activiteit/.test(raw))return"attraction";return"hotel"; }
   function formatCategory(value){return({hotel:"Hotel",wellness:"Wellness",massage:"Massage",tickets:"Tickets",attraction:"Attractie"})[value]||"Deal";}
   function toDate(value){if(!value)return null;const raw=Number(value);const date=Number.isFinite(raw)?new Date(raw<1e11?raw*1000:raw):new Date(value);return Number.isNaN(date.getTime())?null:date;}
