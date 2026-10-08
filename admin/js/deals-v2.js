@@ -9,10 +9,11 @@
     try {
       const admin = await core.requireAuth();
       if (!admin) return;
-      core.mountShell({ active: "deals", title: "Dealbeoordeling", subtitle: "Bekijk, zoek en beoordeel alle aanbiedingen van hotelpartners." }, admin);
+      core.mountShell({ active: "deals", title: "Deals", subtitle: "Alle aanbiedingen van partners en leveranciers. Het bestaande beoordelingsproces blijft leidend." }, admin);
       const form = document.getElementById("deal-filters");
       form.elements[0].value = params.get("search") || "";
       document.getElementById("status-filter").value = params.get("status") || "";
+      document.getElementById("source-filter").value = params.get("source") || "";
       form.addEventListener("submit", (event) => { event.preventDefault(); page = 1; updateUrl(); load(); });
       load();
     } catch (error) { showError(error.message); }
@@ -27,7 +28,16 @@
     if (status) query.set("status", status);
     if (search) query.set("search", search);
     try {
-      const data = await core.request(`/deals?${query}`);
+      const source = document.getElementById("source-filter").value;
+      let data;
+      if (source) {
+        query.delete("page"); query.delete("per_page");
+        const all = await window.AdminOfferData.all(`/deals?${query}`);
+        const filtered = all.filter(deal => source === "supplier" ? deal.source === "provider_sync" : deal.source !== "provider_sync");
+        const pages = Math.max(1, Math.ceil(filtered.length / 25));
+        page = Math.min(page, pages);
+        data = {items: filtered.slice((page - 1) * 25, page * 25), itemsTotal: filtered.length, pageTotal: pages, curPage: page};
+      } else { data = await core.request(`/deals?${query}`); }
       render(resolveItems(data));
       renderPagination(data);
     } catch (error) { showError(error.message); }
@@ -59,6 +69,8 @@
     const next = new URLSearchParams();
     const status = document.getElementById("status-filter").value;
     const search = document.getElementById("deal-search").value.trim();
+    const source = document.getElementById("source-filter").value;
+    if (source) next.set("source", source);
     if (status) next.set("status", status); if (search) next.set("search", search); if (page > 1) next.set("page", page);
     history.replaceState({}, "", `${location.pathname}${next.size ? `?${next}` : ""}`);
   }

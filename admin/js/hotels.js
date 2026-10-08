@@ -8,7 +8,7 @@
     try {
       const admin = await core.requireAuth();
       if (!admin) return;
-      core.mountShell({ active: "hotels", title: "Hotels", subtitle: "Bekijk aangesloten hotelpartners en beheer hun status." }, admin);
+      core.mountShell({ active: "hotels", title: "Partners", subtitle: "Eigen hotelpartneraccounts en hun status. Leveranciersaanbod beheer je onder Leveranciers." }, admin);
       document.getElementById("hotels-refresh")?.addEventListener("click", load);
       bindCreateHotel();
       load();
