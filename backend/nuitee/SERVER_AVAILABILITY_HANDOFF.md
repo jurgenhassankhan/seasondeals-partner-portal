@@ -8,7 +8,7 @@
 - Private reader #1141 compiled and tested with existing admin guard. Expired deal17 result returned unknown/available=false in 370ms. Approval, mapping and financial signature plus 60-second expiry are checked on every read.
 - Task #28 compiled, manual execution completed in 3.02s. Table105 shows deal17 available and fabricated prior deal16 unknown.
 - Selective merge to v1: ONLY five additions (two private APIs, two internal functions, one inactive task). Ten unrelated endpoint differences and branch middleware were excluded; destination backup enabled.
-- v1 task #32 has a supported 60-second schedule. Activation published. Automatic execution and signed-in updated Pages catalog are being verified before final completion claim.
+- v1 task #32 has a supported 60-second schedule. Activation published. Independent minute runs verified at 15:44 and 15:45 Amsterdam. Signed-in Pages catalog verified around 16:02: nhow photo and fixed €241.43, 1/2 approved sandbox offers visible. Subsequent expiry displayed 0/2 without altering deals, confirming the conservative hide behavior.
 
 ## Frontend
 
