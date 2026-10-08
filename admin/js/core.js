@@ -62,9 +62,10 @@
     const role = label(admin?.role || "admin");
     const nav = [
       ["dashboard", "index.html", "Dashboard", dashboardIcon()],
-      ["hotels", "hotels.html", "Hotels", hotelsIcon()],
+      ["hotels", "hotels.html", "Partners", hotelsIcon()],
+      ["suppliers", "suppliers.html", "Leveranciers", integrationsIcon()],
       ["orders", "orders.html", "Omzet & orders", ordersIcon()],
-      ["deals", "deals.html", "Dealbeoordeling", dealsIcon()],
+      ["deals", "deals.html", "Deals", dealsIcon()],
       ["integrations", "integrations.html", "Integratiebeheer", integrationsIcon()]
     ];
     const shell = document.createElement("div");
