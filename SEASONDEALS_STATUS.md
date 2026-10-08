@@ -23,6 +23,11 @@ Bij iedere nieuwe werksessie:
 
 ---
 
+## Opruiming Integratiebeheer — 8 oktober 2026
+
+- Het losse verwijzingsblok ‘Leveranciersaanbod en boekingen’ onder de integratietabel verwijderd. Nuitée blijft in de bestaande lijst; leverancierspagina en connectorcode zijn ongewijzigd.
+- Gecontroleerd: uitsluitend één HTML-sectie verwijderd; integratietabel, modals en scriptversies behouden. Jurgen heeft bevestigd dat Nuitée zichtbaar is in de lijst.
+
 ## Nuitée zichtbaar in Integratiebeheer — 8 oktober 2026
 
 - Nuitée verschijnt als alleen-lezen leverancierskoppeling in dezelfde integratietabel, zonder apart blok; huidige fase is sandbox, productie nog niet vrijgegeven. De weergave claimt geen actuele verbindingstest.
