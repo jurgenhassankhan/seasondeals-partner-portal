@@ -26,6 +26,7 @@
 - Browsercontrole bereikte het admin-inlogscherm; de beveiligde aanmelding gaf geen bevestiging en liep vast op een tooltimeout. Visuele controle en browserverbinding/CORS naar de private API zijn daarom nog niet aangetoond. Een merge bewijst geen werkende Pages-uitrol.
 
 ### Nog te doen voor publieke stap 3 en livegang
+- PR-review signaleert een conservatieve fout bij meerdere passende tarieven: eerst wordt het goedkoopste tarief gekozen, waardoor gewijzigde lokale kosten dat tarief blokkeren terwijl een ander passend tarief mogelijk de goedgekeurde kosten behoudt. Eerst op ongewijzigde kostensignatuur selecteren, daarna prijs/marge vergelijken; regressietest toevoegen en dezelfde policy in Xano bijwerken. Dit punt is nog niet opgelost.
 - Authenticated testpreview in browser verifiëren en eventuele aansluiting corrigeren.
 - Server-side catalogusverversing en publieke filtering voor verlopen/onbekende/onbeschikbare voorraad aansluiten; één onbeschikbare datum mag niet het hele hotel archiveren. Automatische verwijdering/herstel op de publieke website is nog niet gebouwd.
 - Productiecontrole en actuele prebook vóór betaling aansluiten op de orderflow. Kostenreserves (waaronder sandboxvloer €1,30 verwerking en ingestelde Stripe-reserve) zijn geen bewezen definitieve productiekosten.
