@@ -32,6 +32,14 @@
 - Productiecontrole en actuele prebook vóór betaling aansluiten op de orderflow. Kostenreserves (waaronder sandboxvloer €1,30 verwerking en ingestelde Stripe-reserve) zijn geen bewezen definitieve productiekosten.
 - Geen Nuitée-productiecredentials geactiveerd of leverancierdeals gepubliceerd. Webflow is deze stap niet gewijzigd.
 
+### Voortgang na verzoek “maak stap 3 af” — 8 oktober 2026
+- Tariefselectiefout hersteld op branch `feat/nuitee-step3-completion-2026-10-08`, draft PR #14. Policy en corresponderend XanoScript selecteren eerst ongewijzigde lokale kosten en daarna het goedkoopste passende aanbod.
+- Regressietests slagen voor goedkopere gewijzigde kosten plus een geldig alternatief, omgekeerde aanbodvolgorde, onvoldoende marge bij het geldige alternatief en uitsluitend gewijzigde kosten.
+- Xano #1140 bijgewerkt en gepubliceerd op ontwikkelbranch `nuitee-availability-2026-10-08`. Echte zoekrun voor deal #17 op 8 oktober (4,07s) vindt nu het geldige tarief: `available=true`, €201,19 inkoop, €241,43 verkoop, €31,44 marge na reserves en geen uitgesloten lokale kosten. Dit corrigeert de eerdere onterechte `conditions_changed`-uitkomst; het goedkope tarief met gewijzigde kosten wordt overgeslagen.
+- Geen gewijzigde dealrecords, productiepublicatie, betaling of boeking.
+- Adminaanmelding ingediend via de beveiligde browserfunctie, maar het portaal meldt **“Dit beheerdersaccount is gedeactiveerd of heeft geen toegang.”** Browsertest is daarom niet voltooid. Geen accountrechten aangepast.
+- Stap 3 blijft onafgerond: werkende adminaanmelding/browsercontrole en publieke catalogusverversing/filtering blijven nodig. PR #14 is geen volledige oplevering van stap 3.
+
 ## Gebruik van dit bestand
 
 Dit bestand moet na iedere technische wijziging worden bijgewerkt.
