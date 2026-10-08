@@ -9,6 +9,10 @@ query "supplier-deals/{deal_id}/availability" verb=GET {
     int guests
   }
   stack {
+    util.set_header {
+      value = "Cache-Control: private, no-store"
+      duplicates = "replace"
+    }
     function.run "admin/guard" {
       input = {permission: null}
     } as $admin
@@ -32,7 +36,7 @@ function validateRequest(deal, supplier, input, now = Date.now()) {
   if (deal.status !== 'active' || !deal.approved_at || deal.deleted_at) return fail('NOT_APPROVED','Keur de testdeal eerst goed.');
   const dates = [input.checkin,input.checkout].map(v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? Date.parse(v+'T00:00:00Z') : NaN);
   if (dates.some((v,i) => !Number.isFinite(v) || new Date(v).toISOString().slice(0,10) !== [input.checkin,input.checkout][i]) || dates[1] <= dates[0] || dates[0] < Math.floor(now/86400000)*86400000) return fail('INVALID_DATES','Kies geldige toekomstige verblijfsdata.');
-  if (dates[0] < Number(deal.travel_period_start) || dates[1] > Number(deal.travel_period_end) || (dates[1]-dates[0])/86400000 < Number(deal.minimum_nights || 1)) return fail('OUTSIDE_DEAL','Dit verblijf valt buiten de goedgekeurde dealperiode of verblijfsduur.');
+  if (!Number.isFinite(Number(deal.travel_period_start)) || !Number.isFinite(Number(deal.travel_period_end)) || !(Number(deal.travel_period_start)>0) || !(Number(deal.travel_period_end)>Number(deal.travel_period_start)) || dates[0] < Number(deal.travel_period_start) || dates[1] > Number(deal.travel_period_end) || (dates[1]-dates[0])/86400000 < Number(deal.minimum_nights || 1)) return fail('OUTSIDE_DEAL','Dit verblijf valt buiten de goedgekeurde dealperiode of verblijfsduur.');
   const mapping = supplier.supplier_mapping || supplier.supplier_content || {};
   const original = mapping.request;
   if (!original || !Array.isArray(original.occupancies) || original.occupancies.length !== 1 || original.occupancies[0].children?.length || !Number.isInteger(input.guests) || input.guests !== original.occupancies[0].adults) return fail('OCCUPANCY_NOT_APPROVED','Deze deal is goedgekeurd voor de opgeslagen kamerbezetting.');
