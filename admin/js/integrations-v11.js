@@ -30,11 +30,12 @@
       const integrations = getItems(data);
       currentIntegrations = integrations;
       renderConnectorOverview(integrations);
-      if (!integrations.length) {
+      const supplierRow = page === 1 && showNuiteeConnector(integrations) ? nuiteeConnectorRow() : "";
+      if (!integrations.length && !supplierRow) {
         target.innerHTML = '<div class="empty-state"><strong>Nog geen integraties</strong><span>Nieuwe hotelintegraties verschijnen hier zodra ze zijn aangemaakt.</span></div>';
       } else {
         target.className = "table-wrap";
-        target.innerHTML = `<table class="data-table"><thead><tr><th>Hotel</th><th>Provider</th><th>Omgeving</th><th>Synchronisatie</th><th>Status</th><th>Laatste resultaat</th><th>Acties</th></tr></thead><tbody>${integrations.map(row).join("")}</tbody></table>`;
+        target.innerHTML = `<table class="data-table"><thead><tr><th>Hotel / leverancier</th><th>Provider</th><th>Omgeving</th><th>Synchronisatie</th><th>Status</th><th>Laatste resultaat</th><th>Acties</th></tr></thead><tbody>${integrations.map(row).join("")}${supplierRow}</tbody></table>`;
         target.querySelectorAll("[data-integration-status]").forEach(select => select.addEventListener("change", () => updateStatus(select)));
         target.querySelectorAll("[data-manage-keys]").forEach(button => button.addEventListener("click", () => openKeyManager(button.dataset.manageKeys, button.dataset.integrationName)));
         target.querySelectorAll("[data-manage-connector]").forEach(button => button.addEventListener("click", () => openConnectorManager(button.dataset.manageConnector)));
@@ -122,6 +123,19 @@
     document.getElementById("supplier-bookings-next")?.addEventListener("click", () => { supplierPage++; loadSupplierBookings(); });
   }
 
+
+  function showNuiteeConnector(integrations) {
+    return core.config.supplierDealsEnabled === true && !integrations.some(item => {
+      const provider = normalizeObject(item.provider || item.integration_provider) || {};
+      const name = String(provider.slug || provider.name || item.provider_name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      return name === "nuitee";
+    });
+  }
+
+  function nuiteeConnectorRow() {
+    return '<tr data-supplier-connector="nuitee"><td><div class="integration-cell"><strong>Nuitée</strong><span>Leverancierskoppeling</span></div></td><td><div class="integration-cell"><strong>Nuitée API</strong><span>nuitee</span></div></td><td>Sandbox</td><td><div class="integration-cell"><strong>API</strong><span>Aanbod en boekingen</span></div></td><td><span class="status-badge status-pending"><span></span>Sandboxfase</span></td><td><div class="integration-cell"><strong>Productie nog niet vrijgegeven</strong><span>Geen actuele verbindingstest uitgevoerd</span></div></td><td><div class="integration-actions"><a class="integration-key-button" href="suppliers.html">Leverancier bekijken</a></div></td></tr>';
+  }
+
   function row(item) {
     const hotel = normalizeObject(item.hotel) || {}, provider = normalizeObject(item.provider || item.integration_provider) || {};
     const status = item.status || "pending", environment = item.environment || "test";
@@ -133,10 +147,11 @@
   function renderConnectorOverview(integrations) {
     const target = document.getElementById("connector-overview");
     if (!target) return;
+    const supplierCount = showNuiteeConnector(integrations) ? 1 : 0;
     const active = integrations.filter(item => String(item.status || "").toLowerCase() === "active").length;
-    const testing = integrations.filter(item => String(item.environment || "test").toLowerCase() === "test").length;
+    const testing = integrations.filter(item => String(item.environment || "test").toLowerCase() === "test").length + supplierCount;
     const attention = integrations.filter(item => item.last_error_message || ["error", "revoked"].includes(String(item.status || "").toLowerCase())).length;
-    target.innerHTML = `<div class="connector-overview-head"><div><span class="eyebrow">Connector Framework</span><h3>Centraal connectorbeheer</h3><p>Technisch overzicht van alle hotelkoppelingen. Credentials worden hier nooit getoond.</p></div><span class="connector-framework-state"><i></i>Framework gepubliceerd</span></div><div class="connector-stats"><div><span>Totaal</span><strong>${integrations.length}</strong><small>hotelintegraties</small></div><div><span>Actief</span><strong>${active}</strong><small>beschikbare koppelingen</small></div><div><span>Testomgeving</span><strong>${testing}</strong><small>zonder productieverkeer</small></div><div class="${attention ? "has-attention" : ""}"><span>Aandacht nodig</span><strong>${attention}</strong><small>${attention ? "controleer fouten" : "geen fouten gemeld"}</small></div></div>`;
+    target.innerHTML = `<div class="connector-overview-head"><div><span class="eyebrow">Connector Framework</span><h3>Centraal connectorbeheer</h3><p>Technisch overzicht van hotel- en leverancierskoppelingen. Credentials worden hier nooit getoond.</p></div><span class="connector-framework-state"><i></i>Framework gepubliceerd</span></div><div class="connector-stats"><div><span>Totaal</span><strong>${integrations.length + supplierCount}</strong><small>integraties</small></div><div><span>Actief</span><strong>${active}</strong><small>beschikbare koppelingen</small></div><div><span>Testomgeving</span><strong>${testing}</strong><small>zonder productieverkeer</small></div><div class="${attention ? "has-attention" : ""}"><span>Aandacht nodig</span><strong>${attention}</strong><small>${attention ? "controleer fouten" : "geen fouten gemeld"}</small></div></div>`;
   }
 
   function openConnectorManager(integrationId) {
@@ -494,7 +509,7 @@
     const paging = normalizeObject(data.paging) || data;
     const current = Number(paging.curPage || paging.page || page) || 1;
     const pages = Math.max(1, Number(paging.pageTotal || paging.total_pages || 1) || 1);
-    const total = Number(paging.itemsTotal || paging.total || visibleCount) || visibleCount;
+    const total = (Number(paging.itemsTotal || paging.total || visibleCount) || visibleCount) + (showNuiteeConnector(currentIntegrations) ? 1 : 0);
     page = current;
     document.getElementById("integrations-pagination").innerHTML = `<div class="pagination"><span>${total} integraties · pagina ${current} van ${pages}</span><div class="pagination-buttons"><button id="integrations-prev" ${current <= 1 ? "disabled" : ""}>←</button><button id="integrations-next" ${current >= pages ? "disabled" : ""}>→</button></div></div>`;
     document.getElementById("integrations-prev")?.addEventListener("click", () => { page--; load(); });
