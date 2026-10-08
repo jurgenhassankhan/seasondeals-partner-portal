@@ -76,6 +76,7 @@
         if (!supplierResponse.ok) throw new Error('Leveranciersmapping kon niet worden geladen.');
         supplier = (await supplierResponse.json()).supplier_deal;
         if (!supplier || supplier.provider !== 'nuitee' || supplier.environment !== 'sandbox') throw new Error('Deze preview is alleen voor Nuitée-sandboxdeals.');
+        if (deal && supplier.supplier_content?.hotel) deal.hotel = supplier.supplier_content.hotel;
       }
       if (!deal) return showError("Deze deal is niet beschikbaar", "De deal is niet gevonden binnen jouw beveiligde portaal.");
       gallery = getImages(deal);
