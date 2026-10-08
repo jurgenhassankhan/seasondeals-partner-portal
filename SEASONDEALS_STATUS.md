@@ -7,6 +7,30 @@
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
 
+## Nuitée actuele beschikbaarheid en prijsbewaking — 8 oktober 2026
+
+**Status: backend in ontwikkelbranch getest; aparte admin-testpreview samengevoegd in main via PR #13. Stap 3 voor de publieke website is nog niet afgerond.**
+
+### Afgerond en getest
+- Back-ups: GitHub `backup/pre-realtime-availability-2026-10-08` bevat de oorspronkelijke mainversie en Webflow-dealpagina custom-code-export. Xano `backup-pre-availability-2026-10-08` bewaart de backendlogica; een branch is geen afzonderlijke databack-up.
+- Private alleen-lezen Xano-route #1140: `GET supplier-deals/{deal_id}/availability`, uitsluitend gepubliceerd in `nuitee-availability-2026-10-08`. Bestaande adminauthenticatie en superadmin/platform_admin vereist. Geen wijzigingen in v1, records, orders, betalingen of reserveringen.
+- Nieuw aanbod wordt bij Nuitée opgevraagd en gecontroleerd op goedgekeurde bezetting, hotel/kamer/tarief/voorwaarden, geldige verblijfsperiode, EUR, lokale heffingen en minimummarge. De goedgekeurde verkoopprijs blijft gelijk. Ontbrekende of gewijzigde voorwaarden/kosten en onvoldoende marge blokkeren de uitkomst.
+- Echte nieuwe sandboxsearch voor deal #17 (nhow Amsterdam RAI, 10–12 november, twee volwassenen) retourneerde €198,96 leveranciersprijs en €21,92 uitgesloten lokale kosten. De goedgekeurde prijs bleef €241,43; resultaat `conditions_changed` en niet boekbaar omdat de goedgekeurde inhoud geen uitgesloten lokale kosten bevatte.
+- Ongeldige verblijfsdata werden vóór een providerrequest geweigerd. Policy- en controllerchecks slagen: oude asynchrone antwoorden, verlopen snapshots, providerfouten, vaste prijs, marge, lokale kosten en uitgeschakeld betalen.
+- Nuitée leverde geen exact kameraantal. `quantity=null`; aantal tarieven wordt nooit als voorraad geïnterpreteerd.
+
+### Gebouwd maar nog te verifiëren
+- PR #13: `https://github.com/jurgenhassankhan/seasondeals-partner-portal/pull/13`, squashcommit `f09e293c6fd0b0552c7c673afc26514c065a5dc0`.
+- Afzonderlijke `nuitee-availability-preview.html` met bestaande adminsessie, expliciete ontwikkelbranch, nieuwe controle bij datumwijziging en vernieuwing na 45 seconden; snapshots maximaal 60 seconden geldig. Boeken/betalen blijven uitgeschakeld.
+- Deal-detail toont voor een actieve Nuitée-sandboxdeal de link “Actuele beschikbaarheid testen”. Bestaande dealgoedkeuring en normale preview niet gewijzigd.
+- Browsercontrole bereikte het admin-inlogscherm; de beveiligde aanmelding gaf geen bevestiging en liep vast op een tooltimeout. Visuele controle en browserverbinding/CORS naar de private API zijn daarom nog niet aangetoond. Een merge bewijst geen werkende Pages-uitrol.
+
+### Nog te doen voor publieke stap 3 en livegang
+- Authenticated testpreview in browser verifiëren en eventuele aansluiting corrigeren.
+- Server-side catalogusverversing en publieke filtering voor verlopen/onbekende/onbeschikbare voorraad aansluiten; één onbeschikbare datum mag niet het hele hotel archiveren. Automatische verwijdering/herstel op de publieke website is nog niet gebouwd.
+- Productiecontrole en actuele prebook vóór betaling aansluiten op de orderflow. Kostenreserves (waaronder sandboxvloer €1,30 verwerking en ingestelde Stripe-reserve) zijn geen bewezen definitieve productiekosten.
+- Geen Nuitée-productiecredentials geactiveerd of leverancierdeals gepubliceerd. Webflow is deze stap niet gewijzigd.
+
 ## Gebruik van dit bestand
 
 Dit bestand moet na iedere technische wijziging worden bijgewerkt.
