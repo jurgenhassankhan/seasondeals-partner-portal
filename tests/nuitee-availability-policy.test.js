@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const {validateRequest,evaluateAvailability} = require('../backend/nuitee/availability-policy');
+const {validateRequest,evaluateAvailability} = require('./policy');
 const now = Date.parse('2026-10-08T09:00:00Z');
 const deal = {id:17,status:'active',approved_at:now,deleted_at:0,price:241.43,minimum_nights:2,travel_period_start:Date.parse('2026-11-10'),travel_period_end:Date.parse('2026-11-12')};
 const rate = {name:'Nhow Room',boardType:'RO',boardName:'Room Only',adultCount:2,childCount:0,remarks:'',cancellationPolicies:{refundableTag:'NRFN',cancelPolicyInfos:[]},retailRate:{taxesAndFees:[]}};
@@ -27,6 +27,14 @@ assert.equal(evaluateAvailability(deal,supplier,withOffer({...offer,rates:[{...r
 const localOffer = {...offer,rates:[{...rate,retailRate:{taxesAndFees:[{amount:12.6,currency:'EUR',included:false,description:'City tax'}]}}]};
 assert.equal(evaluateAvailability(deal,supplier,withOffer(localOffer),now).status,'conditions_changed');
 assert.equal(evaluateAvailability(deal,supplier,withOffer(localOffer),now).local_fees_total,12.6);
+const changedCheap = {...localOffer,offerId:'changed-cheap',offerRetailRate:{amount:190,currency:'EUR'}};
+const unchangedDearer = {...offer,offerId:'unchanged-dearer',offerRetailRate:{amount:202,currency:'EUR'}};
+const multiple = values => ({success:true,data:[{hotelId:'lp225fcf',roomTypes:values}]});
+assert.equal(evaluateAvailability(deal,supplier,multiple([changedCheap,unchangedDearer]),now).offer_id,'unchanged-dearer');
+assert.equal(evaluateAvailability(deal,supplier,multiple([unchangedDearer,changedCheap]),now).status,'available');
+const unchangedUnprofitable = {...unchangedDearer,offerRetailRate:{amount:230,currency:'EUR'}};
+assert.equal(evaluateAvailability(deal,supplier,multiple([changedCheap,unchangedUnprofitable]),now).status,'price_blocked');
+assert.equal(evaluateAvailability(deal,supplier,multiple([changedCheap]),now).status,'conditions_changed');
 assert.equal(evaluateAvailability(deal,supplier,withOffer({...offer,rates:[{...rate,retailRate:{taxesAndFees:[{amount:12.6,currency:'EUR'}]}}]}),now).status,'unknown');
 assert.equal(JSON.stringify(deal),JSON.stringify({...deal}));
 console.log('Availability policy: date, approval, mapping, provider failure, fixed price, margin, tax and sandbox payment checks passed.');
