@@ -22,11 +22,13 @@ return ($var.suppliers||[]).slice(0,10);
             } as $result
           }
           catch {
-            debug.log { value = {deal_id: $item.deal_id, status: "refresh_failed"} }
+            debug.log {
+              value = {deal_id: $item.deal_id, status: "refresh_failed"}
+            }
           }
         }
       }
     }
   }
-  schedule = [{starts_on: 2026-10-08 12:00:00+0000, freq: 45}]
+  schedule = [{starts_on: 2026-10-08 12:00:00+0000, freq: 60}]
 }
