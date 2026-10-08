@@ -9,7 +9,7 @@
 
 ## Nuitée actuele beschikbaarheid en prijsbewaking — 8 oktober 2026
 
-**Status: ingelogde sandboxpreview en testcatalogus werken; serververversing en publieke stap 3 nog niet afgerond.**
+**Status: zelfstandige sandboxserververversing werkt; nieuwe cataloguscode gepubliceerd. Laatste visuele portalcontrole en publieke productiekoppeling blijven open.**
 
 ### Afgerond en getest
 - Back-ups: GitHub `backup/pre-realtime-availability-2026-10-08` bevat oorspronkelijke main en Webflow-custom-code-export. Xano `backup-pre-availability-2026-10-08` bewaart logica; branches delen tabelrecords en zijn geen afzonderlijke databack-up.
@@ -23,19 +23,24 @@
 - Tests voor policy/controller/catalog slagen. Snapshot-policytest slaagt voor verval, toekomstige/te lange tijdstempels, gewijzigde goedkeuring/prijs/reisperiode/mapping/kostenconfiguratie, pending, verkeerde deal/omgeving en betaling aan.
 - Nuitée levert hier geen exact kameraantal; quantity blijft null, tariefaantal is geen voorraad. Dit is periodiek bevestigde beschikbaarheid, geen kamerreservering of garantie.
 
+- Xano-toegang hersteld. Check #306 uitgevoerd: deal17 beschikbaar, vaste verkoop €241,43, leverancier €204,22, marge na reserves €28,41; can_pay=false.
+- Refresh #307 gebouwd en uitgevoerd (3,67s), alleen aparte snapshots in tabel105. Iedere run bezit zijn eigen record; reader selecteert nieuwste started_at/id, zodat oudere langzame runs nieuwere beschikbaarheid niet overschrijven.
+- Privé-snapshotroute #1141 gecompileerd en getest met adminauth/guard: verlopen resultaat unknown/available=false in 370ms. Goedkeuring, prijs, mapping en configuratie opnieuw vergelijken; maximaal 60 seconden geldig.
+- Sandboxtaak #28 handmatig uitgevoerd (3,02s). Nieuwe records: echte testdeal17 available, fictieve eerdere deal16 unknown.
+- Alleen vijf nieuwe onderdelen naar v1 gemerged (twee private routes, twee functies, één inactieve taak); tien afwijkende bestaande endpoints en middleware uitgesloten. Doelbranchback-up aangevinkt.
+- v1-taak #32 geactiveerd en gepubliceerd met minuutinterval. Zelfstandige runs om 15:44 en 15:45 Amsterdam aangetoond: tabel105 van drie naar zeven records; deal17 telkens available, deal16 unknown. Geen open aanbodpagina of handmatige Run nodig.
+- PR15 merged a21583844ea2234e17a2a3e420b9a63c5910818b; Pages-uitrol geslaagd. Private catalogus leest nu v1 availability-snapshot, zodat het openen van de catalogus geen Nuitée-search start. Datumpreview blijft verse directe sandboxcontroles gebruiken. Syntax en gewijzigde catalogus/snapshotpolicytests slagen.
+
 ### Gebouwd maar nog te verifiëren
-- Aparte tabel `supplier_availability_snapshots` #105 aangemaakt, leeg; 38 tabellen. Geen bestaande tabelvelden hernoemd of verwijderd.
-- Interne functie `supplier/availability/check` #306 aangemaakt vanuit de geteste #1140-logica. Compile/save geslaagd, uitvoering van deze nieuwe functie zelf nog niet getest.
-- Draft PR #15: `https://github.com/jurgenhassankhan/seasondeals-partner-portal/pull/15`. Bevat voorbereide refreshfunctie, private snapshotreader, expliciet inactieve sandboxachtergrondtaak, tabelschema, policytest en exacte vervolgnotities. Deze onderdelen zijn niet gemerged of als voltooid aangemerkt.
-- Browserbediening van Xano wordt na veilige aanmelding geblokkeerd door credential protection. Gedocumenteerde navigatie en nieuwe tab geprobeerd; blokkade blijft bij Add function. Handmatige browserovername aangeboden. Dit is geen gedeactiveerd adminaccount en geen bewezen Xano-storing.
+- Nieuwe servergestuurde catalogus gepubliceerd; laatste ingelogde visuele controle open. Opnieuw gebruikte portaalinlog gaf “Dit beheerdersaccount is gedeactiveerd of heeft geen toegang.” Geen rechten gewijzigd. Bestaande geteste vormgeving behouden, uitsluitend beschikbaarheidsbron gewijzigd.
+- Fresh snapshotreader in v1 nog afzonderlijk via HTTP/integratietest verifiëren; verlopen reader op ontwikkelbranch getest, automatische opslagsuccessen op v1 bewezen.
 
 ### Nog te doen voor publieke stap 3 en livegang
-- Xano-bediening herstellen; #306 uitvoeren, refreshfunctie/snapshotroute/taak aanmaken, compile/run testen en automatische serververversing zonder open browser aantonen.
-- Snapshotwijzigingen mogen alleen aparte voorraadrecords schrijven. Failure/pending invalideert oude beschikbaarheid; current approval/mapping/pricing signature en maximaal 60 seconden geldigheid moeten aan leeskant worden geverifieerd.
-- Voorkom overlappende refreshworkers of vervang generatiecontrole door een bewezen atomaire guard. Huidige voorbereide taak heeft uitsluitend een sandboxlimiet van tien mappings; productieplanning/paginering/rate limits nog uitwerken.
-- Private catalogus gebruikt nu rechtstreekse #1140-controles zolang hij open is. Nog geen browseronafhankelijke serververversing of publieke catalogusfilter aangesloten.
-- Productiecatalogus/detailfilter met beschikbaarheid aansluiten achter productiepoort; onbeschikbaarheid voor één datum mag het hele hotel niet archiveren. Webflow is deze stap niet gewijzigd.
-- Actuele prebook/definitieve kosten vóór betaling en de order-/betaal-/leveranciersboekingflow afronden in volgende stappen. Sandboxvloer €1,30 processing en ingestelde Stripe-reserve zijn geen bewezen definitieve productiekosten.
+- Juiste adminportaalaccount aanmelden en nieuwe snapshotcatalogus visueel controleren.
+- Sandboxplanning: maximaal tien mappings, per minuut. Productie vereist eerlijke paginering, providerlimieten en begrensde snapshotbewaring. Afzonderlijke records voorkomen overschrijven door overlappende workers; dit is geen onbeperkt productiearchief.
+- Checking/fout/verval verbergt beschikbaarheid; minuutinterval met 60 seconden geldigheid kan kort conservatief verborgen aanbod veroorzaken.
+- Publieke productiecatalogus/detailfilter aansluiten achter productiepoort; onbeschikbaarheid voor één datum mag het hele hotel niet archiveren. Webflow niet gewijzigd.
+- Prebook/definitieve kosten vóór betaling en order-/betaal-/leveranciersboeking afronden in volgende stappen. Sandboxvloer €1,30 processing en Stripe-reserve zijn geen bewezen productiekosten.
 - Publieke provider_sync-poorten in v1 blijven dicht. Geen productiecredentials, echte boeking, betaling of publieke Nuitée-deal geactiveerd.
 
 ## Gebruik van dit bestand
@@ -369,6 +374,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 | Datum | Wijziging |
 |---|---|
+| 2026-10-08 | Zelfstandige serververversing: check306, refresh307, private reader1141 en taak28 gebouwd; alleen vijf toevoegingen naar v1. Taak32 per minuut actief, runs15:44/15:45 bewezen. PR15/Pages gepubliceerd; laatste portalcontrole open door geweigerde adminaanmelding. Publieke productiepoort behouden. |
 | 2026-10-08 | PR14 gepubliceerd en ingelogd getest: nhow beschikbaar voor €241,43 met foto; 1/2 sandboxdeals in verse catalogus, 45s verversing. Tariefselectiefout opgelost. Snapshotopslag #105 en checkfunctie #306 aangemaakt; overige serververversing voorbereid in draft PR15 maar geblokkeerd door Xano-browserbediening. Publieke stap3 blijft open. |
 | 2026-10-08 | Publieke sandboxlekkage na goedkeuring hersteld: provider_sync geblokkeerd in publieke lijst, beide detailroutes en normale checkout/orderroutes. Lijst zonder #16/#17 en Not Found voor /deal/17 in Xano bevestigd. Adminafbeeldingfallback toegevoegd; zichtbare foto nog te bevestigen. |
 | 2026-10-08 | Werkelijk Nuitée-sandboxtarief voor nhow Amsterdam RAI opgehaald en opgeslagen als conceptdeal #17 / supplier_deal #2 (€201,19 leverancier, €241,43 verkoop; twee nachten). Brondata en inhoud opgenomen; supplierhotelnaam/foto in portalcode aangesloten. Jurgen doet de portalcontrole. Import blijft ongepubliceerd; geen publieke deal of echte transactie. |
