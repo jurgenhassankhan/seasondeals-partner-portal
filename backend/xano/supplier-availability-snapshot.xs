@@ -2,11 +2,21 @@
 query "supplier-deals/{deal_id}/availability-snapshot" verb=GET {
   api_group = "Admin"
   auth = "admin_users"
-  input { int deal_id }
+  input {
+    int deal_id
+  }
   stack {
-    util.set_header { value = "Cache-Control: private, no-store" duplicates = "replace" }
-    function.run "admin/guard" { input = {permission: null} } as $admin
-    precondition ($admin.role == "superadmin" || $admin.role == "platform_admin") { error_type = "accessdenied" error = "Geen toegang tot leverancierscontrole." }
+    util.set_header {
+      value = "Cache-Control: private, no-store"
+      duplicates = "replace"
+    }
+    function.run "admin/guard" {
+      input = {permission: null}
+    } as $admin
+    precondition ($admin.role == "superadmin" || $admin.role == "platform_admin") {
+      error_type = "accessdenied"
+      error = "Geen toegang tot leverancierscontrole."
+    }
     db.query deals {
       where = $db.deals.id == $input.deal_id
       return = {type: "single"}
