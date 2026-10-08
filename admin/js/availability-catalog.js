@@ -1,28 +1,42 @@
 (() => {
   'use strict';
-  const core=window.AdminCore;
-  const cards=document.getElementById('availability-cards'),summary=document.getElementById('availability-summary');
-  let catalog,rows=[],expiryTimer;
+  const core=window.AdminCore,table=document.getElementById('availability-rows'),summary=document.getElementById('availability-summary');
+  const search=document.getElementById('availability-search'),filter=document.getElementById('availability-filter'),pager=document.getElementById('availability-pagination');
+  let catalog,rows=[],states=[],availableIds=new Set(),expiryTimer,page=1;
+  const name=d=>d.supplier.supplier_content?.hotel?.name||d.title||'Hotel';
+  function status(d){const s=states.find(s=>s.id===d.id);if(availableIds.has(d.id))return ['available','Beschikbaar'];if(s?.status==='checking')return ['checking','Wordt gecontroleerd'];if(s?.status==='unavailable')return ['unavailable','Niet beschikbaar'];return ['unknown','Niet bevestigd'];}
+  function render(){
+    const q=search.value.trim().toLocaleLowerCase('nl'),selected=filter.value;
+    const filtered=rows.filter(d=>name(d).toLocaleLowerCase('nl').includes(q)&&(!selected||status(d)[0]===selected));
+    const pages=Math.max(1,Math.ceil(filtered.length/20));page=Math.min(page,pages);
+    table.replaceChildren();
+    for(const d of filtered.slice((page-1)*20,page*20)){
+      const tr=document.createElement('tr'),hotel=document.createElement('td'),wrap=document.createElement('div');wrap.className='availability-hotel';
+      const image=core.imageUrl(d.images)||core.imageUrl(d.external_image_urls);
+      if(image){const img=document.createElement('img');img.src=image;img.alt='';img.loading='lazy';wrap.append(img);}
+      const title=document.createElement('strong');title.textContent=name(d);wrap.append(title);hotel.append(wrap);tr.append(hotel);
+      const s=states.find(s=>s.id===d.id),values=[core.money(d.price),status(d)[1],s?.checked_at?new Date(s.checked_at).toLocaleString('nl-NL'):'Nog geen bevestigde controle'];
+      for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}
+      const action=document.createElement('td'),a=document.createElement('a');a.href='../nuitee-availability-preview.html?portal=admin&id='+encodeURIComponent(d.id);a.textContent='Verblijf controleren';action.append(a);tr.append(action);table.append(tr);
+    }
+    if(!filtered.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.textContent=rows.length?'Geen deals gevonden met deze filters.':'Geen goedgekeurde Nuitée-sandboxdeals.';tr.append(td);table.append(tr);}
+    document.getElementById('availability-page').textContent=`Pagina ${page} van ${pages} · ${filtered.length} deals`;
+    document.getElementById('availability-prev').disabled=page===1;document.getElementById('availability-next').disabled=page===pages;
+    pager.hidden=!rows.length;
+  }
   async function init(){
     const admin=await core.requireAuth();if(!admin)return;
-    core.mountShell({active:'suppliers',title:'Actuele aanbodtest',subtitle:'Beveiligde sandboxcatalogus — geen publieke voorraad of boekingen.'},admin);
+    core.mountShell({active:'suppliers',title:'Nuitée-beschikbaarheid',subtitle:'Alle goedgekeurde sandboxdeals, met hun actuele beschikbaarheidsstatus.'},admin);
     if(!['superadmin','platform_admin'].includes(admin.role))throw Error('Je rol mag deze test niet uitvoeren.');
-    const deals=(await window.AdminOfferData.all('/deals')).filter(d=>d.source==='provider_sync' && d.status==='active' && d.approved_at && !d.deleted_at);
-    for(const deal of deals){const detail=await core.request('/supplier-deals/'+encodeURIComponent(deal.id),{cache:'no-store'});if(detail.supplier_deal?.provider==='nuitee' && detail.supplier_deal.environment==='sandbox')rows.push({...deal,supplier:detail.supplier_deal});}
-    catalog=window.SeasonDealsAvailabilityCatalog.createCatalog({request:async deal=>{
-      const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),20000);
-      try{return await core.request('/supplier-deals/'+encodeURIComponent(deal.id)+'/availability-snapshot',{signal:abort.signal,cache:'no-store'});}finally{clearTimeout(timeout);}
-    },render:(available,states)=>{
-      summary.textContent=available.length+' van '+states.length+' goedgekeurde sandboxdeals actueel beschikbaar voor hun opgeslagen verblijfsdata. Servercontrole iedere minuut; dit overzicht leest de resultaten iedere 45 seconden. Dit reserveert geen kamer.';
-      cards.replaceChildren();
-      for(const deal of available){const card=document.createElement('article');card.className='panel';const hotel=deal.supplier.supplier_content?.hotel;const image=core.imageUrl(deal.images)||core.imageUrl(deal.external_image_urls);if(image){const img=document.createElement('img');img.src=image;img.alt=hotel?.name||deal.title;img.style.cssText='width:100%;height:200px;object-fit:cover';card.append(img);}const title=document.createElement('h2');title.textContent=hotel?.name||deal.title;const price=document.createElement('p');price.textContent=core.money(deal.price)+' · actueel beschikbaar · exact kameraantal niet geleverd';const link=document.createElement('a');link.className='secondary-button';link.href='../nuitee-availability-preview.html?portal=admin&id='+encodeURIComponent(deal.id);link.textContent='Verblijf controleren';card.append(title,price,link);cards.append(card);}
-      if(!available.length){const empty=document.createElement('p');empty.textContent='Geen vers bevestigd aanbod om te tonen. Deals worden niet verwijderd of afgekeurd; na een geslaagde controle verschijnen ze opnieuw.';cards.append(empty);}
-    }});
+    const deals=(await window.AdminOfferData.all('/deals')).filter(d=>d.source==='provider_sync'&&d.status==='active'&&d.approved_at&&!d.deleted_at);
+    let index=0;await Promise.all([0,1,2,3].map(async()=>{while(index<deals.length){const deal=deals[index++],detail=await core.request('/supplier-deals/'+encodeURIComponent(deal.id),{cache:'no-store'});if(detail.supplier_deal?.provider==='nuitee'&&detail.supplier_deal.environment==='sandbox')rows.push({...deal,supplier:detail.supplier_deal});}}));
+    rows.sort((a,b)=>name(a).localeCompare(name(b),'nl')||a.id-b.id);
+    catalog=window.SeasonDealsAvailabilityCatalog.createCatalog({request:async deal=>{const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),20000);try{return await core.request('/supplier-deals/'+encodeURIComponent(deal.id)+'/availability-snapshot',{signal:abort.signal,cache:'no-store'});}finally{clearTimeout(timeout);}},render:(available,nextStates)=>{availableIds=new Set(available.map(d=>d.id));states=nextStates;summary.textContent=`${available.length} van ${rows.length} goedgekeurde sandboxdeals beschikbaar voor de opgeslagen verblijfsdata. Servercontrole iedere minuut. Alle deals blijven in dit overzicht; boeken en betalen zijn uitgeschakeld.`;render();}});
+    for(const el of [search,filter])el.addEventListener(el===search?'input':'change',()=>{page=1;render();});
+    document.getElementById('availability-prev').addEventListener('click',()=>{page--;render();});document.getElementById('availability-next').addEventListener('click',()=>{page++;render();});
     document.getElementById('availability-refresh').addEventListener('click',()=>catalog.refresh(rows));
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)catalog.refresh(rows);});
-    expiryTimer=setInterval(()=>catalog.expire(),1000);
-    window.addEventListener('pagehide',()=>{catalog.dispose();clearInterval(expiryTimer);},{once:true});
-    await catalog.refresh(rows);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)catalog.refresh(rows);});expiryTimer=setInterval(()=>catalog.expire(),1000);
+    window.addEventListener('pagehide',()=>{catalog.dispose();clearInterval(expiryTimer);},{once:true});await catalog.refresh(rows);
   }
-  init().catch(e=>{summary.textContent=e.message;cards.replaceChildren();});
+  init().catch(e=>{summary.textContent=e.message;});
 })();
