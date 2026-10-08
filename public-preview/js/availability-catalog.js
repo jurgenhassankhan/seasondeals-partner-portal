@@ -5,10 +5,10 @@
   }
   function createCatalog({request,render,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}) {
     let rows=[],snapshots=new Map(),generation=0,timer=null,disposed=false;
-    const show=()=>render(rows.filter(d=>visible(d,snapshots.get(d.id),now())),rows.map(d=>({id:d.id,status:snapshots.get(d.id)?.status || 'checking'})));
+    const show=()=>render(rows.filter(d=>visible(d,snapshots.get(d.id),now())),rows.map(d=>({id:d.id,status:snapshots.get(d.id)?.status==='available' && !visible(d,snapshots.get(d.id),now())?'unknown':(snapshots.get(d.id)?.status || 'checking'),checked_at:snapshots.get(d.id)?.checked_at})));
     async function refresh(next=rows) {
       if(disposed)return;
-      rows=next.filter(d=>d.status==='active' && d.approved_at && !d.deleted_at);snapshots.clear();clearTimer(timer);const run=++generation;show();
+      rows=next.filter(d=>d.status==='active' && d.approved_at && !d.deleted_at);for(const id of snapshots.keys())if(!rows.some(d=>d.id===id))snapshots.delete(id);clearTimer(timer);const run=++generation;show();
       let index=0;
       async function worker(){while(index<rows.length){const deal=rows[index++];let result;try{result=await request(deal);}catch{result={status:'unknown'};}if(disposed || run!==generation)return;snapshots.set(deal.id,result);show();}}
       await Promise.all([worker(),worker()]);
