@@ -26,9 +26,7 @@ return {signature:approvalSignature($var.deal,$var.supplier),started_at:Date.now
       """
       timeout = 5
     } as $context
-    db.add_or_edit supplier_availability_snapshots {
-      field_name = "deal_id"
-      field_value = $input.deal_id
+    db.add supplier_availability_snapshots {
       data = {deal_id: $input.deal_id, environment: "sandbox", started_at: $context.started_at, checked_at: null, valid_until: null, approval_signature: $context.signature, status: "checking", snapshot: null}
     } as $pending
     var $result {
@@ -54,19 +52,14 @@ return {...result,deal_id:$input.deal_id,environment:'sandbox',checked_at:now,va
       """
       timeout = 5
     } as $snapshot
-    db.get supplier_availability_snapshots {
+    // Each refresh owns its row. Readers select the newest started row,
+    // so a slower older run cannot overwrite a newer observation.
+    db.edit supplier_availability_snapshots {
       field_name = "id"
       field_value = $pending.id
-    } as $current
-    conditional {
-      if ($current.started_at == $context.started_at) {
-        db.edit supplier_availability_snapshots {
-          field_name = "id"
-          field_value = $pending.id
-          data = {checked_at: $snapshot.checked_at, valid_until: $snapshot.valid_until, status: $snapshot.status, snapshot: $snapshot}
-        } as $saved
-      }
-    }
+      data = {checked_at: $snapshot.checked_at, valid_until: $snapshot.valid_until, status: $snapshot.status, snapshot: $snapshot}
+    } as $saved
+
   }
   response = $snapshot
 }
