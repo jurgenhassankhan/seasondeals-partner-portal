@@ -1,6 +1,8 @@
 // Refresh only the approved reference stay. No deal, order or booking writes.
 function "supplier/availability/refresh" {
-  input { int deal_id }
+  input {
+    int deal_id
+  }
   stack {
     db.query deals {
       where = $db.deals.id == $input.deal_id
@@ -48,7 +50,7 @@ return {signature:approvalSignature($var.deal,$var.supplier),started_at:Date.now
       code = """
 const now=Date.now();
 const result=$var.result||{};
-return {...result,deal_id:$input.deal_id,environment:'sandbox',checked_at:now,valid_until:now+60000,customer_price:Number($var.deal?.price),currency:'EUR',can_pay:false,quantity:null,quantity_known:false};
+return {...result,deal_id:$input.deal_id,environment:'sandbox',checked_at:now,valid_until:now+90000,customer_price:Number($var.deal?.price),currency:'EUR',can_pay:false,quantity:null,quantity_known:false};
       """
       timeout = 5
     } as $snapshot
@@ -63,3 +65,4 @@ return {...result,deal_id:$input.deal_id,environment:'sandbox',checked_at:now,va
   }
   response = $snapshot
 }
+
