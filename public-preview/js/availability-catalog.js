@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
   function visible(deal,snapshot,now=Date.now()) {
-    return deal?.status==='active' && !!deal.approved_at && !deal.deleted_at && snapshot?.deal_id===deal.id && snapshot.environment==='sandbox' && snapshot.status==='available' && snapshot.available===true && snapshot.can_pay===false && Number.isFinite(snapshot.checked_at) && Number.isFinite(snapshot.valid_until) && snapshot.checked_at<=now+10000 && snapshot.checked_at<=now && snapshot.valid_until>now && snapshot.valid_until-snapshot.checked_at<=60000 && snapshot.valid_until>snapshot.checked_at && snapshot.customer_price===Number(deal.price) && snapshot.currency==='EUR';
+    return deal?.status==='active' && !!deal.approved_at && !deal.deleted_at && snapshot?.deal_id===deal.id && snapshot.environment==='sandbox' && snapshot.status==='available' && snapshot.available===true && snapshot.can_pay===false && Number.isFinite(snapshot.checked_at) && Number.isFinite(snapshot.valid_until) && snapshot.checked_at<=now+10000 && snapshot.checked_at<=now && snapshot.valid_until>now && snapshot.valid_until-snapshot.checked_at<=90000 && snapshot.valid_until>snapshot.checked_at && snapshot.customer_price===Number(deal.price) && snapshot.currency==='EUR';
   }
   function createCatalog({request,render,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}) {
     let rows=[],snapshots=new Map(),generation=0,timer=null,disposed=false;
