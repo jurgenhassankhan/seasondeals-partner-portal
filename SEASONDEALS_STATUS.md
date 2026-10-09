@@ -16,9 +16,12 @@
 - Taak #36 handmatig uitgevoerd in 3,32s; oudste controles eerst, maximaal20 kandidaten, sequentiële aanvragen en 45s startbudget. v1-taak #32 opnieuw actief gepubliceerd na selectieve merge. Productiequotum en opschaalcapaciteit moeten afzonderlijk bevestigd worden.
 - Regressies voor verval, gewijzigde prijzen/configuratie, negatieve resultaten, pendingtimeout en eerlijke rotatie over41 proefdeals slagen. Bestaande20-rijentabel/search/filtertests en nieuwe bezoekerspreviewtest slagen.
 
-### Gebouwd, gepubliceerde browsercontrole nog te verifiëren
+### Gepubliceerd; laatste ingelogde browsercontrole nog open
+- PR17 samengevoegd als `7044524ff8a7747db4accdaab64d377ab8b45de9`; Pages-uitrol #37936400362 geslaagd. v1-taaklijst na publicatie toont taak32 Live: Active, Draft: Active, every1min.
 - Beveiligde `admin/availability-website-preview.html` gebruikt bestaande adminauth en private v1-snapshots. In bezoekersstijl verschijnen alleen beschikbare goedgekeurde sandboxdeals, met foto, vaste prijs en link naar bestaande verse datumselectie. Geen onbevestigd kameraantal. Zoekveld en twintig kaarten per pagina.
 - Admincatalogus linkt naar bezoekerspreview; tabel en goedkeuringsproces behouden. Client accepteert maximaal90s snapshots conform server. Geen anonieme sandboxpublicatie of betaalroute geopend.
+
+- Laatste portalcontrole: beveiligde aanmelding ingediend, maar canonieke catalogus keert terug naar het loginformulier; ingelogde bezoekerspreview vandaag niet geverifieerd. Browserobservatie was tijdelijk beperkt na credentialdelivery. Geen herhaalde credentialinvoer uitgevoerd; bestaande ingelogde controle van8okt blijft afzonderlijk bewijs voor de oude versie.
 
 ### Nog te doen vóór productie
 - Publieke productiecatalogus/detailfilter en Webflow achter productiepoort aansluiten na productiegegevens en gehele betaal-/boekingsflow. De beschermde bezoekerspreview is een test, geen publieke Webflow-livegang.
