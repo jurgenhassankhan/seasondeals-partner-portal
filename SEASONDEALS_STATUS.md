@@ -16,12 +16,13 @@
 - Taak #36 handmatig uitgevoerd in 3,32s; oudste controles eerst, maximaal20 kandidaten, sequentiële aanvragen en 45s startbudget. v1-taak #32 opnieuw actief gepubliceerd na selectieve merge. Productiequotum en opschaalcapaciteit moeten afzonderlijk bevestigd worden.
 - Regressies voor verval, gewijzigde prijzen/configuratie, negatieve resultaten, pendingtimeout en eerlijke rotatie over41 proefdeals slagen. Bestaande20-rijentabel/search/filtertests en nieuwe bezoekerspreviewtest slagen.
 
-### Gepubliceerd; laatste ingelogde browsercontrole nog open
+### Gepubliceerd en ingelogd gecontroleerd
 - PR17 samengevoegd als `7044524ff8a7747db4accdaab64d377ab8b45de9`; Pages-uitrol #37936400362 geslaagd. v1-taaklijst na publicatie toont taak32 Live: Active, Draft: Active, every1min.
 - Beveiligde `admin/availability-website-preview.html` gebruikt bestaande adminauth en private v1-snapshots. In bezoekersstijl verschijnen alleen beschikbare goedgekeurde sandboxdeals, met foto, vaste prijs en link naar bestaande verse datumselectie. Geen onbevestigd kameraantal. Zoekveld en twintig kaarten per pagina.
 - Admincatalogus linkt naar bezoekerspreview; tabel en goedkeuringsproces behouden. Client accepteert maximaal90s snapshots conform server. Geen anonieme sandboxpublicatie of betaalroute geopend.
 
-- Laatste portalcontrole: beveiligde aanmelding ingediend, maar canonieke catalogus keert terug naar het loginformulier; ingelogde bezoekerspreview vandaag niet geverifieerd. Browserobservatie was tijdelijk beperkt na credentialdelivery. Geen herhaalde credentialinvoer uitgevoerd; bestaande ingelogde controle van8okt blijft afzonderlijk bewijs voor de oude versie.
+- Nieuwe beveiligde adminaanmelding geslaagd op9okt circa15:30 Amsterdam als Jurgen Hassankhan/Superadmin. Nieuwe catalogusversie via cacheversie geladen: beide sandboxdeals in tabel, nhow beschikbaar voor€241,43, eerdere fictieve deal niet bevestigd. Bezoekerspreview toont uitsluitend nhow met foto en vaste prijs; detail-link daadwerkelijk geopend. Verse datumcheck10–12nov voor twee gasten bevestigt beschikbaarheid om15:32:48; betalen false. Geen deal-, order- of boekingsrecords gewijzigd.
+- Visuele controle heeft één te brede kaart en onjuiste algemene bezoekersstatustekst gevonden; compacte gridkolommen en bezoekersspecifieke tekst gecorrigeerd. Vijf relevante regressies opnieuw geslaagd. Pages-uitrol37937813671 geslaagd; compacte versie20261009-final-2 met foto, groene datumknop en eigen bezoekersstatustekst daadwerkelijk gecontroleerd circa15:37 Amsterdam. Zoekveld en lege selectie in browser gecontroleerd. Publieke productiepoort en afzonderlijke productievoorwaarden hieronder blijven open.
 
 ### Nog te doen vóór productie
 - Publieke productiecatalogus/detailfilter en Webflow achter productiepoort aansluiten na productiegegevens en gehele betaal-/boekingsflow. De beschermde bezoekerspreview is een test, geen publieke Webflow-livegang.
