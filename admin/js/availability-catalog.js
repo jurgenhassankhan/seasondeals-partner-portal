@@ -2,10 +2,17 @@
   'use strict';
   const core=window.AdminCore,table=document.getElementById('availability-rows'),summary=document.getElementById('availability-summary');
   const search=document.getElementById('availability-search'),filter=document.getElementById('availability-filter'),pager=document.getElementById('availability-pagination');
+  const websiteGrid=document.getElementById('availability-website-grid');
   let catalog,rows=[],states=[],availableIds=new Set(),expiryTimer,page=1;
   const name=d=>d.supplier.supplier_content?.hotel?.name||d.title||'Hotel';
   function status(d){const s=states.find(s=>s.id===d.id);if(availableIds.has(d.id))return ['available','Beschikbaar'];if(s?.status==='checking')return ['checking','Wordt gecontroleerd'];if(s?.status==='unavailable')return ['unavailable','Niet beschikbaar'];return ['unknown','Niet bevestigd'];}
   function render(){
+    if(websiteGrid){
+      const q=search.value.trim().toLocaleLowerCase('nl');const list=rows.filter(d=>availableIds.has(d.id)&&name(d).toLocaleLowerCase('nl').includes(q));const pages=Math.max(1,Math.ceil(list.length/20));page=Math.min(page,pages);websiteGrid.replaceChildren();
+      for(const d of list.slice((page-1)*20,page*20)){const card=document.createElement('article');card.className='deal-card';const image=core.imageUrl(d.images)||core.imageUrl(d.external_image_urls);if(image){const box=document.createElement('div');box.className='deal-image';const img=document.createElement('img');img.src=image;img.alt=name(d);img.loading='lazy';box.append(img);card.append(box);}const body=document.createElement('div');body.className='deal-card-body';const title=document.createElement('h2');title.textContent=name(d);const price=document.createElement('strong');price.textContent=core.money(d.price);const info=document.createElement('p');info.textContent='Beschikbaar voor de opgeslagen verblijfsdata. Controleer je eigen data bij de deal.';const a=document.createElement('a');a.href='../nuitee-availability-preview.html?portal=admin&id='+encodeURIComponent(d.id);a.textContent='Bekijk deal en kies data →';body.append(title,price,info,a);card.append(body);websiteGrid.append(card);}
+      if(!list.length){const p=document.createElement('p');p.textContent='Geen vers bevestigd aanbod voor deze selectie.';websiteGrid.append(p);}
+      document.getElementById('availability-page').textContent=`Pagina ${page} van ${pages} · ${list.length} deals`;document.getElementById('availability-prev').disabled=page===1;document.getElementById('availability-next').disabled=page===pages;pager.hidden=!list.length;return;
+    }
     const q=search.value.trim().toLocaleLowerCase('nl'),selected=filter.value;
     const filtered=rows.filter(d=>name(d).toLocaleLowerCase('nl').includes(q)&&(!selected||status(d)[0]===selected));
     const pages=Math.max(1,Math.ceil(filtered.length/20));page=Math.min(page,pages);
@@ -26,7 +33,7 @@
   }
   async function init(){
     const admin=await core.requireAuth();if(!admin)return;
-    core.mountShell({active:'suppliers',title:'Nuitée-beschikbaarheid',subtitle:'Alle goedgekeurde sandboxdeals, met hun actuele beschikbaarheidsstatus.'},admin);
+    if(!websiteGrid)core.mountShell({active:'suppliers',title:'Nuitée-beschikbaarheid',subtitle:'Alle goedgekeurde sandboxdeals, met hun actuele beschikbaarheidsstatus.'},admin);
     if(!['superadmin','platform_admin'].includes(admin.role))throw Error('Je rol mag deze test niet uitvoeren.');
     const deals=(await window.AdminOfferData.all('/deals')).filter(d=>d.source==='provider_sync'&&d.status==='active'&&d.approved_at&&!d.deleted_at);
     let index=0;await Promise.all([0,1,2,3].map(async()=>{while(index<deals.length){const deal=deals[index++],detail=await core.request('/supplier-deals/'+encodeURIComponent(deal.id),{cache:'no-store'});if(detail.supplier_deal?.provider==='nuitee'&&detail.supplier_deal.environment==='sandbox')rows.push({...deal,supplier:detail.supplier_deal});}}));
