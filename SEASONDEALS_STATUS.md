@@ -9,30 +9,40 @@
 
 ## Stap 4 — voortgang 11 oktober 2026
 
-**Status: in ontwikkeling; nog geen volledige betaal- en boekingstest.**
+**Status: in ontwikkeling. Nieuwe betaalroute deels getest; stap 4 NIET afgerond.**
 
-### Back-up en werkomgeving
-- GitHub-terugvalbranch `backup/pre-step4-2026-10-11` en werkbranch `feat/nuitee-step4-2026-10-11` aangemaakt vanaf main `cfe762d6c6236418594675d5a5be13fe27749ce5`.
-- Xano-werkbranch `nuitee-step4-2026-10-11` (#11, workspace 1) vanuit v1 aangemaakt en in de browser bevestigd. Bestaande zes drafts op `nuitee-checkout-orchestration-2026-10-06` behouden; niet integraal gepubliceerd of gemerged.
-- Xano-branches delen tabelrecords. Deze branch is een logicakopie, geen aparte databack-up. Bestaande productiepoorten blijven dicht.
+### Afbakening en back-up
+- GitHub-terugvalbranch `backup/pre-step4-2026-10-11` en werkbranch `feat/nuitee-step4-2026-10-11`, vanaf main `cfe762d6c6236418594675d5a5be13fe27749ce5`.
+- Xano: Jurgen's Workspace (#1), branch `nuitee-step4-2026-10-11` (#11), vanuit v1. Niet gemerged naar v1. Zes bestaande drafts in de oude ontwikkelbranch behouden.
+- Branches delen databasegegevens. Data source heet `live`; externe Stripe- en Nuitée-aanvragen gebruiken uitsluitend sandbox/testcredentials. Nieuwe fictieve klant4, testorders98/99 en intents3/4 zijn aangemaakt. Geen echte betaling of productieboeking.
+- Additieve schemawijziging: private optionele JSON `supplier_checkout_intents.checkout_context` met serverzijdige quote, goedkeuringssnapshot en verzoekcontext.
+- Bestaande normale hotelpartnerroute, v1-webhooks, Webflow, portalinterface en afgeronde stappen niet gewijzigd.
+- Broncodecheckpoint van functies452–456 staat op de featurebranch in `xano/nuitee-step4-2026-10-11/source-checkpoint.json`.
 
-### Gebouwd, nog niet aangesloten of volledig getest
-- Nieuwe interne functie #452 `connector/stripe/verify_supplier_payment` op branch11: haalt de opgeslagen Checkout Session en PaymentIntent rechtstreeks bij Stripe op met de bestaande testsleutel. Controleert sandbox, betaald/compleet, EUR, exact bedrag, order/intent-metadata, betaalbinding en een niet-gerestitueerde/niet-betwiste charge. Schrijft geen records en geeft geen voucher vrij.
-- Nieuwe interne functie #453 `connector/nuitee/claim_paid_checkout` op branch11: roept #452 aan en vergrendelt daarna het checkout-intentrecord met `db.get lock=true` binnen een transactie. Alleen `pending_payment` met nul boekingspogingen kan naar `processing`. Bestaande processing/onzekere pogingen worden niet automatisch herhaald. Xano accepteert de code; gelijktijdigheid nog niet praktisch getest.
-- Geen wijziging aan bestaande v1-webhooks, Webflow, portalinterface, deals, orders of boekingsrecords uitgevoerd tijdens deze werkzaamheden. Geen betaling of leveranciersboeking gestart.
+### Nieuwe aansluiting
+- #452 `connector/stripe/verify_supplier_payment`: read-only Stripe Session/PaymentIntent/charge-controle, sandbox/EUR/exact bedrag, eigen supplier-metadata, geen refund/dispute.
+- #453 `connector/nuitee/claim_paid_checkout`: transactie met recordlock; alleen pending_payment + nul pogingen wordt geclaimd. Geen automatische herhaling bij processing/manual_attention.
+- #454 `supplier/checkout/prepare`: bestaande beschikbaarheidsfunctie hergebruikt, verse prebook getoetst aan goedgekeurde vaste prijs, kamer, voorwaarden, lokale kosten en minimummarge.
+- #455 `supplier/checkout/create_sandbox_session`: serverquote en stabiele requestkey; herhaalde gelijke aanvraag hergebruikt order/session; gewijzigde inhoud op dezelfde sleutel geweigerd. Eigen `supplier_order_id` voorkomt aansluiting op legacy order/voucherroute. Adaptive pricing uit met formulierwaarde string "false" (Xano boolean false werd als 0 verstuurd en door Stripe geweigerd).
+- #456 `supplier/checkout/fulfill_sandbox_payment`: geverifieerde betaling → claim → hercontrole → sandboxbooking → uitsluitend expliciete CONFIRMED-status en bookingId laten bevestiging toe. Fouten blijven manual_attention zonder voucher. Nieuwe correctie stuurt één hoofdcontact per kamer naar Nuitée; alle reizigers blijven intern opgeslagen. Deze laatste correctie is nog niet succesvol end-to-end getest.
 
-### Daadwerkelijk gecontroleerd
-- Betaalverificatie #452 gecompileerd. Input0 geeft de bedoelde invoerfout (10ms); input1 blijkt geen bestaande checkout-intent te zijn en geeft Not Found (60ms). Dit bewijst uitsluitend deze twee afwijzingen, niet de Stripe-successroute.
-- Bestaande v1 Public API-webhook #70 en oudere Stripe-route #66 gelezen. De supplierroute moet los van de bestaande handmatige voorraad-/voucherflow worden aangesloten.
-- Oude draft-checkout #666 berekent een nieuwe verkoopprijs zonder koppeling aan een goedgekeurde deal; mag niet ongewijzigd gepubliceerd worden.
-- Oude draft `complete_paid_order` #168 heeft onvoldoende gelijktijdigheidsbescherming en laat bevestiging toe zonder expliciete leveranciersstatus CONFIRMED. Deze oude draft is niet als gereed aangemerkt.
+### Daadwerkelijke resultaten en regressies
+- Order98/intent3, deal17, 10–12 november2026, 2 volwassenen/1kamer, EUR241,43: Stripe-testbetaling geslaagd en serverzijdig geverifieerd. Zelfde requestkey leverde dezelfde order/session op; gewijzigde datum geweigerd; onbetaalde sessie geweigerd.
+- Eerste fulfillment stopte vóór leveranciersaanvraag door een door mij gebruikte ongeldige order-enumwaarde `provider_sync_status=processing`. Alleen nieuwe functie456 gecorrigeerd; testintent3 gericht hersteld. Een tijdelijke fout bij UI-bewerking van de pogingenteller (10) is teruggezet vóór hervatten; bestaande records niet gewijzigd.
+- Daarna Nuitée4002: gast-e-mails ontbraken in de nieuwe checkoutpayload. Order98 blijft manual_attention, geen leveranciersbevestiging/voucher. Herhaalde verwerking gaf claimed=false/idempotent_replay=true in690ms, zonder nieuwe boekingsaanvraag.
+- Gast-emailvalidatie in455 toegevoegd; ontbrekende e-mail wordt vóór order/betaling geblokkeerd (50ms).
+- Order99/intent4: checkout hervat na Stripe formuliercoderingsfout, EUR241,43 zonder valutakeuze; Stripe-testbetaling geslaagd. Nuitée4002 `invalid occupancy number` doordat de nieuwe aansluiting twee gasten met occupancyNumber1 voor één kamer stuurde. Dit was een fout in mijn nieuwe aansluiting, geen nieuwe leveranciersvoorwaarde en geen ongeteste basisconnector.
+- Officiële Nuitée-uitleg bevestigt één hoofdcontact per kamer: https://docs.liteapi.travel/docs/adding-guests-during-the-booking-step . Mapping in456 gecorrigeerd.
+- Intent4 was tijdelijk voor een gecontroleerde hertest gereset. Automatische veiligheidsreview blokkeerde herstart wegens mogelijk dubbel boeken zonder voorafgaande lookup op client_reference. Er is GEEN herstart uitgevoerd. Intent4 is weer op manual_attention/booking_attempts1 gezet. Eerst alleen uitlezen/reconciliëren; niet blind resetten of herboeken.
+- Order98 referentie `SD-SBX-4-step4-20261011-checkout01`; order99 `SD-SBX-4-step4-20261011-checkout02`. Beide sandbox.
+- Bestaande basisboekingen zijn geen nieuw resultaat; niet opnieuw als voortgang afvinken.
 
-### Exact vervolg
-1. Verse beschikbaarheidscontrole `supplier/availability/check` (#450 in branch11) hergebruiken; prebook toetsen aan goedgekeurde vaste prijs, kamer, voorwaarden, lokale kosten en minimummarge.
-2. Checkout aan serverzijdig gecontroleerde deal/quote koppelen; geen vrije clientprijs of willekeurig offer accepteren.
-3. Betaalverificatie en transactieclaim op de leveranciersboeking aansluiten. Bij onzekere timeout eerst status achterhalen; geen blinde tweede boeking of automatische refund.
-4. Alleen expliciet bevestigde Nuitée-boeking met echte leveranciersreferentie laat bevestiging/voucher toe; werkelijke financiële reconciliatie afronden.
-5. Gerichte tests voor verkeerde betaling, dubbele verwerking en betaald-maar-niet-bevestigd; daarna volledige sandboxketen. Stap4 blijft open tot die keten aantoonbaar slaagt.
+### Resterend werk
+1. Alleen statuslookup/reconciliatie van referentie checkout02; geen nieuwe leveranciersaanvraag zolang eerdere status niet aantoonbaar duidelijk is. Vervolgens gericht de gecorrigeerde aansluiting testen.
+2. Automatische aparte webhook/trigger aansluiten en testen. Tot nu toe intern via Xano Run, geen automatische volledige keten.
+3. Werkelijke Stripe- en leverancierskosten afstemmen; huidige bedragen zijn reserves/schattingen, geen definitieve marge. Voucher-/mailafhandeling na bevestiging nog aansluiten.
+4. Dubbele verwerking na een bevestigde boeking en gelijktijdige claims gericht verifiëren. Geen herhaling van afgeronde basisfuncties.
+5. Geen v1-merge/livegang en stap4 niet afvinken voordat deze nieuwe keten aantoonbaar werkt.
 
 ## Stap 3 vervolg — 9 oktober 2026
 
