@@ -2,10 +2,37 @@
 
 > **Vaste bron van waarheid voor de technische voortgang van SeasonDeals**
 >
-> Laatst inhoudelijk geverifieerd: **9 oktober 2026**
+> Laatst inhoudelijk geverifieerd: **11 oktober 2026**
 >
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
+
+## Stap 4 — voortgang 11 oktober 2026
+
+**Status: in ontwikkeling; nog geen volledige betaal- en boekingstest.**
+
+### Back-up en werkomgeving
+- GitHub-terugvalbranch `backup/pre-step4-2026-10-11` en werkbranch `feat/nuitee-step4-2026-10-11` aangemaakt vanaf main `cfe762d6c6236418594675d5a5be13fe27749ce5`.
+- Xano-werkbranch `nuitee-step4-2026-10-11` (#11, workspace 1) vanuit v1 aangemaakt en in de browser bevestigd. Bestaande zes drafts op `nuitee-checkout-orchestration-2026-10-06` behouden; niet integraal gepubliceerd of gemerged.
+- Xano-branches delen tabelrecords. Deze branch is een logicakopie, geen aparte databack-up. Bestaande productiepoorten blijven dicht.
+
+### Gebouwd, nog niet aangesloten of volledig getest
+- Nieuwe interne functie #452 `connector/stripe/verify_supplier_payment` op branch11: haalt de opgeslagen Checkout Session en PaymentIntent rechtstreeks bij Stripe op met de bestaande testsleutel. Controleert sandbox, betaald/compleet, EUR, exact bedrag, order/intent-metadata, betaalbinding en een niet-gerestitueerde/niet-betwiste charge. Schrijft geen records en geeft geen voucher vrij.
+- Nieuwe interne functie #453 `connector/nuitee/claim_paid_checkout` op branch11: roept #452 aan en vergrendelt daarna het checkout-intentrecord met `db.get lock=true` binnen een transactie. Alleen `pending_payment` met nul boekingspogingen kan naar `processing`. Bestaande processing/onzekere pogingen worden niet automatisch herhaald. Xano accepteert de code; gelijktijdigheid nog niet praktisch getest.
+- Geen wijziging aan bestaande v1-webhooks, Webflow, portalinterface, deals, orders of boekingsrecords uitgevoerd tijdens deze werkzaamheden. Geen betaling of leveranciersboeking gestart.
+
+### Daadwerkelijk gecontroleerd
+- Betaalverificatie #452 gecompileerd. Input0 geeft de bedoelde invoerfout (10ms); input1 blijkt geen bestaande checkout-intent te zijn en geeft Not Found (60ms). Dit bewijst uitsluitend deze twee afwijzingen, niet de Stripe-successroute.
+- Bestaande v1 Public API-webhook #70 en oudere Stripe-route #66 gelezen. De supplierroute moet los van de bestaande handmatige voorraad-/voucherflow worden aangesloten.
+- Oude draft-checkout #666 berekent een nieuwe verkoopprijs zonder koppeling aan een goedgekeurde deal; mag niet ongewijzigd gepubliceerd worden.
+- Oude draft `complete_paid_order` #168 heeft onvoldoende gelijktijdigheidsbescherming en laat bevestiging toe zonder expliciete leveranciersstatus CONFIRMED. Deze oude draft is niet als gereed aangemerkt.
+
+### Exact vervolg
+1. Verse beschikbaarheidscontrole `supplier/availability/check` (#450 in branch11) hergebruiken; prebook toetsen aan goedgekeurde vaste prijs, kamer, voorwaarden, lokale kosten en minimummarge.
+2. Checkout aan serverzijdig gecontroleerde deal/quote koppelen; geen vrije clientprijs of willekeurig offer accepteren.
+3. Betaalverificatie en transactieclaim op de leveranciersboeking aansluiten. Bij onzekere timeout eerst status achterhalen; geen blinde tweede boeking of automatische refund.
+4. Alleen expliciet bevestigde Nuitée-boeking met echte leveranciersreferentie laat bevestiging/voucher toe; werkelijke financiële reconciliatie afronden.
+5. Gerichte tests voor verkeerde betaling, dubbele verwerking en betaald-maar-niet-bevestigd; daarna volledige sandboxketen. Stap4 blijft open tot die keten aantoonbaar slaagt.
 
 ## Stap 3 vervolg — 9 oktober 2026
 
