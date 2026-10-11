@@ -478,7 +478,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 ## Nuitée stap 5 — adminportaal (11 oktober 2026)
 
-Status: **gebouwd en getest op afgeschermde ontwikkelbranches; nog niet samengevoegd met productie**.
+Status: **gebouwd op ontwikkelbranches; endpoint en detailweergave afzonderlijk getest. Geïntegreerde browsercontrole en uitrol staan nog open**.
 
 - Xano-branch: `nuitee-step5-admin-2026-10-11`; endpoint `GET /supplier-bookings` gepubliceerd op die branch.
 - GitHub-branch: `feat/nuitee-step5-admin-2026-10-11`.
@@ -489,3 +489,11 @@ Status: **gebouwd en getest op afgeschermde ontwikkelbranches; nog niet samengev
 - De normale hotelpartnerroute en Xano `v1` zijn niet aangepast.
 
 Uitgebreide controle: [backend/xano/NUITEE_STEP5_ADMIN.md](backend/xano/NUITEE_STEP5_ADMIN.md).
+
+### Vervolgcontrole stap 5
+
+- Reviewfouten hersteld in PR #18: geschatte versus werkelijke marge, nul als geldige werkelijke Stripe-kosten, zichtbare escape op orderpagina en cacheversies voor CSS/integratiescript.
+- Onbekende omgeving wordt niet meer als productie getoond. Samenvattingen vermelden expliciet dat recordsommen tests, historie en herhaalde pogingen kunnen bevatten en geen omzet zijn.
+- Gerichte Node-controles geslaagd voor afgestemde/geschatte/ontbrekende/nulkosten, onbekende omgeving, HTML-escaping en details openen/sluiten.
+- Nog nodig: statusfilter (hoofdletters versus opgeslagen status), zoeken op verrijkte hotelnaam, actuele Xano-bron exporteren, selectieve admin-endpointuitrol en ingelogde browsercontrole van de aangesloten weergave.
+- Tijdens hervatten vraagt Xano opnieuw om inloggen. Deze sessie heeft geen backenduitrol of nieuwe boeking uitgevoerd. Stap 4 blijft afgerond in sandbox.
