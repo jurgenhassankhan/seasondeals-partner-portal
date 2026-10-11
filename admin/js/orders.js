@@ -37,7 +37,7 @@
     const revenue = number(totals, ["total_paid_revenue", "paid_revenue", "revenue", "total"]);
     const paid = number(totals, ["total_paid_orders", "paid_orders", "orders"]);
     const refunded = number(totals, ["total_refunded", "refunded_amount", "refunds"]);
-    document.getElementById("orders-totals").innerHTML = [["Betaalde omzet", core.money(revenue), "Gerealiseerd"],["Betaalde orders", paid, "Succesvolle betalingen"],["Terugbetaald", core.money(refunded), "Refunds"]].map(([label,value,note])=>`<article class="kpi-card"><div class="kpi-top"><span class="kpi-label">${core.escapeHtml(label)}</span></div><strong class="kpi-value">${core.escapeHtml(value)}</strong><span class="kpi-note">${core.escapeHtml(note)}</span></article>`).join("");
+    document.getElementById("orders-totals").innerHTML = [["Administratief betaald totaal", core.money(revenue), "Inclusief aanwezige testdata"],["Betaalde orders", paid, "Inclusief aanwezige testdata"],["Terugbetaald", core.money(refunded), "Refunds"]].map(([label,value,note])=>`<article class="kpi-card"><div class="kpi-top"><span class="kpi-label">${core.escapeHtml(label)}</span></div><strong class="kpi-value">${core.escapeHtml(value)}</strong><span class="kpi-note">${core.escapeHtml(note)}</span></article>`).join("");
   }
 
   function render(orders) {

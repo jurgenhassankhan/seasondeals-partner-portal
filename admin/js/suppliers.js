@@ -65,7 +65,8 @@ async function loadSupplierBookings() {
         target.innerHTML = "<strong>Geen leveranciersboekingen gevonden</strong><span>Pas de filters aan of voer eerst een gecontroleerde sandboxboeking uit.</span>";
       } else {
         target.className = "table-wrap";
-        target.innerHTML = `<table class="data-table supplier-bookings-table"><thead><tr><th>Hotel</th><th>Referentie</th><th>Verblijf</th><th>Status</th><th>Omgeving</th><th>Financieel</th><th>Bijgewerkt</th></tr></thead><tbody>${items.map(supplierBookingRow).join("")}</tbody></table>`;
+        target.innerHTML = `<table class="data-table supplier-bookings-table"><thead><tr><th>Hotel</th><th>Referentie</th><th>Verblijf</th><th>Status</th><th>Omgeving</th><th>Financieel</th><th>Bijgewerkt</th><th></th></tr></thead><tbody>${items.map(supplierBookingRow).join("")}</tbody></table>`;
+        wireSupplierBookingDetails();
       }
       renderSupplierPagination(data, items.length);
     } catch (error) {
@@ -79,32 +80,77 @@ async function loadSupplierBookings() {
     const target = document.getElementById("supplier-bookings-summary");
     if (!target) return;
     target.innerHTML = `
-      <div><span>Totaal</span><strong>${Number(summary.total_count || 0)}</strong><small>leveranciersboekingen</small></div>
-      <div><span>Sandbox</span><strong>${Number(summary.sandbox_count || 0)}</strong><small>zonder echte betaling</small></div>
+      <div><span>Totaal</span><strong>${Number(summary.total_count || 0)}</strong><small>boekingsrecords, inclusief historie</small></div>
+      <div><span>Sandbox</span><strong>${Number(summary.sandbox_count || 0)}</strong><small>testomgeving leverancier</small></div>
       <div><span>Productie</span><strong>${Number(summary.production_count || 0)}</strong><small>live boekingen</small></div>
-      <div><span>Verkoopwaarde</span><strong>${core.money(summary.total_selling_price)}</strong><small>bruto klantprijs</small></div>
-      <div class="supplier-margin-card"><span>SeasonDeals-marge</span><strong>${core.money(summary.total_seasondeals_margin)}</strong><small>voor reconciliatie</small></div>
+      <div><span>Opgetelde klantprijzen</span><strong>${core.money(summary.total_selling_price)}</strong><small>inclusief tests en herhaalde pogingen; geen omzet</small></div>
+      <div class="supplier-margin-card"><span>SeasonDeals-marge</span><strong>${core.money(summary.total_seasondeals_margin)}</strong><small>recordsom, inclusief schattingen en historie</small></div>
       <div class="${Number(summary.total_cancellation_fee || 0) > 0 ? "has-attention" : ""}"><span>Annuleringskosten</span><strong>${core.money(summary.total_cancellation_fee)}</strong><small>${Number(summary.cancelled_count || 0)} geannuleerd</small></div>`;
   }
 
   function supplierBookingRow(item) {
-    const environment = String(item.environment || "sandbox").toLowerCase();
-    const status = String(item.booking_status || "unknown").toLowerCase();
+    const environment = String(item.environment || "unknown").toLowerCase();
+    const meta = supplierStatusMeta(item.booking_status);
     const stay = `${formatStayDate(item.checkin)} – ${formatStayDate(item.checkout)}`;
+    const id = String(item.id || item.order_id || Math.random());
+    const stripeActual = Number(item.stripe_fee || 0);
+    const stripeEstimated = Number(item.stripe_fee_estimated || 0);
+    const reconciled = item.financial_reconciliation === "reconciled";
+    const actualFeeKnown = reconciled && item.stripe_fee != null && item.stripe_fee !== "" && Number.isFinite(stripeActual);
+    const stripeLabel = actualFeeKnown ? core.money(stripeActual) : `${core.money(stripeEstimated)} geschat`;
+    const marginLabel = actualFeeKnown ? "werkelijke marge" : "geschatte marge";
+    const environmentLabel = environment === "sandbox" ? "Sandbox · test" : environment === "production" ? "Productie" : "Omgeving onbekend";
+    const hotel = item.hotel_name || item.deal_title || item.hotel_external_id || "Onbekend hotel";
+    const mailStatus = item.confirmation_mail_status === "sent" ? "Verzonden" : "Niet bevestigd";
+    const reconcile = item.financial_reconciliation === "reconciled" ? "Afgestemd" : "Controle nodig";
     return `<tr>
-      <td><div class="integration-cell"><strong>${core.escapeHtml(item.hotel_name || item.hotel_external_id || "Onbekend hotel")}</strong><span>${core.escapeHtml(item.hotel_external_id || "Geen extern ID")}</span></div></td>
-      <td><div class="integration-cell"><strong>${core.escapeHtml(item.client_reference || item.external_booking_id || "—")}</strong><span>${core.escapeHtml(item.external_booking_id || "—")}</span></div></td>
+      <td><div class="integration-cell"><strong>${core.escapeHtml(hotel)}</strong><span>${core.escapeHtml(item.hotel_external_id || "Geen extern ID")}</span></div></td>
+      <td><div class="integration-cell"><strong>${core.escapeHtml(item.client_reference || item.external_booking_id || "—")}</strong><span>Nuitée ${core.escapeHtml(item.external_booking_id || "—")} · order #${core.escapeHtml(item.order_id || "—")}</span></div></td>
       <td><div class="integration-cell"><strong>${core.escapeHtml(stay)}</strong><span>${Number(item.guest_count || 0)} gast${Number(item.guest_count || 0) === 1 ? "" : "en"} · ${core.escapeHtml(item.refundable_tag || "—")}</span></div></td>
-      <td><span class="supplier-booking-status status-${core.escapeHtml(status)}"><i></i>${core.escapeHtml(core.label(status))}</span></td>
-      <td><span class="supplier-environment supplier-environment-${core.escapeHtml(environment)}">${core.escapeHtml(core.label(environment))}</span></td>
-      <td><div class="integration-cell"><strong>${core.money(item.selling_price)}</strong><span>Inkoop ${core.money(item.supplier_amount)} · marge ${core.money(item.seasondeals_margin)}</span></div></td>
+      <td><span class="supplier-booking-status status-${core.escapeHtml(meta.tone)}"><i></i>${core.escapeHtml(meta.label)}</span></td>
+      <td><span class="supplier-environment supplier-environment-${core.escapeHtml(environment)}">${core.escapeHtml(environmentLabel)}</span></td>
+      <td><div class="integration-cell"><strong>${core.money(item.selling_price)}</strong><span>Inkoop ${core.money(item.supplier_amount)} · ${marginLabel} ${core.money(item.seasondeals_margin)}</span></div></td>
       <td>${core.escapeHtml(core.date(item.updated_at || item.last_synced_at, true))}</td>
-    </tr>`;
+      <td><button class="row-link supplier-booking-toggle" type="button" data-booking-id="${core.escapeHtml(id)}" aria-expanded="false">Bekijken</button></td>
+    </tr>
+    <tr class="supplier-booking-detail-row" data-booking-detail="${core.escapeHtml(id)}" hidden><td colspan="8"><div class="supplier-booking-detail">
+      <section><span>Boeking</span><strong>${core.escapeHtml(item.deal_title || hotel)}</strong><small>SeasonDeals-order #${core.escapeHtml(item.order_id || "—")} · ${core.escapeHtml(item.order_status || item.payment_status || "—")}</small><small>Klant ${core.escapeHtml(item.customer_email || "—")}</small></section>
+      <section><span>Leverancier</span><strong>Nuitée ${core.escapeHtml(item.external_booking_id || "—")}</strong><small>Clientref. ${core.escapeHtml(item.client_reference || "—")}</small><small>${core.escapeHtml(stay)} · ${Number(item.guest_count || 0)} gast(en)</small></section>
+      <section><span>Financieel</span><strong>${core.money(item.seasondeals_margin)} ${marginLabel}</strong><small>Klantprijs ${core.money(item.selling_price)} · inkoop ${core.money(item.supplier_amount)}</small><small>Verwerking ${core.money(item.processing_fee)} · Stripe ${core.escapeHtml(stripeLabel)} · ${core.escapeHtml(reconcile)}</small></section>
+      <section><span>Voucher & mail</span><strong>${core.escapeHtml(item.voucher_code || "Geen voucher")}</strong><small>Voucher ${core.escapeHtml(item.voucher_status || item.voucher_redemption_status || "—")} · QR ${item.qr_payload ? "beschikbaar" : "ontbreekt"}</small><small>Bevestiging: ${core.escapeHtml(mailStatus)}${item.confirmation_mail_sent_at ? ` · ${core.escapeHtml(core.date(item.confirmation_mail_sent_at, true))}` : ""}</small></section>
+      ${item.error_message ? `<section class="supplier-booking-error"><span>Actie vereist</span><strong>${core.escapeHtml(item.error_message)}</strong></section>` : ""}
+    </div></td></tr>`;
+  }
+
+  function wireSupplierBookingDetails() {
+    document.querySelectorAll(".supplier-booking-toggle").forEach(button => {
+      button.addEventListener("click", () => {
+        const row = document.querySelector(`[data-booking-detail="${CSS.escape(button.dataset.bookingId || "")}"]`);
+        if (!row) return;
+        const opening = row.hidden;
+        row.hidden = !opening;
+        button.setAttribute("aria-expanded", String(opening));
+        button.textContent = opening ? "Sluiten" : "Bekijken";
+      });
+    });
+  }
+
+  function supplierStatusMeta(value) {
+    const status = String(value || "").toLowerCase();
+    if (status === "confirmed") return {label:"Bevestigd", tone:"confirmed"};
+    if (status === "cancelled_with_charges") return {label:"Geannuleerd met kosten", tone:"cancelled"};
+    if (status === "cancelled") return {label:"Geannuleerd", tone:"cancelled"};
+    if (status === "financial_test") return {label:"Financiële test", tone:"test"};
+    if (status.includes("failed") || status.includes("error") || status.includes("attention")) return {label:"Actie vereist", tone:"attention"};
+    if (status.includes("pending") || status.includes("processing") || status.includes("book")) return {label:"In behandeling", tone:"pending"};
+    return {label:core.label(status || "onbekend"), tone:"pending"};
   }
 
   function formatStayDate(value) {
     if (!value) return "—";
-    const parsed = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+    const parsed = typeof value === "number" || /^\d{12,}$/.test(String(value))
+      ? new Date(Number(value))
+      : new Date(`${String(value).slice(0, 10)}T12:00:00`);
     if (Number.isNaN(parsed.getTime())) return String(value);
     return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(parsed);
   }

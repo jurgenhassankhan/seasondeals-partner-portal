@@ -133,7 +133,7 @@
   }
 
   function nuiteeConnectorRow() {
-    return '<tr data-supplier-connector="nuitee"><td><div class="integration-cell"><strong>Nuitée</strong><span>Leverancierskoppeling</span></div></td><td><div class="integration-cell"><strong>Nuitée API</strong><span>nuitee</span></div></td><td>Sandbox</td><td><div class="integration-cell"><strong>API</strong><span>Aanbod en boekingen</span></div></td><td><span class="status-badge status-pending"><span></span>Sandboxfase</span></td><td><div class="integration-cell"><strong>Productie nog niet vrijgegeven</strong><span>Geen actuele verbindingstest uitgevoerd</span></div></td><td><div class="integration-actions"><a class="integration-key-button" href="suppliers.html">Leverancier bekijken</a></div></td></tr>';
+    return '<tr data-supplier-connector="nuitee"><td><div class="integration-cell"><strong>Nuitée</strong><span>Leverancierskoppeling</span></div></td><td><div class="integration-cell"><strong>Nuitée API</strong><span>nuitee</span></div></td><td>Sandbox</td><td><div class="integration-cell"><strong>API</strong><span>Aanbod en boekingen</span></div></td><td><span class="status-badge status-pending"><span></span>Sandbox getest</span></td><td><div class="integration-cell"><strong>Sandboxketen succesvol getest</strong><span>Boeking, voucher en bevestigingsmail gecontroleerd op 11 oktober 2026</span></div></td><td><div class="integration-actions"><a class="integration-key-button" href="suppliers.html">Leverancier bekijken</a></div></td></tr>';
   }
 
   function row(item) {

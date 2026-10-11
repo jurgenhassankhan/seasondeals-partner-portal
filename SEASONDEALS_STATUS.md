@@ -474,3 +474,21 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 | 2026-08-10 | Interne hotelonboarding end-to-end getest: hotel en beheerder aangemaakt, partnerlogin geslaagd, integratie gekoppeld, API-sleutel aangemaakt en getest, sleutel ingetrokken en ingetrokken status in admin bevestigd. Uitnodigingsmail/activatielink, automatisch extern hotel-ID, echte hotelpartner en echte SiteMinder-verbinding blijven openstaan. |
 | 2026-08-05 | Adminflow **Nieuw hotel** gebouwd op het bestaande Xano-endpoint `/partners/create`; dashboardactie, formulier, gekoppelde hotelbeheerder, validatie en veilige wachtwoordgenerator toegevoegd. Nog te testen met de eerste echte partner. |
 | 2026-08-05 | Eerste centrale statusbestand aangemaakt. Voorraadverlaging en Connector Framework als gebouwd/werkend gecorrigeerd; Stripe-liveconfiguratie, echte partner/deal en echte SiteMinder-koppeling als open punten vastgelegd. |
+
+
+## Nuitée stap 5 — adminportaal (11 oktober 2026)
+
+Status: **backend voor adminoverzicht selectief naar v1 samengevoegd; front-end klaar voor uitrol. Geïntegreerde browsercontrole staat nog open.**
+
+- Step 4 blijft afgerond en getest in sandbox.
+- Alleen GET /supplier-bookings is vanuit ontwikkelbranch12 naar v1 samengevoegd, met de terugvalkopieoptie aan. De 15 andere toevoegingen, 10 andere endpointwijzigingen en middleware zijn uitgesloten.
+- Backendbron: backend/xano/nuitee-step5-supplier-bookings.xs.
+- Leest bestaande order-, deal-, voucher- en checkoutgegevens; verrijkt hotel/verblijf/financiën/mailstatus.
+- Hoofdletterongevoelig zoeken en statusfilter werken vóór paginering en samenvatting.
+- Xano-controles: CONFIRMED + NHOW levert order100 met 10–12 november, €241,43 verkoop, €205,20 leverancier, €33,64 marge; ACTION_REQUIRED levert bestaande booking_failed_after_payment; productie levert 0 records.
+- Front-endreview hersteld: geschatte versus werkelijke marge, nul als geldige werkelijke Stripe-kosten, onbekende omgeving, cacheversies en ongewenste escape op orderpagina.
+- Node-controles geslaagd voor kostenprovenance, nul/ontbrekende kosten, onbekende omgeving, HTML-escaping en details openen/sluiten.
+- Geen nieuwe boeking of betaling. Publieke Nuitée-productiepoort en partnerroute blijven ongewijzigd.
+- Nog nodig: portaluitrol en ingelogde visuele controle. Xano-login is hersteld; het adminportaal vraagt afzonderlijk om inloggen.
+
+Zie [backend/xano/NUITEE_STEP5_ADMIN.md](backend/xano/NUITEE_STEP5_ADMIN.md).
