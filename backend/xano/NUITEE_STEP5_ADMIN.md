@@ -1,6 +1,6 @@
 # Nuitée stap 5 — adminportaal
 
-Status: **ontwikkeling compleet en getest op de afgeschermde ontwikkelbranches**  
+Status: **backend selectief naar v1 samengevoegd; front-enduitrol en ingelogde browsercontrole nog open**  
 Datum: 11 oktober 2026
 
 ## Branches
@@ -8,7 +8,7 @@ Datum: 11 oktober 2026
 - Xano: `nuitee-step5-admin-2026-10-11` (workspacebranch 12)
 - GitHub: `feat/nuitee-step5-admin-2026-10-11`
 
-De normale hotelpartnerroute en Xano `v1` zijn niet aangepast.
+Alleen de private adminreader is naar `v1` samengevoegd met de back-upoptie aan. Partner-, betaal- en boekingsroutes zijn niet aangepast.
 
 ## Wat is gebouwd
 
@@ -53,4 +53,8 @@ De endpointtest slaagde met vijf bestaande supplier-bookings. Daarnaast is de ge
 
 ## Livegang
 
-Deze stap staat klaar voor review en gecontroleerde samenvoeging. Productiedata en echte productieboekingen blijven geblokkeerd totdat de bestaande productiepoort en livegangcontroles zijn doorlopen.
+De adminreader is selectief samengevoegd; 15 andere toevoegingen, 10 andere endpoints en middleware zijn uitgesloten. De front-end staat in PR #18 klaar voor uitrol. Nog geen geïntegreerde ingelogde browsercontrole uitgevoerd. Productiedata en echte productieboekingen blijven geblokkeerd totdat de bestaande productiepoort en livegangcontroles zijn doorlopen.
+
+## Vervolgverificatie
+
+CONFIRMED + NHOW vindt order100 (1.51s); ACTION_REQUIRED vindt de bestaande mislukte poging (0.89s); productie geeft nul records (0.08s). Filters worden na verrijking en vóór paginering toegepast. De bron staat naast dit bestand in `nuitee-step5-supplier-bookings.xs`.
