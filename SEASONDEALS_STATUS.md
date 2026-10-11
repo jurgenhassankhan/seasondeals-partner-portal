@@ -474,3 +474,18 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 | 2026-08-10 | Interne hotelonboarding end-to-end getest: hotel en beheerder aangemaakt, partnerlogin geslaagd, integratie gekoppeld, API-sleutel aangemaakt en getest, sleutel ingetrokken en ingetrokken status in admin bevestigd. Uitnodigingsmail/activatielink, automatisch extern hotel-ID, echte hotelpartner en echte SiteMinder-verbinding blijven openstaan. |
 | 2026-08-05 | Adminflow **Nieuw hotel** gebouwd op het bestaande Xano-endpoint `/partners/create`; dashboardactie, formulier, gekoppelde hotelbeheerder, validatie en veilige wachtwoordgenerator toegevoegd. Nog te testen met de eerste echte partner. |
 | 2026-08-05 | Eerste centrale statusbestand aangemaakt. Voorraadverlaging en Connector Framework als gebouwd/werkend gecorrigeerd; Stripe-liveconfiguratie, echte partner/deal en echte SiteMinder-koppeling als open punten vastgelegd. |
+
+
+## Nuitée stap 5 — adminportaal (11 oktober 2026)
+
+Status: **gebouwd en getest op afgeschermde ontwikkelbranches; nog niet samengevoegd met productie**.
+
+- Xano-branch: `nuitee-step5-admin-2026-10-11`; endpoint `GET /supplier-bookings` gepubliceerd op die branch.
+- GitHub-branch: `feat/nuitee-step5-admin-2026-10-11`.
+- Boeking #100 toont hotel, verblijf, gasten, betaling, leverancier, verwerking, werkelijke Stripe-kosten, werkelijke marge, Nuitée-referentie, voucher, QR en bevestigingsstatus.
+- Getest resultaat #100: nhow Amsterdam RAI, 10–12 november 2026, 2 gasten, €241,43 / €205,20 / €2,30 / €0,29 / €33,64, status bevestigd en financieel afgestemd.
+- Alle vijf bestaande supplier-bookings worden fouttolerant opgehaald; oude incomplete testrecords blokkeren het overzicht niet.
+- Sandbox- en testdata worden in het adminportaal expliciet onderscheiden van productie.
+- De normale hotelpartnerroute en Xano `v1` zijn niet aangepast.
+
+Uitgebreide controle: [backend/xano/NUITEE_STEP5_ADMIN.md](backend/xano/NUITEE_STEP5_ADMIN.md).
