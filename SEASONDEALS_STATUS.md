@@ -7,16 +7,16 @@
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
 
-## Stap 4 — voortgang 11 oktober 2026, 13:47 Amsterdam
+## Stap 4 — sandboxresultaat 11 oktober 2026
 
-**Status: automatische sandboxbetaling → bevestigde Nuitée-boeking → werkelijke kosten → één voucher getest. Stap 4 blijft open uitsluitend voor uitvoering/verificatie van de voorbereide testmail; automatische veiligheidsreview verlangt hiervoor expliciete toestemming. Niet naar v1 gemerged.**
+**Status: gecontroleerde sandboxketen getest, inclusief bevestigde boeking, werkelijke kosten, één voucher en afgeleverde bevestigingsmail. Gelijktijdige herhalingen veroorzaken geen nieuwe boeking, voucher of mail. Geen productierelease; niet naar v1 gemerged.**
 
 ### Afbakening en broncode
 - Werkbranch GitHub `feat/nuitee-step4-2026-10-11`, terugvalbranch `backup/pre-step4-2026-10-11`; Xano workspace1, branch11 `nuitee-step4-2026-10-11`.
 - Xano-branches delen databasegegevens (data source `live`). Externe transacties uitsluitend Stripe test en Nuitée sandbox, fictieve klant4, orders98/99/100, intents3/4/5. Geen echte betaling of productieboeking.
 - Normale hotelpartnerroute, bestaande webhooks, v1, Webflow en portalinterface niet aangepast.
 - Broncode op featurebranch: `xano/nuitee-step4-2026-10-11/source-checkpoint.json` (452–456), `source-followup-checkpoint.json` (457–462,1622 en diagnostiek454), plus leesbare `finalize_sandbox.xs` en `webhooks_nuitee_sandbox.xs`.
-- `finalize_with_mail_PENDING_APPROVAL.xs` is uitsluitend voorbereid bronbestand, NIET de actieve afrondingsfunctie. Actieve461 doet geen Resend-aanvraag.
+- Actuele461 staat in `finalize_sandbox.xs`: verzendt uitsluitend wanneer de opgeslagen ontvanger expliciet is goedgekeurd (`authorized=true`), met idempotency key en opgeslagen sent-status.463 staat in `send_approved_order100_mail.xs`. Het oudere `finalize_with_mail_PENDING_APPROVAL.xs` en source-followup-checkpoint zijn historische tussenstanden.
 
 ### Fouten in mijn aansluiting en herstel
 - De basisconnector was al getest. Mijn nieuwe aansluiting gaf aanvankelijk geen gast-e-mails door (order98, Nuitée4002) en daarna twee hoofdgasten voor één kamer (order99,4002 invalid occupancy).
@@ -38,14 +38,21 @@
 -462 stuurde twee gelijktijdige HTTP-aanvragen naar de gepubliceerde nieuwe callback, dezelfde bevestigde event-ID. Starttijden1791719183981/3983, beide200, booked/idempotent_replay=true, finalization=reconciled. Testpassed=true in3,57s; na afloop booking_attempts1, supplier_bookings1, payments1, vouchers1, webhook deliveries3. Dit is een concurrente replaytest na bevestiging, geen nieuwe boeking of test met twee eerste pending-claims.
 - Voorgaande negatieve controles blijven gelden: onbetaalde sessie geweigerd; ontbrekende gastmail vóór orderbetaling geweigerd; gewijzigde inhoud op dezelfde requestkey geweigerd; gelijke aanvraag hergebruikt order/session.
 
-### Enige huidige uitvoeringsblokkade: testmail
-- Automatische approval-review weigerde de finalizer met Resend-verzending omdat payload + bestemming niet expliciet door gebruiker waren goedgekeurd. Die poging is niet uitgevoerd. Verzenddeel vervolgens volledig uit actieve461 verwijderd, veilige versie gepubliceerd en getest. Niet via webhook of andere route omzeilen.
-- Voorbereid concept: aan `delivered@resend.dev` (Resend-testadres), onderwerp **SANDBOX — SeasonDeals boekingsbevestiging**.
-- Inhoud: duidelijke melding “SANDBOX — geen geldig verblijf”; hotel nhow Amsterdam Rai, fictieve boeking l0kp_BVEf,10–12nov2026,2gasten, voucher SD-SBX-100-34Z842RA, betaald EUR241,43, NRFN. Geen echte klantgegevens of hotel-/interne notificaties.
-- Stabiele idempotency key `nuitee-sandbox-voucher-5`; private checkout_context.confirmation_mail bewaart exact concept. Voorbereid verzenddeel gebruikt bestaande emails/render_template en RESEND_API_KEY, controleert succes en slaat resend_id/sent_at op; sent wordt niet nogmaals verstuurd. Geen veilige automatische herhaling buiten idempotency-window.
-- Eerst expliciete toestemming vragen voor uitsluitend deze mailinhoud naar dit testadres. Daarna verzenddeel aansluiten, uitvoeren, aflevering/status en dubbele mailverwerking verifiëren en status pas afsluiten.
-- Geen v1-merge/productielivegang. Publieke supplierpoort blijft dicht; productiekeys, productiequota, productiebeveiliging en hotel-/voucherfrontendmapping blijven afzonderlijke productiegates.
+### Afgeronde mailtest na expliciete toestemming
+- Gebruiker gaf op11okt2026 om13:52Amsterdam expliciet toestemming om de fictieve boekingsbevestiging naar zijn opgegeven persoonlijke Gmail-adres te sturen. Het adres is alleen als runtime-input/private ordercontext gebruikt, niet hardgecodeerd in broncode of dit statusbestand.
+-463 begrenst de test tot order100/intent5/voucher44, bewaart de goedgekeurde ontvanger onder recordlock en maakt deze na toestemming onveranderlijk.461 is op branch11 gepubliceerd met verzenden uitsluitend bij authorized=true en status!=sent. Bestaande automatische callback1622 gebruikt deze functie; andere concepten zonder toestemming worden niet verstuurd.
+- Eerste poging stopte vóór verzending op Xano-datumaritmetiek (“Not numeric”). Tijdcontrole gecorrigeerd naar Date.now() in lambda; geen mail in die mislukte poging.
+- Geautoriseerde mail daarna succesvol door Resend geaccepteerd in2,59s, ID `01a12ad2-0698-7357-a0db-c7f04bfd3dd2`, sent_at1791719769892. Onderwerp **SANDBOX — SeasonDeals boekingsbevestiging**; fictieve boeking l0kp_BVEf, nhow Amsterdam Rai,10–12nov2026,2gasten,voucher44,EUR241,43,NRFN en expliciet “geen geldig verblijf”.
+- GET /emails/{id} gaf HTTP200 en **last_event=delivered**. Dit bevestigt aflevering volgens Resend, geen onafhankelijke verificatie van de Gmail-inbox.
+- Herhaling van463 behield hetzelfde resend_id. Vervolgens462 opnieuw uitgevoerd met twee gelijktijdige gepubliceerde webhookaanvragen: passed=true in3,71s; dezelfde mail-ID én sent_at behouden, één supplierbooking/payment/voucher, geen extra booking_attempt. Geen tweede mailaanvraag bij sent-status.
+- Stabiele sleutel `nuitee-sandbox-voucher-5-owner-20261011`. Bij onzekere verzenduitkomst uitsluitend dezelfde sleutel binnen23uur; buiten die termijn eerst reconciliëren. Geen hotel-/interne notificaties of echt verblijf aangemaakt.
+-463 bevat een aanvullende read-only deliverycheck als geteste draft; de eerder gepubliceerde463 verstuurt dezelfde mail via461 maar retourneert alleen finalization.461 en callback1622 zijn gepubliceerd op ontwikkelbranch11.
 
+### Productie blijft apart
+- Geen v1-merge/productielivegang; publieke supplierpoort blijft dicht.
+- De complete sandboxonderdelen zijn nu bewezen. Dit is geen nieuwe eerste betaling met álle laatste code al vooraf aangesloten: de boeking startte automatisch, de later toegevoegde kosten/voucher/mailafronding is op dezelfde bevestigde order uitgevoerd en via gepubliceerde callback herhaald.
+- Concurrente eerste pending-claims zijn niet met twee nieuwe gelijktijdige eerste aanvragen getest; wel twee gelijktijdige callbacks na bevestiging, plus transactionele recordlock in claimfunctie.
+- Productiekeys, quota, endpointbeveiliging, echte klant-/hotel-/voucherfrontendmapping en publicatie blijven afzonderlijke productiegates.
 
 ## Stap 3 vervolg — 9 oktober 2026
 
