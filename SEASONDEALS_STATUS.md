@@ -7,6 +7,13 @@
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
 
+## Vast onderhoud van status en livegang
+
+- [Livegang- en overzetlijst](SEASONDEALS_LIVEGANG.md): wat staat waar, wat moet nog over en welke testcode blijft achter.
+- [Vast werkprotocol](SEASONDEALS_WERKPROTOCOL.md): bij iedere relevante wijziging deze status én de liveganglijst bijwerken met bron, bestemming en bewijs.
+- [Agentinstructies](AGENTS.md): deze documenten bij iedere volgende werksessie lezen en naleven.
+- Op 11 oktober 2026 op verzoek van Jurgen vastgelegd. Documentatiewijziging; geen nieuwe software-, configuratie- of productievrijgave. Nog onbekende bronversies/doel-ID's staan in de lijst expliciet als TE VERIFIËREN.
+
 ## Stap 4 — sandboxresultaat 11 oktober 2026
 
 **Status: STAP 4 AFGEROND EN GETEST IN DE SANDBOX. Stripe-testbetaling, automatische Nuitée-boeking, werkelijke kosten, één voucher, QR-code en afgeleverde bevestigingsmail zijn bewezen. Gelijktijdige dubbele meldingen veroorzaakten geen extra boeking, betaling, voucher of e-mail. De nieuwe mailopmaak is door de gebruiker ontvangen en visueel goedgekeurd. Geen productierelease; niet naar v1 gemerged.**
