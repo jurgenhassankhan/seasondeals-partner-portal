@@ -185,8 +185,8 @@ function "supplier/checkout/create_sandbox_session" {
           url = "https://api.stripe.com/v1/checkout/sessions"
           method = "POST"
           params = {
-            success_url         : "https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/boeking-bevestiging.html#session_id={CHECKOUT_SESSION_ID}"
-            cancel_url          : "https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/boeking-bevestiging.html#cancelled=1"
+            success_url         : "https://www.seasondeals.nl/boeking-bevestiging#session_id={CHECKOUT_SESSION_ID}"
+            cancel_url          : "https://www.seasondeals.nl/boeking-bevestiging#cancelled=1"
             mode                : "payment"
             adaptive_pricing    : {enabled:"false"}
             customer_email      : $intent.holder.email
