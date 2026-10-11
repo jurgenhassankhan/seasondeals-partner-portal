@@ -54,7 +54,8 @@
 -464 getest met fictieve bevestigde boeking: HTML succesvol gegenereerd in60ms.461 aangesloten en getest op bestaande intent5 in1,82s: reconciled, voucher44, mail_status=sent en dezelfde bestaande Resend-ID. Geen nieuwe boeking of mail verstuurd.
 -464 en aangepaste461 gepubliceerd uitsluitend op branch11. Versie `supplier-confirmation-v2` wordt als complete HTML verstuurd; bestaande mailinhoud/idempotencysleutels blijven behouden. Normale partnerfunctie423 en partnerroute ongewijzigd.
 - Bron en exact door Xano gegenereerd voorbeeld opgeslagen op featurebranch: `render_confirmation.xs`, `finalize_sandbox.xs`, `confirmation-preview.html` (commit19cb2c775808aff538f7a5f6e42a72a2fcb9d9d3).
-- Beperking: nieuwe opmaak nog niet opnieuw naar Gmail verzonden of daar visueel gecontroleerd. Browserbeleid blokkeerde lokaal HTML-voorbeeld; geen omweg gebruikt. Eerdere delivered-mail betreft de oude opmaak.
+- Nieuwe opmaak op expliciet verzoek als aparte testmail naar de eerder goedgekeurde eigenaar verstuurd.465 gebruikte bestaande order100/voucher44 en actuele sandboxbooking; geen nieuwe boeking, originele confirmation_mail ongewijzigd. Resend HTTP200, ID `01a12ae5-adb0-706a-83a6-ab8ecd4b55a5`; alleen-lezen vervolgcontrole gaf delivered. Gebruiker bevestigde ontvangst en goede weergave: “Yes heb het binnen ziet er goed uit”.
+-465 is na de geslaagde verzending vervangen door alleen-lezen aflevercontrole; bron `test_confirmation_v2.xs`. Geen hotelmail of productiewijziging.
 
 ### Productie blijft apart
 - Geen v1-merge/productielivegang; publieke supplierpoort blijft dicht.
