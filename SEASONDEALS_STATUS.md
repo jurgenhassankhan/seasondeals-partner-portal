@@ -478,7 +478,7 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 ## Nuitée stap 5 — adminportaal (11 oktober 2026)
 
-Status: **backend voor adminoverzicht selectief naar v1 samengevoegd; front-end klaar voor uitrol. Geïntegreerde browsercontrole staat nog open.**
+Status: **stap 5 adminoverzicht gepubliceerd en ingelogd gecontroleerd op 11 oktober 2026.**
 
 - Step 4 blijft afgerond en getest in sandbox.
 - Alleen GET /supplier-bookings is vanuit ontwikkelbranch12 naar v1 samengevoegd, met de terugvalkopieoptie aan. De 15 andere toevoegingen, 10 andere endpointwijzigingen en middleware zijn uitgesloten.
@@ -489,6 +489,9 @@ Status: **backend voor adminoverzicht selectief naar v1 samengevoegd; front-end 
 - Front-endreview hersteld: geschatte versus werkelijke marge, nul als geldige werkelijke Stripe-kosten, onbekende omgeving, cacheversies en ongewenste escape op orderpagina.
 - Node-controles geslaagd voor kostenprovenance, nul/ontbrekende kosten, onbekende omgeving, HTML-escaping en details openen/sluiten.
 - Geen nieuwe boeking of betaling. Publieke Nuitée-productiepoort en partnerroute blijven ongewijzigd.
-- Nog nodig: portaluitrol en ingelogde visuele controle. Xano-login is hersteld; het adminportaal vraagt afzonderlijk om inloggen.
+- PR #18 samengevoegd als `69a3c855ad7ec2e65832ffe7ebf2cb76c428c459`; Pages-uitrol #277 / `38168178348` geslaagd.
+- V1-reader #550 met bestaande order100 gecontroleerd (223 statements, 1.23s). In de gepubliceerde portal gecontroleerd: vijf sandboxrecords, zoeken NHOW + Bevestigd, details openen/sluiten, kosten/voucher/QR/mail, Actie vereist met bestaande foutmelding, leeg productieresultaat, orderwaarschuwing en bijgewerkte integratiestatus.
+- Historische onvolledige records blijven herkenbaar; deze worden niet door verzonnen hotel- of verblijfgegevens aangevuld.
+- Het overzicht betreft supplier_bookings. Bewaking van checkout-intents zonder leveranciersrecord en schaaloptimalisatie van verrijking horen bij de verdere foutafhandeling/productievoorbereiding.
 
 Zie [backend/xano/NUITEE_STEP5_ADMIN.md](backend/xano/NUITEE_STEP5_ADMIN.md).
