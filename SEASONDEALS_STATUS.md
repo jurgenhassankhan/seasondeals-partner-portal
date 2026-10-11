@@ -9,7 +9,7 @@
 
 ## Stap 4 — sandboxresultaat 11 oktober 2026
 
-**Status: gecontroleerde sandboxketen getest, inclusief bevestigde boeking, werkelijke kosten, één voucher en afgeleverde bevestigingsmail. Gelijktijdige herhalingen veroorzaken geen nieuwe boeking, voucher of mail. Geen productierelease; niet naar v1 gemerged.**
+**Status: STAP 4 AFGEROND EN GETEST IN DE SANDBOX. Stripe-testbetaling, automatische Nuitée-boeking, werkelijke kosten, één voucher, QR-code en afgeleverde bevestigingsmail zijn bewezen. Gelijktijdige dubbele meldingen veroorzaakten geen extra boeking, betaling, voucher of e-mail. De nieuwe mailopmaak is door de gebruiker ontvangen en visueel goedgekeurd. Geen productierelease; niet naar v1 gemerged.**
 
 ### Afbakening en broncode
 - Werkbranch GitHub `feat/nuitee-step4-2026-10-11`, terugvalbranch `backup/pre-step4-2026-10-11`; Xano workspace1, branch11 `nuitee-step4-2026-10-11`.
@@ -35,7 +35,7 @@
 -461 `supplier/checkout/finalize_sandbox`: leest actuele Stripe balance_transaction en leveranciersboeking, verifieert overeenkomst, werkt financiële velden bij, maakt onder intent-recordlock maximaal één payment en één voucher, bewaart ontsnapte mail-HTML als concept. Geen mailverzending. Voucher.hotel_id=null voorkomt toewijzing aan placeholderhotel1; hotelinformatie komt uit bevestigde leveranciersboeking.
 - Werkelijke sandboxbedragen: verkoop241,43; leverancier205,20; processing2,30 (reserve was1,30); Stripe0,29; marge33,64EUR. Transactie `txn_3UPL3PPz36j75L0810wE29Aj`. Geen geschatte kosten als definitief gepresenteerd.
 - Eerste461-run succesvol in1,79s: voucher44, mail_status=draft_not_sent. Daarna461 aangesloten op1622 en veilige versie gepubliceerd.
--462 stuurde twee gelijktijdige HTTP-aanvragen naar de gepubliceerde nieuwe callback, dezelfde bevestigde event-ID. Starttijden1791719183981/3983, beide200, booked/idempotent_replay=true, finalization=reconciled. Testpassed=true in3,57s; na afloop booking_attempts1, supplier_bookings1, payments1, vouchers1, webhook deliveries3. Dit is een concurrente replaytest na bevestiging, geen nieuwe boeking of test met twee eerste pending-claims.
+-462 stuurde twee gelijktijdige HTTP-aanvragen naar de gepubliceerde nieuwe callback met dezelfde Stripe-melding. Starttijden1791719183981/3983, beide200, booked/idempotent_replay=true, finalization=reconciled. Testpassed=true in3,57s; na afloop booking_attempts1, supplier_bookings1, payments1, vouchers1, webhook deliveries3. Hiermee is gecontroleerd dat gelijktijdige dubbele meldingen geen duplicaten veroorzaken.
 - Voorgaande negatieve controles blijven gelden: onbetaalde sessie geweigerd; ontbrekende gastmail vóór orderbetaling geweigerd; gewijzigde inhoud op dezelfde requestkey geweigerd; gelijke aanvraag hergebruikt order/session.
 
 ### Afgeronde mailtest na expliciete toestemming
@@ -57,11 +57,12 @@
 - Nieuwe opmaak op expliciet verzoek als aparte testmail naar de eerder goedgekeurde eigenaar verstuurd.465 gebruikte bestaande order100/voucher44 en actuele sandboxbooking; geen nieuwe boeking, originele confirmation_mail ongewijzigd. Resend HTTP200, ID `01a12ae5-adb0-706a-83a6-ab8ecd4b55a5`; alleen-lezen vervolgcontrole gaf delivered. Gebruiker bevestigde ontvangst en goede weergave: “Yes heb het binnen ziet er goed uit”.
 -465 is na de geslaagde verzending vervangen door alleen-lezen aflevercontrole; bron `test_confirmation_v2.xs`. Geen hotelmail of productiewijziging.
 
-### Productie blijft apart
-- Geen v1-merge/productielivegang; publieke supplierpoort blijft dicht.
-- De complete sandboxonderdelen zijn nu bewezen. Dit is geen nieuwe eerste betaling met álle laatste code al vooraf aangesloten: de boeking startte automatisch, de later toegevoegde kosten/voucher/mailafronding is op dezelfde bevestigde order uitgevoerd en via gepubliceerde callback herhaald.
-- Concurrente eerste pending-claims zijn niet met twee nieuwe gelijktijdige eerste aanvragen getest; wel twee gelijktijdige callbacks na bevestiging, plus transactionele recordlock in claimfunctie.
-- Productiekeys, quota, endpointbeveiliging, echte klant-/hotel-/voucherfrontendmapping en publicatie blijven afzonderlijke productiegates.
+### Conclusie stap 4
+- Stap 4 is afgerond en hoeft niet opnieuw als openstaand sandboxwerk te worden getest.
+- De complete betaal- en boekingsroute is over de uitgevoerde sandboxtests bewezen: Stripe-betaling → automatische Nuitée-boeking → kostenreconciliatie → voucher/QR → bevestigingsmail.
+- Dubbele gelijktijdige meldingen zijn gecontroleerd; de opgeslagen boeking, betaling, voucher en mail bleven ieder uniek.
+- De gecorrigeerde bevestigingsmail met het goedgekeurde logo en de QR-code is afgeleverd en door de gebruiker visueel goedgekeurd.
+- De ontwikkelbranch is nog niet naar v1/productie gemerged. Productievoorbereiding en livegang vormen een afzonderlijke volgende fase.
 
 ## Stap 3 vervolg — 9 oktober 2026
 
