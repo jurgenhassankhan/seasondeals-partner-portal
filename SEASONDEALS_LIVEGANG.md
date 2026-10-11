@@ -29,7 +29,7 @@ Vast onderhoud: [SEASONDEALS_WERKPROTOCOL.md](SEASONDEALS_WERKPROTOCOL.md). Voor
 | SD-10 | Stripe live, Nuitée-productietoegang en mailconfiguratie | Stripe test en Nuitée sandbox bewezen; productieconfiguratie niet opnieuw volledig geverifieerd | Toegang, keys op juiste plek, webhook, valuta/kosten, afzender en autorisatie vastleggen zonder geheimen in Git. Echte transacties alleen binnen specifieke autorisatie | Configuratie plus gecontroleerde liveverificatie nog open |
 | SD-11 | Productie-import van aanbod | Xano `nuitee-deal-import-2026-10-07`, import #782 volgens status ongepubliceerd concept | Actuele draft herlezen; server-side offerverificatie en atomaire deal/supplier-opslag afronden; productiebron/duplicaatcontrole bewijzen | Doel TE VERIFIËREN; testdeals #16/#17 niet automatisch omzetten |
 | SD-12 | Fout-, annulerings- en herstelafhandeling | Basisannulering sandbox bewezen; volledige betaalroute/productieherstel nog verder uitwerken | Onder meer betaalde checkout-intents zonder supplier_booking zichtbaar maken, time-outs/retries, onzekere leverancierstatus, refund/voucherconsistentie en schaalgedrag controleren. Geen herboeking zonder statuscontrole | Beoogde vervolgfase stap 7; exacte artefacten TE VERIFIËREN |
-| SD-13 | Publieke Webflow-klantreis en vrijgave | Beveiligde bezoekerspreview bestaat; publieke Nuitée-verkoop nog geblokkeerd | Stap 6 bevestigings-/succespagina exact inventariseren; volledige publieke aansluiting, voorwaarden, beschikbaarheid, betaling en foutweergave afronden. Afhankelijk van SD-07–12 | Publieke productie blijft dicht tot concrete go/no-go en gecontroleerde uitrol |
+| SD-13 | Webflow-klantreis en stap-6-bevestiging | GitHub `feat/nuitee-step6-confirmation-2026-10-11`; Xano branch14 Public152 POST1985; Webflow draftpagina `6acbead36631ab0d5cf3b9fd`, `/boeking-bevestiging` | Reader met bestaande order100 bevestigd; order-ID geweigerd; lokale status/QR-controles geslaagd. Frontend en Webflow-concept gebouwd. Aangesloten browsercontrole, assetuitrol en return-URL nog open | Geen merge naar v1 of Webflow-publicatie; sandbox. Publieke productie blijft dicht |
 | SD-14 | Overige platformlivegang | Bestaande statussecties voor Stripe, hotelonboarding, SiteMinder, content/juridisch en domeinen | Per release bepalen welke punten vereisten zijn; echte SiteMinder-verbinding niet verwarren met demo. Dit werk is niet automatisch onderdeel van de Nuitée-merge | Exacte scope en bewijs vóór betreffende release vastleggen |
 
 ## C. Achterlaten / eerst beoordelen
@@ -72,3 +72,11 @@ Voor iedere volgende release: voeg een rij toe en leg daarnaast concrete bron/do
 - Productiego/no-go en gecontroleerde echte transactie.
 
 Deze open verificaties staan hier bewust, zodat een volgende sessie ze niet als afgerond kan aannemen.
+
+## G. Stap 6 — werkselectie 11 oktober 2026
+
+- Bron main `69693ca911915e0d29b70eba45aec09759e48410`; GitHub werkbranch `feat/nuitee-step6-confirmation-2026-10-11`.
+- Xano branch14 is kopie van gepubliceerde branch11, niet van drafts. Enige toevoeging tot nu toe: Public API152 endpoint1985. Overige gekopieerde onderdelen niet naar v1 overzetten.
+- Nieuwe Webflow-conceptpagina `6acbead36631ab0d5cf3b9fd`; geen bestaande pagina gewijzigd, geen volledige site gepubliceerd. Terugval: nieuwe pagina in draft houden; uitsluitend nieuwe bevestigingsassets/routering terugnemen bij latere release.
+- Bevestigingslookup is alleen-lezen. Geen dataherstel nodig zolang geen records worden gewijzigd; branchkopie is geen databack-up.
+- Open: aangesloten browsercontrole en redirectwijziging. Productieroute en productie-go/no-go blijven buiten deze sandboxstap.
