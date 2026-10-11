@@ -478,22 +478,17 @@ Nog te controleren in de uiteindelijke Webflow-publicatie:
 
 ## Nuitée stap 5 — adminportaal (11 oktober 2026)
 
-Status: **gebouwd op ontwikkelbranches; endpoint en detailweergave afzonderlijk getest. Geïntegreerde browsercontrole en uitrol staan nog open**.
+Status: **backend voor adminoverzicht selectief naar v1 samengevoegd; front-end klaar voor uitrol. Geïntegreerde browsercontrole staat nog open.**
 
-- Xano-branch: `nuitee-step5-admin-2026-10-11`; endpoint `GET /supplier-bookings` gepubliceerd op die branch.
-- GitHub-branch: `feat/nuitee-step5-admin-2026-10-11`.
-- Boeking #100 toont hotel, verblijf, gasten, betaling, leverancier, verwerking, werkelijke Stripe-kosten, werkelijke marge, Nuitée-referentie, voucher, QR en bevestigingsstatus.
-- Getest resultaat #100: nhow Amsterdam RAI, 10–12 november 2026, 2 gasten, €241,43 / €205,20 / €2,30 / €0,29 / €33,64, status bevestigd en financieel afgestemd.
-- Alle vijf bestaande supplier-bookings worden fouttolerant opgehaald; oude incomplete testrecords blokkeren het overzicht niet.
-- Sandbox- en testdata worden in het adminportaal expliciet onderscheiden van productie.
-- De normale hotelpartnerroute en Xano `v1` zijn niet aangepast.
+- Step 4 blijft afgerond en getest in sandbox.
+- Alleen GET /supplier-bookings is vanuit ontwikkelbranch12 naar v1 samengevoegd, met de terugvalkopieoptie aan. De 15 andere toevoegingen, 10 andere endpointwijzigingen en middleware zijn uitgesloten.
+- Backendbron: backend/xano/nuitee-step5-supplier-bookings.xs.
+- Leest bestaande order-, deal-, voucher- en checkoutgegevens; verrijkt hotel/verblijf/financiën/mailstatus.
+- Hoofdletterongevoelig zoeken en statusfilter werken vóór paginering en samenvatting.
+- Xano-controles: CONFIRMED + NHOW levert order100 met 10–12 november, €241,43 verkoop, €205,20 leverancier, €33,64 marge; ACTION_REQUIRED levert bestaande booking_failed_after_payment; productie levert 0 records.
+- Front-endreview hersteld: geschatte versus werkelijke marge, nul als geldige werkelijke Stripe-kosten, onbekende omgeving, cacheversies en ongewenste escape op orderpagina.
+- Node-controles geslaagd voor kostenprovenance, nul/ontbrekende kosten, onbekende omgeving, HTML-escaping en details openen/sluiten.
+- Geen nieuwe boeking of betaling. Publieke Nuitée-productiepoort en partnerroute blijven ongewijzigd.
+- Nog nodig: portaluitrol en ingelogde visuele controle. Xano-login is hersteld; het adminportaal vraagt afzonderlijk om inloggen.
 
-Uitgebreide controle: [backend/xano/NUITEE_STEP5_ADMIN.md](backend/xano/NUITEE_STEP5_ADMIN.md).
-
-### Vervolgcontrole stap 5
-
-- Reviewfouten hersteld in PR #18: geschatte versus werkelijke marge, nul als geldige werkelijke Stripe-kosten, zichtbare escape op orderpagina en cacheversies voor CSS/integratiescript.
-- Onbekende omgeving wordt niet meer als productie getoond. Samenvattingen vermelden expliciet dat recordsommen tests, historie en herhaalde pogingen kunnen bevatten en geen omzet zijn.
-- Gerichte Node-controles geslaagd voor afgestemde/geschatte/ontbrekende/nulkosten, onbekende omgeving, HTML-escaping en details openen/sluiten.
-- Nog nodig: statusfilter (hoofdletters versus opgeslagen status), zoeken op verrijkte hotelnaam, actuele Xano-bron exporteren, selectieve admin-endpointuitrol en ingelogde browsercontrole van de aangesloten weergave.
-- Tijdens hervatten vraagt Xano opnieuw om inloggen. Deze sessie heeft geen backenduitrol of nieuwe boeking uitgevoerd. Stap 4 blijft afgerond in sandbox.
+Zie [backend/xano/NUITEE_STEP5_ADMIN.md](backend/xano/NUITEE_STEP5_ADMIN.md).
