@@ -65,7 +65,8 @@ async function loadSupplierBookings() {
         target.innerHTML = "<strong>Geen leveranciersboekingen gevonden</strong><span>Pas de filters aan of voer eerst een gecontroleerde sandboxboeking uit.</span>";
       } else {
         target.className = "table-wrap";
-        target.innerHTML = `<table class="data-table supplier-bookings-table"><thead><tr><th>Hotel</th><th>Referentie</th><th>Verblijf</th><th>Status</th><th>Omgeving</th><th>Financieel</th><th>Bijgewerkt</th><th></th></tr></thead><tbody>${items.map(supplierBookingRow).join("")}</tbody></table>`;\n        wireSupplierBookingDetails();
+        target.innerHTML = `<table class="data-table supplier-bookings-table"><thead><tr><th>Hotel</th><th>Referentie</th><th>Verblijf</th><th>Status</th><th>Omgeving</th><th>Financieel</th><th>Bijgewerkt</th><th></th></tr></thead><tbody>${items.map(supplierBookingRow).join("")}</tbody></table>`;
+        wireSupplierBookingDetails();
       }
       renderSupplierPagination(data, items.length);
     } catch (error) {
