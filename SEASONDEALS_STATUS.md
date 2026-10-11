@@ -48,6 +48,14 @@
 - Stabiele sleutel `nuitee-sandbox-voucher-5-owner-20261011`. Bij onzekere verzenduitkomst uitsluitend dezelfde sleutel binnen23uur; buiten die termijn eerst reconciliëren. Geen hotel-/interne notificaties of echt verblijf aangemaakt.
 -463 bevat een aanvullende read-only deliverycheck als geteste draft; de eerder gepubliceerde463 verstuurt dezelfde mail via461 maar retourneert alleen finalization.461 en callback1622 zijn gepubliceerd op ontwikkelbranch11.
 
+### Bevestigingsopmaak en goedgekeurd logo — 11 oktober 2026
+- Gebruiker bevestigde het bestaande nieuwe websitelogo. Nieuwe functie464 `supplier/checkout/render_confirmation` gebruikt exact dat CDN-bestand, witte achtergrond en expliciete inline afmetingen220×220. De oude mailheader had donkere tekst op donkergroen en vertrouwde op head-CSS voor afbeeldingsafmetingen.
+- Leveranciersbevestiging in partnerhuisstijl: boekingsgegevens, betaald bedrag, annuleringslabel, prominente leverancier-/hotelreferentie, voucher en QR. De QR is expliciet voor SeasonDeals-administratie; geen belofte dat het leveranciershotel deze scant. Aankomsttekst bevestigt dat de data al gereserveerd zijn.
+-464 getest met fictieve bevestigde boeking: HTML succesvol gegenereerd in60ms.461 aangesloten en getest op bestaande intent5 in1,82s: reconciled, voucher44, mail_status=sent en dezelfde bestaande Resend-ID. Geen nieuwe boeking of mail verstuurd.
+-464 en aangepaste461 gepubliceerd uitsluitend op branch11. Versie `supplier-confirmation-v2` wordt als complete HTML verstuurd; bestaande mailinhoud/idempotencysleutels blijven behouden. Normale partnerfunctie423 en partnerroute ongewijzigd.
+- Bron en exact door Xano gegenereerd voorbeeld opgeslagen op featurebranch: `render_confirmation.xs`, `finalize_sandbox.xs`, `confirmation-preview.html` (commit19cb2c775808aff538f7a5f6e42a72a2fcb9d9d3).
+- Beperking: nieuwe opmaak nog niet opnieuw naar Gmail verzonden of daar visueel gecontroleerd. Browserbeleid blokkeerde lokaal HTML-voorbeeld; geen omweg gebruikt. Eerdere delivered-mail betreft de oude opmaak.
+
 ### Productie blijft apart
 - Geen v1-merge/productielivegang; publieke supplierpoort blijft dicht.
 - De complete sandboxonderdelen zijn nu bewezen. Dit is geen nieuwe eerste betaling met álle laatste code al vooraf aangesloten: de boeking startte automatisch, de later toegevoegde kosten/voucher/mailafronding is op dezelfde bevestigde order uitgevoerd en via gepubliceerde callback herhaald.
