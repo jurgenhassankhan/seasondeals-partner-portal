@@ -56,12 +56,13 @@ symbol_whitelist=""} as $suffix
  db.add vouchers {data={order_id:$order.id,deal_id:$order.deal_id,hotel_id:null,customer_id:$order.customer_id,customer_email:$intent.holder.email,code:$code,qr_payload:$code,redemption_status:"active",status:"active",created_at:now,checkin:$order.checkin,checkout:$order.checkout,guests:$intent.checkout_context.request.guest_count}} as $created_voucher
  var.update $voucher {value=$created_voucher}
  }}
+ function.run "supplier/checkout/render_confirmation" {input={confirmation:{booking:$supplier.data,request:$intent.checkout_context.request,holder:$intent.holder,voucher:$voucher,selling_price:$intent.selling_price}}} as $confirmation_html
  api.lambda {
  code="""
 const i=$var.locked,d=$var.supplier.data,v=$var.voucher;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const old=i.checkout_context?.confirmation_mail;
-const mail=old||{status:'pending',idempotency_key:'nuitee-sandbox-voucher-'+i.id,to:'delivered@resend.dev',subject:'SANDBOX — SeasonDeals boekingsbevestiging',html:'<h2>SANDBOX — geen geldig verblijf</h2><p>De testboeking is bevestigd.</p><p>Hotel: '+esc(d.hotel?.name||d.hotelName)+'<br>Boekingsnummer: '+esc(d.bookingId)+'<br>Aankomst: '+esc(d.checkin)+'<br>Vertrek: '+esc(d.checkout)+'<br>Gasten: '+esc(i.checkout_context.request.guest_count)+'<br>Voucher: '+esc(v.code)+'</p><p>Betaald: EUR '+esc(i.selling_price)+' — annuleringsvoorwaarden: '+esc(d.cancellationPolicies?.refundableTag||d.tag)+'</p>',created_at:Date.now()};
+const mail=old||{status:'pending',idempotency_key:'nuitee-sandbox-voucher-'+i.id,to:'delivered@resend.dev',subject:'SANDBOX — SeasonDeals boekingsbevestiging',html:$var.confirmation_html,template_version:'supplier-confirmation-v2',created_at:Date.now()};
 return {mail,context:{...i.checkout_context,financial_reconciliation:$var.financials,voucher_id:v.id,confirmation_mail:mail}};
 """
  timeout=5
@@ -81,7 +82,11 @@ return {valid:Number.isFinite($var.mail.created_at)&&Date.now()-$var.mail.create
  timeout=5
  } as $mail_window
  precondition ($mail_window.valid == true) {error="Mail retry outside idempotency window; reconcile before resend"}
- function.run "emails/render_template" {input={content:$mail.html}} as $html
+ var $html {value=$mail.html}
+ conditional {if (($mail.template_version ?? "") != "supplier-confirmation-v2") {
+ function.run "emails/render_template" {input={content:$mail.html}} as $legacy_html
+ var.update $html {value=$legacy_html}
+ }}
  api.request {
  url="https://api.resend.com/emails"
  method="POST"
