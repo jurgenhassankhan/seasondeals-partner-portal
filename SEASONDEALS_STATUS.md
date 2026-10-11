@@ -502,3 +502,19 @@ Status: **stap 5 adminoverzicht gepubliceerd en ingelogd gecontroleerd op 11 okt
 - Het overzicht betreft supplier_bookings. Bewaking van checkout-intents zonder leveranciersrecord en schaaloptimalisatie van verrijking horen bij de verdere foutafhandeling/productievoorbereiding.
 
 Zie [backend/xano/NUITEE_STEP5_ADMIN.md](backend/xano/NUITEE_STEP5_ADMIN.md).
+
+
+## Nuitée stap 6 — bevestigingspagina (11 oktober 2026)
+
+Status: **in uitvoering; reader met bestaande sandboxboeking gecontroleerd, frontend gebouwd; publicatie en aangesloten browsercontrole volgen.**
+
+- SD-13: Webflow-site `68cb0d808ea4f2467bb313af` heeft 24 bestaande pagina's, zonder aparte bevestigingspagina. `/boeken` (pagina `695bd851c2b988eef5d14f96`) bevat de oude SimplyBook-widget. `/dea` gebruikt de bestaande GitHub `public-preview/js/deal.js` en Public API create-checkout-session. Geen wijzigingen aan deze routes.
+- Gepubliceerde stap-4-bron #455 stuurt success/cancel naar de homepage. Stap 4 blijft sandbox bewezen; deze nieuwe terugkeerpagina hoort bij stap 6.
+- Nieuwe Xano-branch14 `nuitee-step6-confirmation-2026-10-11` is aangemaakt vanuit uitsluitend gepubliceerde branch11-logica; de vier oude drafts zijn niet meegenomen. Gedeelde database blijft live; deze stap schrijft geen boekingsrecords.
+- Alleen-lezen POST `supplier/confirmation-status`, Public API152 endpoint1985, aangemaakt op branch14. Geen Stripe/Nuitée/Resend-acties. Een volledige Stripe-testsessie is vereist, gekoppeld aan intent/order/customer, maximaal 24 uur na aanmaak. Geen lookup met alleen een ordernummer. Alleen minimale reserveringsinformatie; geen gastnaam, e-mail, betaalreferenties of interne kosten.
+- Xano-run bestaande order100: confirmed, paid, sent; nhow Amsterdam Rai, 10–12 november, 2 gasten, EUR241.43, boekingsnummer en actieve voucher. 11 statements / 0.52s. Input `100` wordt geweigerd met Not Found / Confirmation unavailable (10ms).
+- Frontend toont afzonderlijk wachten op betaling, verwerking, bevestigd, aandacht nodig, geannuleerd, ontbrekende/verlopen link en netwerkfout. Betaling alleen geeft nooit een bevestigde boeking. Begrensde polling, printoptie, goedgekeurd logo en lokaal gegenereerde QR zonder externe QR-service.
+- Lokale Node-controles slagen voor statusvoorwaarden, ingetrokken voucher, annulering/fout, aflopende toegang, dataminimalisatie, HTML-escaping en lokale QR.
+- Webflow-conceptpagina `6acbead36631ab0d5cf3b9fd`, slug `boeking-bevestiging`, embed `b883ba38-59f9-74c3-6cdf-556cc786337a`. Draft=true; niet gepubliceerd. Assets op GitHub-branch `feat/nuitee-step6-confirmation-2026-10-11`.
+- Jurgen wil alleen verder met de nieuwe look. Oude Webflow-pagina's nu nadrukkelijk niet opruimen.
+- Open: aangesloten browsercontrole, definitieve assetpublicatie, sandbox-return-URL; publieke productie blijft geblokkeerd. Geen nieuwe boeking, betaling of mail.
