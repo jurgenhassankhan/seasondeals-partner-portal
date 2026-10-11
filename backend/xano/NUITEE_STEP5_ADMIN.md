@@ -1,6 +1,6 @@
 # Nuitée stap 5 — adminportaal
 
-Status: **backend selectief naar v1 samengevoegd; front-enduitrol en ingelogde browsercontrole nog open**  
+Status: **gepubliceerd en ingelogd gecontroleerd**  
 Datum: 11 oktober 2026
 
 ## Branches
@@ -53,8 +53,12 @@ De endpointtest slaagde met vijf bestaande supplier-bookings. Daarnaast is de ge
 
 ## Livegang
 
-De adminreader is selectief samengevoegd; 15 andere toevoegingen, 10 andere endpoints en middleware zijn uitgesloten. De front-end staat in PR #18 klaar voor uitrol. Nog geen geïntegreerde ingelogde browsercontrole uitgevoerd. Productiedata en echte productieboekingen blijven geblokkeerd totdat de bestaande productiepoort en livegangcontroles zijn doorlopen.
+De adminreader is selectief samengevoegd; 15 andere toevoegingen, 10 andere endpoints en middleware zijn uitgesloten. PR #18 is samengevoegd als `69a3c855ad7ec2e65832ffe7ebf2cb76c428c459`; Pages-uitrol #277 (`38168178348`) is geslaagd. De gepubliceerde portal is ingelogd gecontroleerd: zoeken/statusfilter, openen/sluiten details, sandboxkosten/voucher/QR/mail, Actie vereist, leeg productieresultaat, orderwaarschuwing en integratiestatus. V1-reader #550 is na samenvoeging met order100 uitgevoerd: 223 statements in 1.23s. Productiedata en echte productieboekingen blijven geblokkeerd totdat de bestaande productiepoort en livegangcontroles zijn doorlopen.
 
 ## Vervolgverificatie
 
 CONFIRMED + NHOW vindt order100 (1.51s); ACTION_REQUIRED vindt de bestaande mislukte poging (0.89s); productie geeft nul records (0.08s). Filters worden na verrijking en vóór paginering toegepast. De bron staat naast dit bestand in `nuitee-step5-supplier-bookings.xs`.
+
+## Reikwijdte
+
+Het overzicht toont bestaande supplier_bookings, inclusief historische pogingen. Recordsommen zijn geen omzet en kunnen tests/herhaalde pogingen bevatten. Checkout-intents zonder supplier_booking worden hier nog niet als apart incident getoond; uitbreiding daarvan en schaaloptimalisatie van de verrijking behoren tot verdere foutafhandeling en productievoorbereiding.
