@@ -526,7 +526,7 @@ Status: **bevestigingspagina en statuskoppeling gepubliceerd en in de browser ge
 
 ## Nieuwe Webflow-website klaarzetten — 11 oktober 2026
 
-Status: **wijzigingen opgeslagen in Webflow en Git; publicatie geblokkeerd door automatische veiligheidscontrole. Niet als volledig uitgerolde website aanmerken.**
+Status: **nieuwe Webflow-pagina's gepubliceerd na expliciete toestemming van Jurgen op 11 oktober 2026 om 22:23 Amsterdam. Coming Soon blijft de root-landingspagina. Nieuwe homepage/detail en bevestiging in de browser gecontroleerd; geen vrijgave echte Nuitée-boekingen.**
 
 - SD-13 / REL-20261011-WEBREADY. Opdracht: nieuwe pagina's en verbindingen klaarzetten, echte Nuitée-betalingen/boekingen niet vrijgeven; oude pagina's niet opruimen. Bron Git main `07abcfc608d051710fb9369f0777dc1a37c5b615` en actuele Webflow-embeds/head/footer.
 - Webflow-site `68cb0d808ea4f2467bb313af`: nieuwe homepage `6a5f73d431f70573692af960` (/new-website), detail `6a5f7754024f18d807219648` (/dea), bevestiging `6acbead36631ab0d5cf3b9fd` (/boeking-bevestiging). Oude Home/boeken/partnerpagina's ongemoeid; root-homepage niet vervangen.
@@ -537,3 +537,12 @@ Status: **wijzigingen opgeslagen in Webflow en Git; publicatie geblokkeerd door 
 - Losse paginapublicatie gaf HTTP400 Invalid parameter: pageId. Aansluitend volledige sitepublicatie naar www.seasondeals.nl, seasondeals.nl en Webflow-subdomein door automatische veiligheidscontrole geweigerd wegens mogelijk meepubliceren van andere wijzigingen en onvoldoende specifieke toestemming voor die brede actie. Niet omzeild, geen publicatie geslaagd.
 - Terugval: actuele vooraf gelezen embeds + head/footer in `public-preview/webflow/checkpoints/pre-webflow-ready-20261011.json`; bevestigingspagina terug naar draft=true indien gewenst. Geen databasewrites/transacties.
 - Open: toestemming voor volledige Webflow-sitepublicatie, daarna browsercontrole van de daadwerkelijk geplaatste nieuwe pagina's en nieuwe bevestigings-URL. Branch14 #591 wijst voorlopig correct naar de bewezen GitHub Pages-versie; niet naar een ongepubliceerde Webflow-URL omgezet. Account/favorieten/nieuwsbrief zijn niet alsnog gebouwd; volledige productieklantreis is geen afgeronde claim.
+
+### Publicatie WEBREADY afgerond — 11 oktober 2026
+
+- Na uitleg dat Coming Soon de landingspagina blijft gaf Jurgen expliciet toestemming: “Ja dan mag het”. De eerder genoemde automatische blokkade is hiermee opgelost; onderstaande publicatie vervangt de ongepubliceerde tussenstand hierboven.
+- Volledige Webflow-sitepublicatie geaccepteerd voor www.seasondeals.nl, seasondeals.nl en Webflow-subdomein. Publish task `02f587d2-fcae-4d7a-9e72-90b2bd310a3e` (scope site).
+- Werkelijk gepubliceerde browsercontrole: https://www.seasondeals.nl/ toont titel Coming Soon, logo, “Hot offers, cool prices.” en bestaande aankondiging. Homepage niet vervangen.
+- /new-website toont de nieuwe hulplink en “De SeasonDeals Club komt binnenkort.”; /dea?id=4&view=inventory-v2 toont de bijgewerkte service/bedrijfs/privacy/cookielinks en cookiekeuze.
+- /boeking-bevestiging bereikbaar op eigen domein. Zonder sessie correct Bevestiging niet beschikbaar. Met uitsluitend de bestaande order100-testsessie: bevestigd, betaald EUR241,43, nhow10–12nov,2gasten, voucher/QR en mailstatus sent. Geen nieuwe boeking, betaling, mail of databasewrite. Volledige sessiewaarde niet in Git opgenomen.
+- Webflow-publicatie en aangesloten bevestigingscontrole zijn dus afgerond. Branch14 #591 wijst nog naar de eveneens werkende GitHub Pages-bevestiging; omzetting daarvan naar het eigen domein is een afzonderlijke kleine routeringswijziging. Geen productieboekingen vrijgegeven, geen oude pagina verwijderd.
