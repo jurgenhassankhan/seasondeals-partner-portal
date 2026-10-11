@@ -1,4 +1,4 @@
-// Sandbox only: actual fees and one voucher. Mail is a stored preview; no external email request.
+// Sandbox only. Sends the saved confirmation only when its recipient has explicit recorded approval.
 function "supplier/checkout/finalize_sandbox" {
  input { int supplier_checkout_intent_id }
  stack {
@@ -72,6 +72,37 @@ data={checkout_context:$context.context,updated_at:now}} as $saved
  var.update $mail {value=$context.mail}
  }
  }
+ conditional {if ($mail.status != "sent" && ($mail.authorized ?? false) == true) {
+ precondition ($mail.to != null && $mail.to != "") {error="Approved recipient required"}
+ api.lambda {
+ code="""
+return {valid:Number.isFinite($var.mail.created_at)&&Date.now()-$var.mail.created_at<82800000};
+"""
+ timeout=5
+ } as $mail_window
+ precondition ($mail_window.valid == true) {error="Mail retry outside idempotency window; reconcile before resend"}
+ function.run "emails/render_template" {input={content:$mail.html}} as $html
+ api.request {
+ url="https://api.resend.com/emails"
+ method="POST"
+ params={from:"SeasonDeals <klantenservice@mail.seasondeals.nl>",to:$mail.to,subject:$mail.subject,html:$html}
+ headers=["Authorization: Bearer " ~ $env.RESEND_API_KEY,"Content-Type: application/json","Idempotency-Key: " ~ $mail.idempotency_key]
+ } as $sent
+ precondition ($sent.response.status >= 200 && $sent.response.status < 300 && $sent.response.result.id != null) {error="Confirmation mail pending; retry with same idempotency key"}
+ db.transaction {stack {
+ db.get supplier_checkout_intents {field_name="id"
+field_value=$intent.id
+lock=true} as $latest
+ api.lambda {code="""
+return {...$var.latest.checkout_context,confirmation_mail:{...$var.latest.checkout_context.confirmation_mail,status:'sent',resend_id:$var.sent.response.result.id,sent_at:Date.now()}};
+"""
+ timeout=5
+ } as $sent_context
+ db.edit supplier_checkout_intents {field_name="id"
+field_value=$intent.id
+data={checkout_context:$sent_context,updated_at:now}} as $completed
+ }}
+ }}
  }
- response={status:"reconciled",environment:"sandbox",order_id:$order.id,external_booking_id:$order.external_booking_id,financials:$financials,voucher_id:$voucher.id,mail_status:"draft_not_sent",mail_recipient:"delivered@resend.dev"}
+ response={status:"reconciled",environment:"sandbox",order_id:$order.id,external_booking_id:$order.external_booking_id,financials:$financials,voucher_id:$voucher.id,mail_status:($completed.checkout_context.confirmation_mail.status ?? $mail.status),mail_recipient:$mail.to,resend_id:($completed.checkout_context.confirmation_mail.resend_id ?? $mail.resend_id ?? null)}
 }
