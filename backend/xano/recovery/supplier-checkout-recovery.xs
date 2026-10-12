@@ -113,7 +113,7 @@ intent_id:$intent_id
 
 
 } as $before
- precondition ($input.order_id == 0 || $before.order_id == $input.order_id) {
+ precondition ($input.order_id == 0 || ($before.order_id ?? $input.order_id) == $input.order_id) {
 
 error="Order and checkout do not match"
 

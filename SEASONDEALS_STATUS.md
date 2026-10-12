@@ -1,8 +1,10 @@
 # SeasonDeals — actuele projectstatus
 
+> **Actueel12okt — SD-12:** vijf backendonderdelen op v1 en admin op main/Pages gepubliceerd en ingelogd gecontroleerd. Overzetactie klaar; volledige stap7-afsluiting wacht nog op betrouwbare afhandeling van historisch order97. Order99 blijft bewust manual_attention. Zie REL-20261012-RECOVERY7-DEPLOY onderaan.
+
 > **Vaste bron van waarheid voor de technische voortgang van SeasonDeals**
 >
-> Laatst inhoudelijk geverifieerd: **11 oktober 2026**
+> Laatst inhoudelijk geverifieerd: **12 oktober 2026**
 >
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
@@ -576,7 +578,7 @@ Schermcorrectie deployment `38173646652`: success. Browsercontrole: geen vervolg
 
 ## REL-20261011-RECOVERY7 — herstelroute, tussenstand 11 oktober 2026
 
-**SD-12: gebouwd en met bestaande sandboxorders getest op Xano-ontwikkelbranch17. Nog NIET naar v1 overgezet; nieuwe adminbediening nog NIET gepubliceerd of aangesloten geverifieerd. Stap 7 blijft daarom open.** Stap4/5 blijven bewezen afgerond.
+**Historische tussenstand11okt (achterhaald door REL-20261012-RECOVERY7-DEPLOY hieronder): SD-12 was gebouwd en getest op branch17. Inmiddels op v1/main/Pages geplaatst en ingelogd gecontroleerd; resterend datapunt97 apart geregistreerd.** Stap4/5 blijven bewezen afgerond.
 
 ### Exacte bron en selectieve bestemming
 - Xano workspace1 branch17 `nuitee-step7-recovery-2026-10-11`, kopie van gepubliceerde v1. Functies710 `supplier/checkout/recovery_snapshot`,711 `supplier/checkout/recovery_apply` en Admin175 POST2349 `supplier-checkout-recovery` zijn gepubliceerd en gebruikt in onderstaande tests. Alleen Nuitée sandbox en Stripe test; actieve superadmin/platform_admin via bestaande authenticatie/guard.
@@ -625,3 +627,30 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Frontend in deze tussenstand nog werkbranch; publicatie en aangesloten controle volgen. Nieuw geopende adminbrowser vraagt SeasonDeals-adminlogin. Xano-login werkt wel.
 - Order97 voucher/mail nog beoordelen;99 blijft manual_attention. Geen ordermutaties, nieuwe boekingen, betalingen, refunds of mails in deze uitrol. Back-up betreft uitsluitend logica; historische98-refund en100-annulering niet terugdraaien. Coming Soon en gesloten productiepoort behouden.
 - Terugval: gericht vijf onderdelen vergelijken met `v1-fmiKpY`; geen volledige database-/branchrollback. Frontend terugval main vóór deze release `8786e904b9828c93bc20d7ac5f7d1483c7a0ab2b`. Stap7 blijft open tot adminpublicatie/aangesloten eindcontrole en beoordeling97 daadwerkelijk zijn voltooid; stap4/5 blijven afgerond.
+
+
+### REL-20261012-RECOVERY7-DEPLOY — publicatie en aangesloten eindcontrole
+
+**Actuele toestand 12 oktober 2026:** de vijf geselecteerde backendonderdelen staan op v1; de bijbehorende privé-admin staat op main/GitHub Pages en is ingelogd met de echte v1-aansluiting gecontroleerd. De overzetactie is klaar. SD-12/stap7 wordt nog niet als volledig afgehandeld gemarkeerd: order97 heeft geen betrouwbaar bewezen betaalsessiebinding en mist voucher/mail; order99 blijft bewust manual_attention. Stap4/5 blijven afgerond.
+
+| Onderdeel | Gepubliceerde bron workspace1/branch17 | Werkelijke bestemming workspace1/v1 |
+|---|---|---|
+| recovery_snapshot | functie710 | functie748 |
+| recovery_apply | functie711 | functie749 |
+| supplier-checkout-recovery POST | Admin175 endpoint2349 | Admin3 endpoint2471 |
+| orders/{order_id}/refund POST | Admin175 endpoint2251 | Admin3 endpoint24 |
+| supplier-checkout-incidents GET | Admin175 endpoint2277 | Admin3 endpoint2227 |
+
+- Eerste selectieve merge:12okt09:30 Amsterdam, back-up `v1-fmiKpY`. Uitsluitend bovenstaande vijf; demo2344–2348, partner2312/2314/2315/2316/2317 en middleware uitgesloten.
+- In de aangesloten controle bleek een concrete fout: ongeldige evidence bevat geen order_id, waardoor inspect van97 een Xano ERROR_FATAL gaf. Endpoint2349 om09:51 gepubliceerd met één gerichte null-coalescing-correctie in de ordervergelijking; alleen dit endpoint opnieuw naar2471 gemerged om09:55, back-up `v1--oi6V-`. Geen autorisatie-, provider-, sandbox-, evidence- of financiële begrenzing versoepeld. Invalid evidence blijft zonder toegestane acties. Bronbestand `backend/xano/recovery/supplier-checkout-recovery.xs` in dezelfde GitHub-correctie.
+- Frontendcheckpoint b48c3310d8cd0f30c0272a7ad7b26327e69b0de2 via PR20 gepubliceerd: main `b63196fe806e13a30bfb3577441e9690176be133`, GitHub Pages-run `38219630962` completed/success (12okt07:47 UTC). Config gebruikt `https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-admin` zonder testbranchoverride.
+- Werkelijk ingelogd gecontroleerd op `https://jurgenhassankhan.github.io/seasondeals-partner-portal/admin/checkout-recovery.html`, bereikbaar vanuit Leveranciers → bestaande boeking100 → Status controleren, annuleren of herstellen. Uitsluitend inspect; geen herstel-, annulerings- of refundknop uitgevoerd.
+- Order100: Sandbox, CANCELLED_WITH_CHARGES, referentie l0kp_BVEf, betaald EUR241,43, klantrefund EUR0,00, resterend EUR241,43; leverancierskosten EUR205,20 en leveranciersrefund EUR0,00. Bestaande voucher in leveranciersdetail cancelled. Geen nieuwe annulering of klantrefund.
+- Order98: Sandbox, NOT_BOOKED, betaald EUR241,43, terugbetaald EUR241,43, pending EUR0,00, resterend EUR0,00. Geen refundknop meer; alleen statusbijwerking beschikbaar. Geen nieuwe terugbetaling.
+- Order99: nette blokkade “Geen zekere leveranciersuitkomst. Lege zoekresultaten of time-out zijn geen bewijs dat er nooit geboekt is.” Geen actieknoppen, reset of herboeking.
+- Order97: na correctie nette blokkade “Betaalsessie niet betrouwbaar gekoppeld.” Geen financiële actieknoppen. De route controleert exact provider_slug=nuitee, environment=sandbox, de gekoppelde order, Stripe-testmodus, session-ID, EUR-bedrag en order/intent-metadata. De historische lokale status betaald/bevestigd alleen is onvoldoende bewijs om een voucher/mail uit te geven. Xano-database103 alleen-lezen gecontroleerd: intent2 hoort bij order97, provider_slug=nuitee, environment=sandbox, status=booked, holder={}, guests=[], checkout_context=null; record laatst bijgewerkt7okt09:17 Amsterdam. Dit historische record mist dus ook de context/gastgegevens van de nieuwere checkoutketen. De precieze afwijkende Stripe-sessievoorwaarde blijft TE VERIFIËREN; niet blind metadata of betaalstatus aanpassen.
+- Andere orderroute81: aangesloten scherm weigert “Exactly one Nuitee sandbox checkout required; other order routes are excluded”. Geen externe transactie.
+- Incidentreader2227 via gepubliceerde `admin/checkout-incidents.html`:4 sandboxcheckouts gescand, exact2 aandachtspunten (97 ontbrekende voucher/mail;99 manual_attention/leveranciersfout). Afgehandelde98 en geannuleerde100 niet meer als open incident. Beide herstelkoppelingen aanwezig.
+- Lokale tests opnieuw groen:17 evidence-scenario's (de historische console-teller print15 vóór de laatste2), echte reservatielambda's voor concurrency/stale requests, onveranderlijke retry, retrytermijn en refundgrenzen; bestaande partnerrefundbody gelijk; admin-JavaScript syntax geldig. Nieuwe inspectcorrectie bovendien werkelijk op v1 via orders97/99 bewezen. Historische branchtransactietests blijven het bewijs voor daadwerkelijke refund/annulering; geen nieuwe externe transacties voor schermcontrole.
+- Resterende concrete opvolging97: oorspronkelijke Stripe-testsessie/order97/intent2 en bestaande Nuitée-reservering onafhankelijk read-only vergelijken; bij bewijs van volledige consistente binding bepalen of de bestaande idempotente finalisatie kan worden gebruikt voor één ontbrekende voucher en afzonderlijk geautoriseerde mail, of het oude testrecord expliciet als historische fixture moet blijven staan. De herstelroute creëert zelf geen vouchers/mails. Geen nieuwe boeking en geen testmail uitsluitend voor schermcontrole.
+- Geen datarecords gewijzigd in deze uitrol. Back-ups herstellen uitsluitend logica, geen gedeelde databasegegevens of externe98-refund/100-annulering. Coming Soon, gewone hotelpartnerroute en gesloten productiepoort behouden. Productieboekingen, betalingen en refunds zijn niet vrijgegeven.
