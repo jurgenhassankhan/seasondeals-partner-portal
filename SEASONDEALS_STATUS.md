@@ -1,6 +1,6 @@
 # SeasonDeals — actuele projectstatus
 
-> **Actueel12okt — SD-12:** vijf backendonderdelen op v1 en admin op main/Pages gepubliceerd en ingelogd gecontroleerd. Overzetactie klaar; volledige stap7-afsluiting wacht nog op betrouwbare afhandeling van historisch order97. Order99 blijft bewust manual_attention. Zie REL-20261012-RECOVERY7-DEPLOY onderaan.
+> **Actueel12okt — SD-12:** stap7-sandboxherstelroute afgerond, op v1/main/Pages geplaatst en ingelogd gecontroleerd. Historische order97 blijft op aanwijzing van Jurgen een ongewijzigd testrecord en is geen afsluitblokkade; order99 blijft manual_attention. Geen publieke productievrijgave. Zie DOC-20261012-ORDER97-LEGACY onderaan.
 
 > **Vaste bron van waarheid voor de technische voortgang van SeasonDeals**
 >
@@ -631,7 +631,7 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 
 ### REL-20261012-RECOVERY7-DEPLOY — publicatie en aangesloten eindcontrole
 
-**Actuele toestand 12 oktober 2026:** de vijf geselecteerde backendonderdelen staan op v1; de bijbehorende privé-admin staat op main/GitHub Pages en is ingelogd met de echte v1-aansluiting gecontroleerd. De overzetactie is klaar. SD-12/stap7 wordt nog niet als volledig afgehandeld gemarkeerd: order97 heeft geen betrouwbaar bewezen betaalsessiebinding en mist voucher/mail; order99 blijft bewust manual_attention. Stap4/5 blijven afgerond.
+**Historische tussenstand vóór DOC-20261012-ORDER97-LEGACY:** de vijf geselecteerde backendonderdelen staan op v1; de bijbehorende privé-admin staat op main/GitHub Pages en is ingelogd met de echte v1-aansluiting gecontroleerd. De overzetactie is klaar. SD-12/stap7 wordt nog niet als volledig afgehandeld gemarkeerd: order97 heeft geen betrouwbaar bewezen betaalsessiebinding en mist voucher/mail; order99 blijft bewust manual_attention. Stap4/5 blijven afgerond.
 
 | Onderdeel | Gepubliceerde bron workspace1/branch17 | Werkelijke bestemming workspace1/v1 |
 |---|---|---|
@@ -657,4 +657,23 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 
 **Definitief GitHub-bewijs (12okt):** correctie + beide documenten via PR21 samengevoegd naar main `914ea8e1b38b858760c6a8f6585bd172975b0400`; Pages-run `38221311841` completed/success. Geen frontendcode veranderd na de aangesloten controle. Deze aanvullende registratie wijzigt alleen documentatie.
 
-**Grens van het vervolgonderzoek97:** browser en Xano-login bleven beschikbaar, maar bij verdere Xano-debugnavigatie/invoer retourneerde de browser `credential_observation_restricted`/`retained_data_restricted`, ook na de gedocumenteerde nieuwe-tab/navigatieherstelroute. Daarom geen onderliggende Stripe-response/metadata opgehaald en geen gegevens gerepareerd op basis van aannames. Dit is geen bewezen fout in de Xano-login. Hervat de read-only sessievergelijking zodra die browserbeperking weg is; publicatie/merge en aangesloten admincontrole zijn hierboven al voltooid en hoeven niet opnieuw.
+**Historische browserbeperking (vervangen door DOC-20261012-ORDER97-LEGACY):** browser en Xano-login bleven beschikbaar, maar bij verdere Xano-debugnavigatie/invoer retourneerde de browser `credential_observation_restricted`/`retained_data_restricted`, ook na de gedocumenteerde nieuwe-tab/navigatieherstelroute. Daarom geen onderliggende Stripe-response/metadata opgehaald en geen gegevens gerepareerd op basis van aannames. Dit is geen bewezen fout in de Xano-login. Hervat de read-only sessievergelijking zodra die browserbeperking weg is; publicatie/merge en aangesloten admincontrole zijn hierboven al voltooid en hoeven niet opnieuw.
+
+
+## DOC-20261012-ORDER97-LEGACY — onderzoek en afbakening SD-12
+
+**Besluit 12 oktober 2026:** Jurgen verduidelijkte dat order97 vóór de nieuwe checkoutconstructie is gemaakt en dat herstel van deze oude testorder niet nodig is. Onderzoek gestopt; order97 blijft een historische sandboxfixture. Ontbrekende voucher/mail bij dit record blokkeren de afsluiting van de huidige stap7-sandboxscope niet. Dit vervangt de eerdere opdracht om97 te herstellen vóór afsluiting. Order99 blijft bewust manual_attention; niet resetten of herboeken.
+
+### Nieuw alleen-lezen bewijs
+- Browserbediening daadwerkelijk gecontroleerd via instance, workspace1/v1, tabel103/intent2 en functie748 `supplier/checkout/recovery_snapshot`. In deze sessie geen `credential_observation_restricted` of `retained_data_restricted` bij de uitgevoerde controles. Geen nieuwe login nodig.
+- Functie748 met intent2 uitgevoerd: 31 statements/1,74s; geldig afgehandelde blokkade “Betaalsessie niet betrouwbaar gekoppeld.” Debugger uitsluitend gebruikt om dezelfde leesketen te onderzoeken; geen recovery_apply, finalisatie, annulering, refund of webhookreplay uitgevoerd.
+- Precieze historische schema-afwijking gevonden: Stripe-sessionmetadata bevat `order_id=97`, `supplier_checkout_intent_id=2`, `supplier_fulfillment=nuitee`; `supplier_order_id` ontbreekt. De huidige evidencecontrole vereist juist die laatste naam. De bestaande Stripe-sessie komt overeen met de orderreferentie; EUR579,49 komt overeen met order en intent.
+- Stripe GET bevestigt testmodus, session complete/paid, PaymentIntent succeeded/amount_received57949, gekoppelde charge paid/captured, bedrag57949, currency eur, livemode false, disputed false en amount_refunded0. De volledige refundlijst is vóór het stoppen niet afzonderlijk inhoudelijk uitgelezen; geen claim van complete refundreconciliatie of valid=true.
+- Nuitée get_booking bevestigt bestaande sandboxboeking `8yAyZt0BQ`, clientReference `SD-NUITEE-97`, CONFIRMED, The Manhattan at Times Square Hotel,10–12nov2026, EUR474,06 leverancier en EUR5,32 processing. Geen nieuwe reservering gemaakt.
+- Historische lokale context is onvolledig: intent2 holder={},guests=[],checkout_context=null; order97 deal_id=0,checkin=0,checkout=0. De stap4-finalizer gebruikt holder.email, checkout_context.request.guest_count en orderdatums voor voucher/mail. Daarom niet blind op deze fixture uitvoeren of alleen Stripe-metadata aanpassen. De reeds geregistreerde ontbrekende voucher/mail is niet gerepareerd; geen nieuwe mail-/vouchertest uitgevoerd.
+
+### Plaatsing, scope en vervolg
+- Uitsluitend beide statusdocumenten bijgewerkt op GitHub main. Geen software/configuratie uitgerold, geen datarecord gewijzigd en geen nieuwe transacties/testmails. Geen dataherstel nodig; terugval uitsluitend deze documentatiediff.
+- Bronnen: workspace1/v1 functie748 en tabel103/intent2; Git main `backend/xano/recovery/recovery-snapshot.xs`; historische stap4-bron `feat/nuitee-step4-2026-10-11:xano/nuitee-step4-2026-10-11/finalize_sandbox.xs` (blob `8a25ee24136ab843e6f3a12ca852a4f8f19c0bd0`). Bestaand releasebewijs REL-20261012-RECOVERY7-DEPLOY blijft geldig.
+- SD-12 huidige sandboxbouw/test en plaatsing zijn afgerond op basis van het al vastgelegde test-/uitrolbewijs. De historische testrecords97/99 blijven voor audit behouden; geen incidentfilter aangepast, dus bestaande waarschuwingen kunnen zichtbaar blijven. Deze administratie is geen datareparatie.
+- Geen verder herstel van97 plannen of afgeronde stap4/5/7 opnieuw uitvoeren alleen vanwege deze fixture. Productiescenario’s, productieconfiguratie en publieke go/no-go blijven afzonderlijke open livegangvoorwaarden; Coming Soon en de gesloten productiepoort blijven behouden.
