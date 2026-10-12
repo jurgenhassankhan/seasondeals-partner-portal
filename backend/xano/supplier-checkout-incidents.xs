@@ -38,6 +38,7 @@ return={type:"list"}} as $vouchers
         api.lambda {
           code = """
 // Pure policy: reads stored evidence only. Never books, refunds or sends mail.
+// Pure policy: reads stored evidence only. Never books, refunds or sends mail.
 function classifyCheckoutIncident(intent, order, bookings, vouchers, now) {
   const i = intent || {}, o = order || {}, c = i.checkout_context || {};
   const lower = value => String(value || '').toLowerCase();
@@ -53,8 +54,11 @@ function classifyCheckoutIncident(intent, order, bookings, vouchers, now) {
   const confirmed = paid && lower(i.status) === 'booked' && lower(o.provider_sync_status) === 'confirmed' && lower(b?.booking_status) === 'confirmed' && !!o.external_booking_id && b.external_booking_id === o.external_booking_id;
   const reasons = [];
   if (!order) reasons.push('ORDER_MISSING');
+  const recovery=c.recovery||{};
+  if (recovery.operation) reasons.push('RECOVERY_PENDING');
+  if (Number(recovery.last?.pending_refund_minor)>0) reasons.push('REFUND_PENDING');
   if (lower(i.status) === 'manual_attention') reasons.push('MANUAL_REVIEW');
-  if (!confirmed && (lower(o.provider_sync_status) === 'error' || candidates.some(x => /failed|error/.test(lower(x.booking_status))))) reasons.push('BOOKING_ERROR');
+  if (!confirmed && !cancelled && (lower(o.provider_sync_status) === 'error' || candidates.some(x => /failed|error/.test(lower(x.booking_status))))) reasons.push('BOOKING_ERROR');
   if (cancelled) {
     if (activeVoucher) reasons.push('CANCELLED_VOUCHER_ACTIVE');
     if (refunded && lower(b?.booking_status) === 'confirmed') reasons.push('REFUNDED_BOOKING_CONFIRMED');
@@ -80,6 +84,7 @@ function classifyCheckoutIncident(intent, order, bookings, vouchers, now) {
     next_action: 'Controleer eerst de bestaande betaling en leveranciersstatus op referentie. Niet opnieuw boeken, afschrijven of terugbetalen zonder vastgestelde uitkomst.'
   };
 }
+
 return classifyCheckoutIncident($var.intent,$var.related_order,$var.bookings,$var.vouchers,Date.now());
 """
           timeout = 5

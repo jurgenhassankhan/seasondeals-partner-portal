@@ -14,8 +14,11 @@ function classifyCheckoutIncident(intent, order, bookings, vouchers, now) {
   const confirmed = paid && lower(i.status) === 'booked' && lower(o.provider_sync_status) === 'confirmed' && lower(b?.booking_status) === 'confirmed' && !!o.external_booking_id && b.external_booking_id === o.external_booking_id;
   const reasons = [];
   if (!order) reasons.push('ORDER_MISSING');
+  const recovery=c.recovery||{};
+  if (recovery.operation) reasons.push('RECOVERY_PENDING');
+  if (Number(recovery.last?.pending_refund_minor)>0) reasons.push('REFUND_PENDING');
   if (lower(i.status) === 'manual_attention') reasons.push('MANUAL_REVIEW');
-  if (!confirmed && (lower(o.provider_sync_status) === 'error' || candidates.some(x => /failed|error/.test(lower(x.booking_status))))) reasons.push('BOOKING_ERROR');
+  if (!confirmed && !cancelled && (lower(o.provider_sync_status) === 'error' || candidates.some(x => /failed|error/.test(lower(x.booking_status))))) reasons.push('BOOKING_ERROR');
   if (cancelled) {
     if (activeVoucher) reasons.push('CANCELLED_VOUCHER_ACTIVE');
     if (refunded && lower(b?.booking_status) === 'confirmed') reasons.push('REFUNDED_BOOKING_CONFIRMED');
