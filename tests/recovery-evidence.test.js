@@ -1,0 +1,24 @@
+const assert=require('node:assert/strict');const evidence=require('../backend/xano/recovery/evidence');
+const now=2000000000;
+function fixture(){const i={id:1,order_id:2,environment:'sandbox',provider_slug:'nuitee',currency:'EUR',selling_price:100,stripe_checkout_session_id:'cs_test_fixture',stripe_payment_intent_id:'pi_fixture',client_reference:'SD-SBX-fixture',updated_at:now-600000,checkout_context:{},booking_attempts:0};const o={id:2,total_amount:100,stripe_checkout_session_id:i.stripe_checkout_session_id,updated_at:1};const s={response:{status:200,result:{id:i.stripe_checkout_session_id,object:'checkout.session',livemode:false,currency:'eur',amount_total:10000,payment_intent:'pi_fixture',payment_status:'paid',metadata:{supplier_checkout_intent_id:'1',supplier_order_id:'2',supplier_fulfillment:'nuitee'}}}};const p={response:{status:200,result:{id:'pi_fixture',livemode:false,currency:'eur',amount:10000,status:'succeeded',latest_charge:{id:'ch_fixture',payment_intent:'pi_fixture',paid:true,currency:'eur',amount:10000,livemode:false,amount_refunded:0,balance_transaction:{object:'balance_transaction',amount:10000,currency:'eur',fee:35}}}}};const r={response:{status:200,result:{has_more:false,data:[]}}};const l={response:{status:200,result:{data:[]}}};return {i,o,s,p,r,l,b:null};}
+const run=f=>evidence(f.i,f.o,f.s,f.p,f.r,f.l,f.b,now);
+let count=0;function test(name,fn){fn();count++;console.log('PASS '+name)}
+test('never submitted and absent can refund but cannot book',()=>{const e=run(fixture());assert(e.valid);assert.deepEqual(e.allowed,['reconcile','refund']);});
+test('unresolved submitted attempt cannot refund',()=>{const f=fixture();f.i.booking_attempts=1;f.i.checkout_context.booking_submission_at=now-600000;assert(!run(f).valid)});
+test('4005 reserved reference does not prove no booking',()=>{const f=fixture();f.i.booking_attempts=1;f.i.checkout_context={booking_response_at:now-600000,booking_response:{success:false,error:{upstream_error:{error:{code:4005}}}}};assert(!run(f).valid)});
+test('definitive validation failure plus fresh absence allows refund',()=>{const f=fixture();f.i.booking_attempts=1;f.i.checkout_context={booking_response_at:now-600000,booking_response:{success:false,error:{upstream_error:{error:{code:4002}}}}};assert(run(f).allowed.includes('refund'))});
+function confirmed(){const f=fixture();f.b={success:true,data:{sandbox:1,clientReference:f.i.client_reference,currency:'EUR',bookingId:'b_fixture',status:'CONFIRMED',price:75,processingFee:1}};return f;}
+test('confirmed cannot refund before cancellation',()=>{const e=run(confirmed());assert(e.valid);assert.deepEqual(e.allowed,['reconcile','cancel']);});
+test('wrong booking reference blocked',()=>{const f=confirmed();f.b.data.clientReference='someoneelse';assert(!run(f).valid)});
+test('production blocked',()=>{const f=confirmed();f.i.environment='production';assert(!run(f).valid)});
+test('cancelled allows controlled refund',()=>{const f=confirmed();f.b.data.status='CANCELLED_WITH_CHARGES';assert(run(f).allowed.includes('refund'))});
+test('partial refund not full refund',()=>{const f=fixture();f.r.response.result.data=[{id:'re1',payment_intent:'pi_fixture',currency:'eur',amount:2500,status:'succeeded'}];f.p.response.result.latest_charge.amount_refunded=2500;assert.equal(run(f).refunded_minor,2500);assert.equal(run(f).remaining_minor,7500)});
+test('pending refund blocks additional refund',()=>{const f=fixture();f.r.response.result.data=[{payment_intent:'pi_fixture',currency:'eur',amount:2500,status:'pending'}];assert(!run(f).allowed.includes('refund'));assert.equal(run(f).pending_refund_minor,2500)});
+test('refund list pagination fails closed',()=>{const f=fixture();f.r.response.result.has_more=true;assert(!run(f).valid)});
+test('mismatched payment blocked',()=>{const f=fixture();f.s.response.result.metadata.supplier_order_id='9';assert(!run(f).valid)});
+test('unknown refund past window cannot retry',()=>{const f=fixture();f.i.checkout_context.recovery={operation:{key:'k',action:'refund',started_at:now-86400000,amount_minor:10000}};assert(!run(f).allowed.includes('refund'));assert(!run(f).allowed.includes('retry_refund'))});
+test('retry bounded by stable persisted operation',()=>{const f=fixture();f.i.checkout_context.recovery={operation:{key:'k',action:'refund',started_at:now-120000,amount_minor:10000}};assert(run(f).allowed.includes('retry_refund'));assert(!run(f).allowed.includes('refund'))});
+test('disputed charge blocked',()=>{const f=fixture();f.p.response.result.latest_charge.disputed=true;assert(!run(f).valid)});
+console.log(count+' recovery evidence checks passed');
+test('ordinary partner test order excluded despite sandbox label',()=>{const f=fixture();f.i.provider_slug='seasondeals_demo';assert(!run(f).valid)});
+test('unrelated order ID excluded',()=>{const f=fixture();f.o.id=99;assert(!run(f).valid)});
