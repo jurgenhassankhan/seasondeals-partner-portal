@@ -232,3 +232,12 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Bronnen: workspace1/v1 functie748 en tabel103/intent2; Git main `backend/xano/recovery/recovery-snapshot.xs`; historische stap4-bron `feat/nuitee-step4-2026-10-11:xano/nuitee-step4-2026-10-11/finalize_sandbox.xs` (blob `8a25ee24136ab843e6f3a12ca852a4f8f19c0bd0`). Bestaand releasebewijs REL-20261012-RECOVERY7-DEPLOY blijft geldig.
 - SD-12 huidige sandboxbouw/test en plaatsing zijn afgerond op basis van het al vastgelegde test-/uitrolbewijs. De historische testrecords97/99 blijven voor audit behouden; geen incidentfilter aangepast, dus bestaande waarschuwingen kunnen zichtbaar blijven. Deze administratie is geen datareparatie.
 - Geen verder herstel van97 plannen of afgeronde stap4/5/7 opnieuw uitvoeren alleen vanwege deze fixture. Productiescenario’s, productieconfiguratie en publieke go/no-go blijven afzonderlijke open livegangvoorwaarden; Coming Soon en de gesloten productiepoort blijven behouden.
+
+
+## DOC-20261012-PRODUCTION-ACCESS — SD-10 controle gestart
+
+- Op verzoek van Jurgen productievoorbereiding gestart; stap7 en historische orders97/99 niet heropend.
+- Alleen-lezen gecontroleerd: Xano workspace1/v1, Keys & Variables. Zichtbare workspacevariabelen: STRIPE_SECRET_KEY_test, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY, NUITEE_SANDBOX_API_KEY. Geen afzonderlijk benoemde Stripe-live- of Nuitée-productiesleutel in deze lijst. Waarden niet onthuld, gekopieerd of aangepast. De naam STRIPE_WEBHOOK_SECRET bewijst geen live-configuratie; exacte modus/endpointbinding TE VERIFIËREN.
+- Nuitée-dashboard verwijst naar connect.nuitee.com en toont aanmelding; Stripe-dashboard toont eveneens aanmelding. Actuele productieautorisatie, Stripe-accountactivatie/uitbetalingen en live-webhooks nog TE VERIFIËREN. Historische Nuitée-productievergrendeling niet als actuele accountcontrole gepresenteerd.
+- Beveiligde Nuitée-aanmelding gestart; gebruiker koos Google en verzocht vervolgens zelf in te loggen. Nog geen succesvolle ingelogde accountcontrole vastgelegd. Volgende actie: na gebruikerslogin Nuitée-productiestatus en eventuele ontbrekende vereisten alleen-lezen controleren; daarna Stripe-account en live-configuratie controleren.
+- Uitsluitend documentatie op main; geen software/configuratie uitgerold, sleutels gegenereerd, saldo opgewaardeerd, kaarten toegevoegd, orders gewijzigd, transacties of mails uitgevoerd. Coming Soon en publieke productiepoort ongewijzigd. Terugval: alleen deze documentatieaanvulling.
