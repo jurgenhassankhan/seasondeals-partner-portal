@@ -371,3 +371,11 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - SD-07/08/09 backendcode is nu geplaatst en intern verbonden; veilige entry-gate en beperkte fixturetests bewezen. Niet aanduiden als volledige productieaansluiting afgerond. Open: aparte Stripe-bestemming/secret/transport, productie-dealimport en kostenbewijs, klantautorisatie voor publiek checkoutendpoint, bevestigingsreader/frontend en productieherstelbediening. SD-11 en SD-13 blijven open.
 - Vrijgave blijft gesloten: read/transactions/sales/refunds/email=false; Coming Soon blijft. Geen sleutelrotatie, echte of testbetaling, boeking, refund, mail of DB-recordwijziging uitgevoerd.97 en99 niet gelezen/gewijzigd, stappen4/5/7 niet heropend.
 - Terugval: herstel alleen callback2594 naar de vorige gesloten versie uit `c92df16058bf940cc4155f162ff023cb6d213bda`; nieuwe791–798 achter gesloten788 houden en alleen na afhankelijkheidscontrole verwijderen. Bestaande routes/credentials behouden. Geen dataherstel vereist voor deze plaatsing; branches delen live data.
+
+
+## DOC-20261013-WEBHOOK-PREP — aparte Stripe-bestemming klaar voor registratie
+
+- Bron: Stripe-account `acct_1TkMuaPz36j75L08`, Workbench-formulier; gecontroleerde GitHub-main `f209deb2c34cdef44f0baaf66c6f793d577a031d`.
+- Voorbereid, NIET opgeslagen: bestemming `SeasonDeals Nuitee productie`, eigen account, snapshotpayload, API-versie `2023-10-16`, uitsluitend `checkout.session.completed` en `checkout.session.async_payment_succeeded`.
+- Exacte bestemming: `https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/webhooks/nuitee-production` (bestaande nieuwe callback2594 op workspace1/v1). Formulier ingevuld; `Bestemming maken` nog niet uitgevoerd. Er is dus nog geen nieuw webhook-ID of signing secret.
+- Volgende stap: registratie en veilige opslag van het bijbehorende secret als afzonderlijke Xano-variabele `NUITEE_STRIPE_WEBHOOK_SECRET`, gevolgd door transportcontrole. Deze stappen zijn nog niet bewezen of vrijgegeven. Bestaande partnerwebhook/secret behouden. Productiepoorten blijven gesloten; geen transactie, boeking, mail of databasewijziging.
