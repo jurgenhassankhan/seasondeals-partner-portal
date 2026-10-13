@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "environment": "production",
+  "payment_method": "ACC_CREDIT_CARD",
+  "read_enabled": false,
+  "transactions_enabled": false,
+  "sales_enabled": false,
+  "refunds_enabled": false,
+  "email_enabled": false
+}
