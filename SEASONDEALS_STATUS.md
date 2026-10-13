@@ -824,3 +824,14 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Voorbereid, NIET opgeslagen: bestemming `SeasonDeals Nuitee productie`, eigen account, snapshotpayload, API-versie `2023-10-16`, uitsluitend `checkout.session.completed` en `checkout.session.async_payment_succeeded`.
 - Exacte bestemming: `https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/webhooks/nuitee-production` (bestaande nieuwe callback2594 op workspace1/v1). Formulier ingevuld; `Bestemming maken` nog niet uitgevoerd. Er is dus nog geen nieuw webhook-ID of signing secret.
 - Volgende stap: registratie en veilige opslag van het bijbehorende secret als afzonderlijke Xano-variabele `NUITEE_STRIPE_WEBHOOK_SECRET`, gevolgd door transportcontrole. Deze stappen zijn nog niet bewezen of vrijgegeven. Bestaande partnerwebhook/secret behouden. Productiepoorten blijven gesloten; geen transactie, boeking, mail of databasewijziging.
+
+
+## REL-20261013-WEBHOOK-REGISTERED — Stripe-bestemming aangemaakt; binding nog onbevestigd
+
+- Bron: Stripe-account `acct_1TkMuaPz36j75L08`; eigenaar gaf expliciet akkoord voor registratie en veilige opslag van het afzonderlijke signing secret in Xano.
+- Aangemaakt: `we_1UQ8G9Pz36j75L08Zvmc0rFW`, naam `SeasonDeals Nuitee productie`, eigen account, API `2023-10-16`, snapshotpayload, uitsluitend `checkout.session.completed` en `checkout.session.async_payment_succeeded`.
+- Exacte bestemming: `https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/webhooks/nuitee-production`, callback2594, workspace1/v1. Bestaande partnerwebhook `we_1TkOkQPz36j75L08Cb1oHit5` niet aangepast.
+- Signing secret veilig uit de nieuwe Stripe-bestemming overgenomen voor opslag als `NUITEE_STRIPE_WEBHOOK_SECRET`. Opslag is NIET bevestigd; niet als geplaatst of werkend registreren. Geen secretwaarde in broncode of Git. Volgende stap is eerst de actuele Xano-variabelenlijst controleren om dubbele aanmaak te voorkomen, daarna zo nodig uitsluitend deze nieuwe variabele opslaan en callbackbinding/transport testen.
+- Geen geslaagde webhooklevering, echte signaturetransportcontrole of productie-end-to-end bewijs. Config_status788 en bestaande gepubliceerde callbackcode ongewijzigd; boekingen/betalingen/verkoop/refunds/mail blijven gesloten. Geen echte of testtransactie, mail of ordermutatie. Afgeronde sandboxstappen en orders97/99 ongemoeid.
+
+- Laatste Stripe-controle: nieuwe bestemming Actief, nul leveringen. Kort uitgeschakeld tijdens onafgeronde aansluiting, daarna op expliciet verzoek van Jurgen weer ingeschakeld en Actief geverifieerd. Dit is alleen aflevering van Stripe-meldingen; geen vrijgave van transacties of openbare verkoop.
