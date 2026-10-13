@@ -1,4 +1,4 @@
-// Dedicated Nuitée live callback. Closed preparation only; no writes or fulfillment.
+// Dedicated production payment-to-booking callback. Entry gate remains closed; no production release.
 query "webhooks/nuitee-production" verb=POST {
   api_group = "Public API"
 
@@ -11,6 +11,7 @@ query "webhooks/nuitee-production" verb=POST {
       error_type = "accessdenied"
       error = "PRODUCTION_NOT_RELEASED"
     }
+  
     util.get_raw_input {
       encoding = "text"
       exclude_middleware = true
@@ -59,7 +60,9 @@ query "webhooks/nuitee-production" verb=POST {
         const r=$var.remote.response,e=r.result,s=e?.data?.object,signed=$var.signed.event;
         const valid=r.status===200&&e?.object==='event'&&e.id===signed.id&&e.type===signed.type&&e.livemode===true&&e.account==null&&e.data?.object?.id===signed.data?.object?.id;
         const accepted=valid&&['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(e.type)&&s?.object==='checkout.session'&&s.livemode===true&&s.payment_status==='paid'&&s.metadata?.supplier_fulfillment==='nuitee'&&s.metadata?.supplier_flow==='nuitee_production_v1';
-        return {valid,accepted};
+        const meta=s?.metadata||{};
+        const intent_id=Number(meta.supplier_checkout_intent_id),order_id=Number(meta.supplier_order_id);
+        return {valid,accepted:accepted&&Number.isSafeInteger(intent_id)&&intent_id>0&&Number.isSafeInteger(order_id)&&order_id>0,intent_id,order_id,session_id:s?.id};
         """
       timeout = 5
     } as $event_check
@@ -82,8 +85,38 @@ query "webhooks/nuitee-production" verb=POST {
       error = "PRODUCTION_NOT_RELEASED"
     }
   
-    precondition (false) {
-      error = "PRODUCTION_ORCHESTRATION_NOT_RELEASED"
+    db.get supplier_checkout_intents {
+      field_name = "id"
+      field_value = $event_check.intent_id
+    } as $callback_intent
+  
+    precondition ($callback_intent != null && $callback_intent.environment == "production" && $callback_intent.provider_slug == "nuitee" && $callback_intent.order_id == $event_check.order_id && $callback_intent.stripe_checkout_session_id == $event_check.session_id) {
+      error_type = "accessdenied"
+      error = "Stripe event does not belong to this production checkout"
+    }
+  
+    function.run "supplier/production/fulfill_payment" {
+      input = {supplier_checkout_intent_id: $callback_intent.id}
+    } as $fulfillment
+  
+    conditional {
+      if ($fulfillment.voucher_allowed) {
+        function.run "supplier/production/finalize" {
+          input = {supplier_checkout_intent_id: $callback_intent.id}
+        } as $finalization
+      
+        return {
+          value = {
+            received           : true
+            status             : $fulfillment.status
+            confirmation_status: $finalization.mail_status
+          }
+        }
+      }
+    }
+  
+    return {
+      value = {received: true, status: $fulfillment.status}
     }
   }
 
