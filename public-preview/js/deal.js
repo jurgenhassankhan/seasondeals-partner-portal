@@ -4,6 +4,7 @@
   const CONFIG = Object.assign({
     dealsEndpoint: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/deals",
     checkoutEndpoint: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/create-checkout-session",
+    supplierCheckoutEndpoint: "https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/supplier/production/guest-checkout",
     homePage: "index.html",
     locale: "nl-NL",
     currency: "EUR"
@@ -13,6 +14,7 @@
   let deal = null;
   let gallery = [];
   let activePhoto = 0;
+  let checkoutBusy = false;
 
   if (!dealId) return showError("Geen deal geselecteerd", "Open een deal via de SeasonDeals-homepage om alle informatie te bekijken.");
   loadDeal();
@@ -20,6 +22,11 @@
   async function loadDeal() {
     try {
       const response = await fetch(CONFIG.dealsEndpoint, { method: "GET", mode: "cors", credentials: "omit", headers: { Accept: "application/json" } });
+      if (supplier && !response.ok && response.status === 403 && data?.message === "PRODUCTION_NOT_RELEASED") {
+        // This precise entry-gate rejection happens before any order or Stripe write.
+        try { sessionStorage.removeItem(supplierStorageKey(deal.id)); } catch (_) {}
+        throw new Error("Deze hoteldeal is nog niet beschikbaar om te boeken.");
+      }
       if (!response.ok) throw new Error(`De dealservice gaf status ${response.status}.`);
       const data = await response.json();
       deal = resolveDeals(data).find((item) => String(item?.id) === String(dealId));
@@ -94,27 +101,71 @@
 
   async function startCheckout(event) {
     event.preventDefault();
+    if (checkoutBusy) return;
     const checkin = document.getElementById("sd-checkin").value;
     const checkout = document.getElementById("sd-checkout").value;
     const guests = Number(document.getElementById("sd-guests").value || 1);
     if (!checkin || !checkout) return showBookingMessage("Kies eerst een geldige check-in- en check-outdatum.", "error");
     if (new Date(`${checkout}T00:00:00`) <= new Date(`${checkin}T00:00:00`)) return showBookingMessage("De check-outdatum moet na de check-indatum liggen.", "error");
     const button = document.getElementById("sd-check-availability");
+    checkoutBusy = true;
     button.disabled = true; button.innerHTML = "Je wordt doorgestuurd…";
     showBookingMessage("Je wordt doorgestuurd naar de beveiligde betaalpagina…", "info");
     try {
-      const response = await fetch(CONFIG.checkoutEndpoint, { method: "POST", mode: "cors", credentials: "omit", headers: { Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify({ deal_id: deal.id, checkin, checkout, guests }) });
+      const supplier = deal.source === "provider_sync";
+      // The backend verifies provider=nuitee, production approval, occupancy and price.
+      // Never send a supplier deal through the ordinary partner checkout.
+      const request = supplier ? supplierRequest(deal.id, checkin, checkout, guests) : { deal_id: deal.id, checkin, checkout, guests };
+      const response = await fetch(supplier ? CONFIG.supplierCheckoutEndpoint : CONFIG.checkoutEndpoint, { method: "POST", mode: "cors", credentials: "omit", headers: { Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify(request) });
       const responseText = await response.text();
       let data = {}; try { data = responseText ? JSON.parse(responseText) : {}; } catch { data = { message: responseText }; }
+      if (supplier && !response.ok && response.status === 403 && data?.message === "PRODUCTION_NOT_RELEASED") {
+        // This precise entry-gate rejection happens before any order or Stripe write.
+        try { sessionStorage.removeItem(supplierStorageKey(deal.id)); } catch (_) {}
+        throw new Error("Deze hoteldeal is nog niet beschikbaar om te boeken.");
+      }
       if (!response.ok) throw new Error(data?.message || data?.error || data?.detail || `Boeken is niet gelukt (${response.status}).`);
       const checkoutUrl = data?.checkout_url || data?.url || data?.session_url || data?.session?.url || data?.api1?.response?.url || data?.api1?.response?.result?.url;
+      if (supplier && !validSupplierCheckout(data, checkoutUrl)) throw new Error("De betaalpagina kon niet veilig worden bevestigd. Probeer dezelfde boeking opnieuw of neem contact op met SeasonDeals.");
       if (!checkoutUrl) throw new Error("De betaalpagina kon niet worden geopend. Probeer het opnieuw.");
       window.location.href = checkoutUrl;
     } catch (error) {
       console.error("SeasonDeals checkout failed:", error);
       showBookingMessage(error.message || "Boeken is nu niet mogelijk. Probeer het opnieuw.", "error");
+      checkoutBusy = false;
       button.disabled = false; button.innerHTML = "Bekijk beschikbaarheid & boek <span>→</span>";
     }
+  }
+
+  function supplierStorageKey(id) { return `sd-direct-checkout-v1:${id}`; }
+
+  function supplierRequest(id, checkin, checkout, guests) {
+    const dealId = Number(id);
+    if (!Number.isSafeInteger(dealId) || dealId <= 0 || !Number.isInteger(guests) || guests < 1 || guests > 6) throw new Error("Deze hoteldeal ondersteunt dit aantal gasten niet.");
+    const request = { deal_id: dealId, checkin, checkout, guest_count: guests };
+    const fingerprint = JSON.stringify(request), key = supplierStorageKey(id);
+    let saved;
+    try { saved = JSON.parse(sessionStorage.getItem(key) || "null"); }
+    catch (_) { throw new Error("Je betaalpoging kan niet veilig worden bewaard. Neem contact op met SeasonDeals."); }
+    if (saved) {
+      if (!/^[a-f0-9]{64}$/.test(saved.request_key || "") || !Number.isFinite(saved.created_at) || Date.now() < saved.created_at || Date.now() - saved.created_at >= 82800000) throw new Error("Een eerdere betaalpoging moet eerst worden gecontroleerd. Neem contact op met SeasonDeals.");
+      if (saved.fingerprint !== fingerprint) throw new Error("Er staat al een betaalpoging voor andere datums of gasten klaar. Gebruik dezelfde gegevens of neem contact op met SeasonDeals.");
+    } else {
+      const bytes = new Uint8Array(32);
+      window.crypto.getRandomValues(bytes);
+      saved = { request_key: Array.from(bytes, b => b.toString(16).padStart(2, "0")).join(""), fingerprint, created_at: Date.now() };
+      try { sessionStorage.setItem(key, JSON.stringify(saved)); }
+      catch (_) { throw new Error("Je betaalpoging kan niet veilig worden bewaard. Neem contact op met SeasonDeals."); }
+    }
+    return { ...request, request_key: saved.request_key };
+  }
+
+  function validSupplierCheckout(data, url) {
+    if (data?.environment !== "production" || data?.status !== "pending_payment" || data?.currency !== "EUR" || typeof url !== "string") return false;
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "https:" && parsed.hostname === "checkout.stripe.com" && !parsed.username && !parsed.password && !parsed.port && /^\/c\/pay\/cs_live_[A-Za-z0-9_]+$/.test(parsed.pathname);
+    } catch (_) { return false; }
   }
 
   function setDateLimits(start, end) {
@@ -158,3 +209,4 @@
   function showToast(value){const toast=document.getElementById("preview-toast");if(!toast)return;toast.textContent=value;toast.classList.add("is-visible");clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.classList.remove("is-visible"),3500);}
   function showError(title,message){container.innerHTML=`<section class="detail-error"><span>!</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p><a class="button button-primary" href="${escapeAttribute(CONFIG.homePage)}#deals">Terug naar alle deals <span>→</span></a></section>`;}
 })();
+
