@@ -1055,3 +1055,12 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Eerste run stopte vóór databasewrites: providerresponse had HTTP200 en velden data/guestLevel/hotels, maar géén sandboxmarker. Controle gecorrigeerd naar expliciet afwijzen van aanwezige onveilige marker; provenance afzonderlijk opgeslagen als dedicated production credential, provider_sandbox=null. Geen vals bewijs sandbox=false. Request history uitgeschakeld. Offer-ID/payload blijft uitsluitend afgeschermd in Xano, niet in Git.
 - Dataherstel: alleen nieuw concept18 terugzetten/archiveren en supplier3 disabled houden; niet permanent verwijderen zonder afzonderlijk besluit. Code-terugval schakelt geen database terug. Geen bestaande deal, partnerroute of order97/99 gewijzigd. inventory0/is_active=false/is_enabled=false; geen websiteplaatsing of goedkeuring.
 - Nog open: productiegeschikte adminprijs-/inhoud-/goedkeuringsroute en ingelogde inspectie van concept18, exact gelijke websitepreview, kosten/voorwaarden/margeverificatie, afzonderlijke publieke plaatsing en volledige productieboekingsketen. Dit checkpoint markeert uitsluitend conceptaanmaak als voltooid; SD-15 en productievrijgave blijven open.
+
+
+## REL-20261015-ADMIN-STATUS-CONCEPT — SD-02/10/15
+
+- Admin: Nuitée toont sandbox en productie afzonderlijk, met verkoop gesloten. Conceptdeals bekijken toegevoegd aan dashboard, aanbod en leveranciersoverzicht. Geen publieke verkoop vrijgegeven.
+- Selectie: admin/js/integrations-v11.js, admin/integrations.html, admin/suppliers.html, admin/deals.html, admin/index.html. Bron f2edd8902b59407ce2e5f74555dbf73256152c1b; bestemming main/Pages.
+- Lokaal gecontroleerd: render van beide omgevingen, conceptfilter/source-selectie en uitsluitend leesaanvragen. JS-syntax en diffcontrole geslaagd. Uitrol en ingelogde controle nog te verifiëren.
+- Terugval: gerichte revert van deze vijf adminbestanden. Geen gegevenswijzigingen.
+- **Verplicht vóór livegang (OPEN): interne documenten, backendbronnen en geschiedenis afschermen; controleren dat interne bestanden niet via de gepubliceerde website bereikbaar zijn.** Tijdelijk openbaar verder werken is op 15 oktober door de eigenaar toegestaan. Geen geheimen of klantgegevens publiceren.
