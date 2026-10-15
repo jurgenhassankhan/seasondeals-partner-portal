@@ -287,7 +287,7 @@
 
   function getImage(deal) {
     const first = deal.images?.[0];
-    return deal.image_url || deal.image?.url || (typeof first === "string" ? first : first?.url) || deal.cover_image?.url || "";
+    return deal.external_image_urls?.[0] || deal.image_url || deal.image?.url || (typeof first === "string" ? first : first?.url) || deal.cover_image?.url || "";
   }
 
   function getFeatures(deal) {

@@ -1,5 +1,7 @@
 # SeasonDeals — livegang- en overzetlijst
 
+> **Afspraak gecorrigeerd 15 oktober:** concept → ter beoordeling → goedgekeurd → automatisch zichtbaar op de website. Geen afzonderlijke publicatiestap per deal. Eerdere teksten over een extra websitevrijgave zijn vervangen door deze afspraak; algemene livegang/verkoop blijft afzonderlijk.
+
 > **OPEN LIVEGANGVEREISTE — SD-15:** automatisch breed Nuitée-hotelaanbod voor heel Nederland; eerst één Amsterdamse voorbeelddeal samen. Import, varianten, automatische plaatsing en verversing nog afmaken en bewijzen. Zie DOC-20261015-NL-AANBOD-AUTOMATISERING.
 
 > **Actueel 15 oktober — SD-09/13:** bestaande dealpagina technisch aangesloten op de gesloten Nuitée-checkout; gepubliceerd en laden/formuliervalidatie live gecontroleerd. Volledige proef met echte Nuitée-deal nog open. Zie REL-20261015-DIRECT-DEAL-ROUTE.
@@ -624,3 +626,13 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Uitrol bevestigd: commit 72c25ac8827bda8249e946054f7bf7cfc0f25d64 op main; GitHub Pages run 38777296700 completed/success. Gepubliceerde integratiescript, conceptlink en livegangnotitie via HTTP200 met nieuwe inhoud gecontroleerd. Browser beschermt de admin met login; ingelogde visuele controle blijft open. Geen verkoopvrijgave.
 
 - Aanvullende ingelogde browsercontrole 15 oktober 2026: beide Nuitée-omgevingen en gesloten verkoop zichtbaar; Conceptdeals bekijken opent status=Concept en bron=Leveranciers. Het Amsterdamse concept staat in dit overzicht. Deze controle vervangt het bovenstaande open punt voor ingelogde visuele verificatie. Screenshots geleverd; geen gegevens of verkoopinstellingen gewijzigd.
+
+
+## REL-20261015-APPROVAL-PUBLICATION — SD-02/11/15
+
+- Eigenaar verduidelijkt: concept → ter beoordeling → goedkeuren publiceert automatisch. Geen tweede publicatiehandeling; afwijzen en terugzetten naar concept houden/halen de deal offline.
+- Bron main `358c71498e603af5d0d16f114c450952a1d8e5ab`; selectie bestaande adminbeoordeling, publieke aanbodweergave en Xano v1 Admin #902/#903 + Public API #63/#64/#71. Bron en terugvalversies in `backend/xano/approval-publication/`. Andere routes/configuratie niet geselecteerd.
+- Xano-selectie van precies vijf endpoints gepubliceerd; openbare lijst HTTP200, concept18 via beide detailroutes HTTP404. Verkoopconfiguratie blijft gesloten. Geen deal goedgekeurd, geen boeking/betaling/mail uitgevoerd.
+- Gericht lokaal bewijs: elf tests geslaagd voor publicatieprojectie zonder interne gegevens, behoud partnercontract, beoordeling alleen na indienen, gesloten checkout en bestaande checkoutafhandeling. Een echte goedkeuring/publicatie met definitieve kosten is niet uitgevoerd.
+- Frontendplaatsing en ingelogde eindcontrole: nog te verifiëren. Bij concept18 moeten de werkelijke kosten nog worden ingevuld/gecontroleerd; geen kostenbedragen verzonnen.
+- Terugval: oorspronkelijke vijf endpointbronnen terugplaatsen en gerichte frontendrevert. Deze release wijzigt geen bestaande dealrecords; een toekomstige goedgekeurde deal kan via Terug naar concept weer offline.

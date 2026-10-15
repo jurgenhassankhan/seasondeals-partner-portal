@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),{webcrypto}=require('node:crypto');
 const source=fs.readFileSync(__dirname+'/../public-preview/js/deal.js','utf8');
-function harness(deal={id:999,source:'provider_sync'},transport){
+function harness(deal={id:999,source:'provider_sync',booking_enabled:true},transport){
  const values={'sd-checkin':{value:'2026-11-10'},'sd-checkout':{value:'2026-11-12'},'sd-guests':{value:'2'},'sd-check-availability':{}};
  const memory=new Map(),calls=[],messages=[];
  const c={deal,checkoutBusy:false,CONFIG:{checkoutEndpoint:'partner',supplierCheckoutEndpoint:'supplier'},document:{getElementById:id=>values[id]},window:{crypto:webcrypto,location:{href:''}},sessionStorage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)},showBookingMessage:m=>messages.push(m),console:{error(){}},URL,Uint8Array,Date,fetch:async(url,options)=>{calls.push({url,body:JSON.parse(options.body)});return transport?transport():{ok:true,status:200,text:async()=>JSON.stringify({environment:'production',status:'pending_payment',currency:'EUR',checkout_url:'https://checkout.stripe.com/c/pay/cs_live_fixture#test'})};}};
@@ -34,4 +34,10 @@ test('full page script loads and renders a deal before checkout is selected',asy
  const errors=[];
  const c={window:{location:{search:'?id=4'},SEASONDEALS_CONFIG:{}},document:{getElementById:node,querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:{style:{}}},fetch:async()=>({ok:true,json:async()=>[{id:4,status:'active',title:'Fixture deal',price:99,max_guests:2}]}),URLSearchParams,Intl,Date,console:{error:(...args)=>errors.push(args)},setTimeout};
  vm.runInNewContext(source,c);await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(errors,[]);assert.match(node('deal-detail').innerHTML,/Fixture deal/);assert.match(node('deal-detail').innerHTML,/id="booking-form"/);
+});
+
+test('published supplier offer remains visible but cannot start checkout while sales are closed',async()=>{
+ for(const booking_enabled of [false,undefined]) {
+  const h=harness({id:18,source:'provider_sync',booking_enabled});await h.run();assert.equal(h.calls.length,0);assert.equal(h.memory.size,0);assert.equal(h.messages.at(-1),'Boeken is binnenkort mogelijk.');
+ }
 });

@@ -67,7 +67,7 @@
         <section><span class="detail-section-label">Annuleren en wijzigen</span><h2>Goed om vooraf te weten.</h2><div class="policy-card">${formatText(policy)}</div></section>
       </article>
       <aside class="booking-card" aria-label="Deal boeken"><div class="booking-price"><span>${original > price ? `<del>${escapeHtml(formatCurrency(original))}</del>` : ""}<strong>${escapeHtml(formatCurrency(price))}</strong><small>${deal.max_guests > 1 ? `voor maximaal ${formatNumber(deal.max_guests)} personen` : "per boeking"}</small></span>${saving > 0 ? `<span class="booking-save">Bespaar ${escapeHtml(formatCurrency(saving))}</span>` : ""}</div>
-        <form id="booking-form" class="booking-form" novalidate><div class="booking-dates"><label>Check-in<input id="sd-checkin" name="checkin" type="date" required></label><label>Check-out<input id="sd-checkout" name="checkout" type="date" required></label></div><label>Aantal gasten<select id="sd-guests" name="guests">${Array.from({length:maxGuests},(_,i)=>`<option value="${i+1}">${i+1} ${i ? "gasten" : "gast"}</option>`).join("")}</select></label><div id="booking-message" class="booking-message" role="alert"></div><button id="sd-check-availability" class="button button-primary booking-submit" type="submit">Bekijk beschikbaarheid & boek <span>→</span></button></form>
+        ${deal.source === "provider_sync" && deal.booking_enabled !== true ? '<p class="notice">Deze aanbieding is goedgekeurd. Boeken is binnenkort mogelijk.</p>' : ''}<form id="booking-form" class="booking-form" novalidate><div class="booking-dates"><label>Check-in<input id="sd-checkin" name="checkin" type="date" required></label><label>Check-out<input id="sd-checkout" name="checkout" type="date" required></label></div><label>Aantal gasten<select id="sd-guests" name="guests">${Array.from({length:maxGuests},(_,i)=>`<option value="${i+1}">${i+1} ${i ? "gasten" : "gast"}</option>`).join("")}</select></label><div id="booking-message" class="booking-message" role="alert"></div><button id="sd-check-availability" class="button button-primary booking-submit" type="submit" ${deal.source === "provider_sync" && deal.booking_enabled !== true ? "disabled" : ""}>Bekijk beschikbaarheid & boek <span>→</span></button></form>
         <div class="booking-assurances"><div><span>♢</span><p><strong>Veilig betalen via Stripe</strong><br>Je betaling wordt beveiligd verwerkt.</p></div><div><span>▱</span><p><strong>Direct je voucher</strong><br>Na betaling ontvang je de bevestiging per e-mail.</p></div><div><span>◇</span><p><strong>Transparante voorwaarden</strong><br>Geen onverwachte verplichte kosten achteraf.</p></div></div>${remaining !== null ? `<p class="availability${remaining <= 5 ? " is-low" : ""}"><span>●</span> Actuele voorraad: <strong>${formatNumber(remaining)} ${remaining === 1 ? "deal" : "deals"}</strong></p>` : ""}
       </aside></div>
     </div>${renderLightbox(title)}`;
@@ -96,6 +96,7 @@
 
   async function startCheckout(event) {
     event.preventDefault();
+    if (deal.source === "provider_sync" && deal.booking_enabled !== true) return showBookingMessage("Boeken is binnenkort mogelijk.", "error");
     if (checkoutBusy) return;
     const checkin = document.getElementById("sd-checkin").value;
     const checkout = document.getElementById("sd-checkout").value;
@@ -182,7 +183,7 @@
 
   function resolveDeals(data) { return [data,data?.items,data?.deals,data?.records,data?.data,data?.data?.items,data?.result,data?.result?.items].find(Array.isArray)||[]; }
   function isPublicDeal(item) { const status=String(item?.status||"").toLowerCase(); return (status==="active"||item?.is_active===true)&&(item?.deleted_at===0||item?.deleted_at===null||item?.deleted_at===undefined); }
-  function getImages(item) { const values=[...(Array.isArray(item.images)?item.images:[]),item.image,item.cover_image,item.image_url]; return [...new Set(values.map((value)=>typeof value==="string"?value:value?.url).filter(Boolean))]; }
+  function getImages(item) { const values=[...(Array.isArray(item.external_image_urls)?item.external_image_urls:[]),...(Array.isArray(item.images)?item.images:[]),item.image,item.cover_image,item.image_url]; return [...new Set(values.map((value)=>typeof value==="string"?value:value?.url).filter(Boolean))]; }
   function getAmenities(item) { return [[item.includes_breakfast,"☕","Ontbijt inbegrepen","Begin de dag ontspannen"],[item.includes_wifi,"⌁","Wifi inbegrepen","Blijf zorgeloos verbonden"],[item.includes_parking,"P","Parkeren inbegrepen","Comfortabel aankomen"],[item.includes_late_checkout,"◷","Late check-out","Nog iets langer genieten"],[item.includes_welcome_drink,"◇","Welkomstdrankje","Een warm welkom"]].filter(([active])=>active); }
   function renderAmenity([,icon,title,subtitle]) { return `<div class="amenity"><span class="amenity-icon">${icon}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle)}</small></div></div>`; }
   function getRemaining(item) { const direct=number(item.remaining_inventory??item.available_quantity??item.inventory); return direct===null?null:Math.max(0,direct); }
