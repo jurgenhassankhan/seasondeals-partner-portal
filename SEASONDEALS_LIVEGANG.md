@@ -622,3 +622,5 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - **Verplicht vóór livegang (OPEN): interne documenten, backendbronnen en geschiedenis afschermen; controleren dat interne bestanden niet via de gepubliceerde website bereikbaar zijn.** Tijdelijk openbaar verder werken is op 15 oktober door de eigenaar toegestaan. Geen geheimen of klantgegevens publiceren.
 
 - Uitrol bevestigd: commit 72c25ac8827bda8249e946054f7bf7cfc0f25d64 op main; GitHub Pages run 38777296700 completed/success. Gepubliceerde integratiescript, conceptlink en livegangnotitie via HTTP200 met nieuwe inhoud gecontroleerd. Browser beschermt de admin met login; ingelogde visuele controle blijft open. Geen verkoopvrijgave.
+
+- Aanvullende ingelogde browsercontrole 15 oktober 2026: beide Nuitée-omgevingen en gesloten verkoop zichtbaar; Conceptdeals bekijken opent status=Concept en bron=Leveranciers. Het Amsterdamse concept staat in dit overzicht. Deze controle vervangt het bovenstaande open punt voor ingelogde visuele verificatie. Screenshots geleverd; geen gegevens of verkoopinstellingen gewijzigd.
