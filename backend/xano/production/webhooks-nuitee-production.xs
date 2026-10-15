@@ -6,12 +6,6 @@ query "webhooks/nuitee-production" verb=POST {
   }
 
   stack {
-    function.run "supplier/production/config_status" as $entry_gate
-    precondition ($entry_gate.can_book && $entry_gate.can_pay && $entry_gate.can_sell) {
-      error_type = "accessdenied"
-      error = "PRODUCTION_NOT_RELEASED"
-    }
-  
     util.get_raw_input {
       encoding = "none"
       exclude_middleware = true
@@ -31,6 +25,11 @@ query "webhooks/nuitee-production" verb=POST {
       timeout = 5
     } as $header
   
+    precondition ($header.signature != "") {
+      error_type = "accessdenied"
+      error = "Invalid webhook signature"
+    }
+  
     function.run "supplier/production/verify_stripe_signature" {
       input = {
         raw_body       : $raw_body
@@ -42,6 +41,12 @@ query "webhooks/nuitee-production" verb=POST {
     precondition ($signed.verified && $signed.event.livemode) {
       error_type = "accessdenied"
       error = "Verified live Stripe event required"
+    }
+  
+    function.run "supplier/production/config_status" as $entry_gate
+    precondition ($entry_gate.can_book && $entry_gate.can_pay && $entry_gate.can_sell) {
+      error_type = "accessdenied"
+      error = "PRODUCTION_NOT_RELEASED"
     }
   
     api.request {
