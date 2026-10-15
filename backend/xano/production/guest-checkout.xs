@@ -8,8 +8,6 @@ query "supplier/production/guest-checkout" verb=POST {
     text checkout filters=trim
     int guest_count
     text request_key filters=trim
-    json holder
-    json guests
   }
 
   stack {
@@ -31,7 +29,7 @@ query "supplier/production/guest-checkout" verb=POST {
   
     var $key_hash {
       value = $input.request_key
-        |hmac_sha256:"seasondeals-guest-reference-v1":false
+        |hmac_sha256:"seasondeals-direct-reference-v1":false
     }
   
     api.lambda {
@@ -39,9 +37,7 @@ query "supplier/production/guest-checkout" verb=POST {
         const i=$input;
         if(!/^[a-f0-9]{64}$/.test(i.request_key))throw new Error('A 256-bit guest request key is required');
         if(!Number.isSafeInteger(i.deal_id)||i.deal_id<=0||!Number.isInteger(i.guest_count)||i.guest_count<1||i.guest_count>6)throw new Error('Invalid stay');
-        if(!i.holder||!i.holder.firstName||!i.holder.lastName||!/^.+@.+\..+$/.test(i.holder.email||''))throw new Error('Holder name and email are required');
-        if(!Array.isArray(i.guests)||i.guests.length!==i.guest_count||i.guests.some(g=>!g.firstName||!g.lastName||g.occupancyNumber!==1||!/^.+@.+\..+$/.test(g.email||'')))throw new Error('Name and email are required for every guest in room 1');
-        return {reference:'SD-GUEST-'+i.deal_id+'-'+$var.key_hash,request:{deal_id:i.deal_id,checkin:i.checkin,checkout:i.checkout,guest_count:i.guest_count,customer_id:0,holder:i.holder,guests:i.guests}};
+        return {reference:'SD-DIRECT-'+i.deal_id+'-'+$var.key_hash,request:{deal_id:i.deal_id,checkin:i.checkin,checkout:i.checkout,guest_count:i.guest_count,customer_id:0}};
         """
       timeout = 5
     } as $validated
@@ -111,7 +107,7 @@ query "supplier/production/guest-checkout" verb=POST {
               code = """
                 const canonical=v=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
                 const p=$var.prior;
-                return {valid:p.environment==='production'&&p.provider_slug==='nuitee'&&canonical(p.checkout_context?.request)===canonical($var.validated.request)};
+                return {valid:p.environment==='production'&&p.provider_slug==='nuitee'&&p.checkout_context?.guest_capture==='stripe-custom-fields-v1'&&canonical(p.checkout_context?.request)===canonical($var.validated.request)};
                 """
               timeout = 5
             } as $same_request
@@ -144,7 +140,7 @@ query "supplier/production/guest-checkout" verb=POST {
                 const q=$var.quote,d=$var.locked_deal,s=$var.locked_supplier;
                 const canonical=v=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
                 if(!q||!q.ready||q.environment!=='production'||Date.now()-q.checked_at>60000||q.approval_fingerprint!==canonical({deal:d,supplier:s}))throw new Error('Quote expired or approved deal changed');
-                return {schema_version:1,flow:'nuitee-production-v1',request:$var.validated.request,quote:q,product_name:'SeasonDeals - '+d.title};
+                return {schema_version:2,flow:'nuitee-production-v1',guest_capture:'stripe-custom-fields-v1',room_count:1,request:$var.validated.request,quote:q,product_name:'SeasonDeals - '+d.title};
                 """
               timeout = 5
             } as $context
@@ -175,8 +171,8 @@ query "supplier/production/guest-checkout" verb=POST {
                 environment                : "production"
                 prebook_id                 : $quote.prebook_id
                 client_reference           : $validated.reference
-                holder                     : $input.holder
-                guests                     : $input.guests
+                holder                     : {}
+                guests                     : []
                 currency                   : "EUR"
                 supplier_amount            : $quote.supplier_amount
                 selling_price              : $quote.selling_price
@@ -237,7 +233,10 @@ query "supplier/production/guest-checkout" verb=POST {
             cancel_url          : "https://www.seasondeals.nl/boeking-bevestiging#cancelled=1"
             mode                : "payment"
             adaptive_pricing    : {enabled:"false"}
-            customer_email      : $intent.holder.email
+            custom_fields       : [
+              {key:"guestfirstname",label:{type:"custom",custom:"Voornaam hoofdgast"},type:"text",optional:false,text:{minimum_length:1,maximum_length:100}}
+              {key:"guestlastname",label:{type:"custom",custom:"Achternaam hoofdgast"},type:"text",optional:false,text:{minimum_length:1,maximum_length:100}}
+            ]
             payment_method_types: ["card","ideal"]
             line_items          : [{price_data:{currency:"eur",product_data:{name:$intent.checkout_context.product_name},unit_amount:(($intent.selling_price * 100)|round:0|to_int)},quantity:1}]
             metadata            : {supplier_order_id:$intent.order_id,supplier_checkout_intent_id:$intent.id,supplier_fulfillment:"nuitee",supplier_flow:"nuitee_production_v1"}

@@ -59,24 +59,70 @@ function "supplier/production/claim_payment" {
               error = "Prebook and stable booking reference required"
             }
           
-            db.edit supplier_checkout_intents {
-              field_name = "id"
-              field_value = $locked_intent.id
-              data = {
-                status                  : "processing"
-                stripe_payment_intent_id: $payment.stripe_payment_intent_id
-                booking_attempts        : 1
-                last_error              : null
-                updated_at              : now
+            api.lambda {
+              code = """
+                const i=$var.locked_intent,g=$var.payment.guest_details;
+                const direct=i.checkout_context?.guest_capture==='stripe-custom-fields-v1';
+                if(direct) return {valid:g?.required===true&&g.valid===true,holder:g?.holder||{},guests:g?.guests||[]};
+                return {valid:true,holder:i.holder,guests:i.guests};
+                """
+              timeout = 5
+            } as $bound_guest
+          
+            conditional {
+              if ($bound_guest.valid != true) {
+                db.edit supplier_checkout_intents {
+                  field_name = "id"
+                  field_value = $locked_intent.id
+                  data = {
+                    status                  : "manual_attention"
+                    stripe_payment_intent_id: $payment.stripe_payment_intent_id
+                    last_error              : "Paid; Stripe guest details invalid. No booking submitted."
+                    updated_at              : now
+                  }
+                } as $invalid_guest
+              
+                db.edit orders {
+                  field_name = "id"
+                  field_value = $payment.order_id
+                  data = {
+                    status              : "paid"
+                    payment_status      : "paid"
+                    paid_at             : now
+                    provider_sync_status: "error"
+                    provider_sync_error : "Guest details require review. No booking submitted."
+                    updated_at          : now
+                  }
+                } as $invalid_guest_order
+              
+                var.update $claim_status {
+                  value = "manual_attention"
+                }
               }
-            } as $processing_intent
-          
-            var.update $claimed {
-              value = true
-            }
-          
-            var.update $claim_status {
-              value = "processing"
+            
+              else {
+                db.edit supplier_checkout_intents {
+                  field_name = "id"
+                  field_value = $locked_intent.id
+                  data = {
+                    holder                  : $bound_guest.holder
+                    guests                  : $bound_guest.guests
+                    status                  : "processing"
+                    stripe_payment_intent_id: $payment.stripe_payment_intent_id
+                    booking_attempts        : 1
+                    last_error              : null
+                    updated_at              : now
+                  }
+                } as $processing_intent
+              
+                var.update $claimed {
+                  value = true
+                }
+              
+                var.update $claim_status {
+                  value = "processing"
+                }
+              }
             }
           }
         }

@@ -1,6 +1,6 @@
 'use strict';
 
-// Prepared policy only. Not wired to Xano or Checkout; visible fields await owner approval.
+// Owner-approved guest fields. Pure policy mirrored in verify-payment.xs.
 // Call only with a server-retrieved Session AFTER existing payment verification.
 const customFields = [
   { key: 'guestfirstname', label: { type: 'custom', custom: 'Voornaam hoofdgast' }, type: 'text', optional: false },
