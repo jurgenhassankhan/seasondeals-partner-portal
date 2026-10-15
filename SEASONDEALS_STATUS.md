@@ -1,5 +1,7 @@
 # SeasonDeals — actuele projectstatus
 
+> **Actueel 15 oktober — SD-09/13:** bestaande dealpagina technisch aangesloten op de gesloten Nuitée-checkout; gepubliceerd en laden/formuliervalidatie live gecontroleerd. Volledige proef met echte Nuitée-deal nog open. Zie REL-20261015-DIRECT-DEAL-ROUTE.
+
 > **Actueel 15 oktober — SD-09/13:** goedgekeurde Stripe-naamvelden en opslagkoppeling geplaatst op Xano v1; gesloten poorten getest. De aansluiting vanaf de bestaande dealpagina en echte ketenproef blijven open. Zie REL-20261015-STRIPE-GUEST-BINDING.
 
 > **Actueel 15 oktober — SD-13:** extra /hotel-boeken-pagina offline gezet op verzoek eigenaar. Klantreis blijft dealcard → bestaande dealpagina → Stripe → bevestiging, zonder account. Zie REL-20261015-REMOVE-EXTRA-STEP. Productieverkoop blijft gesloten.
@@ -976,3 +978,9 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Terugval: deal.js en deal-before-body.html uit a53f097 terugplaatsen; Webflow-footer oorspronkelijke versietag herstellen en gericht controleren/publiceren. Geen bedrijfsdatawijziging of dataherstel; gates gesloten. Coming Soon, extra boekingspagina offline, normale partnerroute, orders97/99 en bewezen sandboxstappen behouden.
 
 - Eerste plaatsing49d9aa4 op main/Pages (workflow38714011005 success) en Webflow-publicatie3792cb14-b979-4231-8934-5074ec9f9807 om2026-10-15T09:36:12.375Z. Livecontrole vond eigen regressie: supplier-check was onbedoeld ook in loadDeal geplaatst, ReferenceError supplier is not defined en foutmelding bij laden. Geen formulier of transactie uitgevoerd. Gerichte correctie verwijdert dit blok uit loadDeal; gehele laad-/rendercode is weer bytegelijk aan a53f097. Zevende test voert het volledige paginascript inclusief laden/renderen uit en slaagt. Herpublicatie en livehercontrole volgen; eerste publicatie niet als succesvolle aansluiting tellen.
+
+### Definitieve plaatsing en livecontrole — REL-20261015-DIRECT-DEAL-ROUTE
+
+- Correctiecommit `c4656d605398a1f48497b313d575a90b109cb1f7` op main. GitHub Pages workflow38714357355: build/report-build-status/deploy alle completed/success. Webflow-herpublicatie task6901db4c-4e54-4eff-ac96-d8d6e26dc6e4; get_site bevestigt lastPublished/fullSiteCompiledAt2026-10-15T09:38:32.643Z (11:38Amsterdam), beide eigen domeinen plus Webflow-subdomein. Bestaande eigenaarautorisatie voor volledige sitepublicatie toegepast. Voorcontrole26paginametadata: alleen /dea gewijzigd sinds voorafgaande publicatie; dit is geen volledige CMS-audit.
+- Live /dea?id=4&view=inventory-v2 na herladen: titel Romantic Getaway, bestaande foto/informatie/prijs/boekingskaart zichtbaar; DOM laadt deal.js?v=20261015-direct-2. Knop met lege datums geeft “Kies eerst een geldige check-in- en check-outdatum.” vóór enige checkoutaanvraag. Screenshot gecontroleerd. De eerste laadregressie is hiermee aantoonbaar hersteld. Home / blijft Coming Soon. Geen nieuwe boekingspagina of login.
+- Definitieve bewijsgrens: technische frontenddispatch gepubliceerd; zeven lokale mocktests en live laden/formuliervalidatie bewezen. Er is nog geen echte productie-supplierdeal via deze pagina naar Stripe gestuurd; testdeal4 blijft bestaande testdeal. Geen echte checkoutbetaling, gastopslag, hotelreservering, voucher of mail aangemaakt/getest. Xano-poorten en configuratie niet gewijzigd. Volgende stap: goedgekeurde Nuitée-productiedeal/import/ACC-kosten klaarzetten en volledige keten gericht bewijzen vóór verkoopvrijgave.
