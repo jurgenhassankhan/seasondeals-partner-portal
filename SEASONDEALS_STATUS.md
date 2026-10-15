@@ -1,6 +1,8 @@
 # SeasonDeals — actuele projectstatus
 
-> **Actueel13okt — SD-07/08/09:** aparte productieketen791–798 op v1 geplaatst en op callback2594 aangesloten; entry gates getest en gesloten. Stripe-registratie/secret en productievrijgave blijven open. Zie REL-20261013-PRODUCTION-CHAIN.
+> **Actueel15okt — SD-09/10:** aparte Stripe-webhooksleutel in Xano opgeslagen, na herladen bevestigd en aan endpoint2594 gebonden. Raw-inputcodering gericht aangepast; gesloten poort getest. Raw-body/signaturetransport, editor-parsermelding en volledige productieaansluiting nog open. Zie REL-20261015-WEBHOOK-BINDING.
+
+> **Actueel13okt — SD-07/08/09:** aparte productieketen791–798 op v1 geplaatst en op callback2594 aangesloten; entry gates getest en gesloten. Stripe-registratie en secretbinding zijn inmiddels geplaatst (zie REL-20261015-WEBHOOK-BINDING); transport en productievrijgave blijven open. Zie REL-20261013-PRODUCTION-CHAIN.
 
 > **Actueel13okt — SD-09/10:** livecredentials via alleen-lezen API-verzoeken gecontroleerd; signaturehelper getest; nieuwe callback2594 geplaatst met bewezen gesloten toegang. Volledige productieboekingsketen nog open. Zie REL-20261013-PRODUCTION-CONNECTIONS onderaan.
 
@@ -10,7 +12,7 @@
 
 > **Vaste bron van waarheid voor de technische voortgang van SeasonDeals**
 >
-> Laatst inhoudelijk geverifieerd: **12 oktober 2026**
+> Laatst inhoudelijk geverifieerd: **15 oktober 2026**
 >
 > Repository: `jurgenhassankhan/seasondeals-partner-portal`  
 > Productiearchitectuur: **Webflow (publieke frontend) + Xano (backend en bron van waarheid) + Stripe (betalingen) + Resend (e-mail)**
@@ -835,3 +837,15 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Geen geslaagde webhooklevering, echte signaturetransportcontrole of productie-end-to-end bewijs. Config_status788 en bestaande gepubliceerde callbackcode ongewijzigd; boekingen/betalingen/verkoop/refunds/mail blijven gesloten. Geen echte of testtransactie, mail of ordermutatie. Afgeronde sandboxstappen en orders97/99 ongemoeid.
 
 - Laatste Stripe-controle: nieuwe bestemming Actief, nul leveringen. Kort uitgeschakeld tijdens onafgeronde aansluiting, daarna op expliciet verzoek van Jurgen weer ingeschakeld en Actief geverifieerd. Dit is alleen aflevering van Stripe-meldingen; geen vrijgave van transacties of openbare verkoop.
+
+
+## REL-20261015-WEBHOOK-BINDING — SD-09/10 secret geplaatst; transport nog open
+
+- Bron vóór wijziging: GitHub main `07bde786e97fc2c3192f68f733e6577ec0d224a3`; actuele vier projectdocumenten gelezen, geen nieuwere main aangetroffen. Stripe-account `acct_1TkMuaPz36j75L08`, bestaande nieuwe webhook `we_1UQ8G9Pz36j75L08Zvmc0rFW` (SeasonDeals Nuitee productie).
+- Bestemming: Xano instance `xgrq-dkge-tace.n7e.xano.io`, workspace1/v1, nieuwe afzonderlijke variabele `NUITEE_STRIPE_WEBHOOK_SECRET`. Vooraf afwezig vastgesteld; het bestaande signing secret van uitsluitend deze webhook opgeslagen. Na herladen aanwezig; Xano Referenced By toont precies Public API7 POST2594 `/webhooks/nuitee-production`. Opslag en codeverwijzing nu bevestigd; de eerdere onbevestigde opslagstatus is achterhaald. Geen secretwaarde in Git of broncode.
+- Stripe-bestemming opnieuw Actief gezien, URL exact `https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/webhooks/nuitee-production`, API2023-10-16, twee events, deze week nul leveringen. Geen webhook gewijzigd, vervangen of uitgeschakeld; partnerwebhook en partnersecret behouden.
+- Gerichte codecorrectie in2594: Get All Raw Input encoding van `"text"` naar de door de Xano-configuratie aangeboden `"none"`; exclude_middleware=true behouden. Alleen dit endpoint gericht gepubliceerd, nul drafts bevestigd. Actuele editorbron teruggeëxporteerd naar `backend/xano/production/webhooks-nuitee-production.xs`; vergelijking bevestigt uitsluitend deze encodingwijziging. Alle gates en overige code gelijk aan de vorige versie.
+- Controle gepubliceerd endpoint zonder input:6 statements,80ms, ERROR_CODE_ACCESS_DENIED / PRODUCTION_NOT_RELEASED bij eerste precondition. Geen database-/Stripe-/Nuitée-/Resend-actie bereikt. Dit bewijst de gesloten poort, NIET de raw-body/signatureverwerking. De XanoScript-editor bleef een enum-parsermelding bij encoding tonen, ook bij de aangeboden none-waarde; runtimecontrole van deze stap is daarom nog TE VERIFIËREN. Niet als volledig herstelde of werkende transportketen aanmerken.
+- Volgende technische controle: geïsoleerd raw-body/headertransport en signaturevalidatie bewijzen zonder transactiepoort te openen; daarna productiecheckoutautorisatie, bevestigingsreader/frontendaansluiting, productieaanbod/kostenbewijs en productieherstelbediening. Een echte end-to-end betaling/boeking/voucher/mail is niet uitgevoerd of bewezen.
+- ACC blijft eigenaarbevestiging; dashboardbewijs en key-authenticatie zijn afzonderlijke bewijzen. Productievrijgave blijft gesloten, Coming Soon behouden. Geen betaling, boeking, refund, mail of bedrijfsrecordmutatie. Stappen4/5/7 niet heropend; orders97/99 niet gelezen of gewijzigd.
+- Terugval: alleen2594 herstellen uit de genoemde broncommit indien nodig, gesloten config_status788 behouden; de nieuwe variabele niet blind verwijderen en de bestaande partnerconfiguratie niet aanraken. Geen dataherstel vereist; Xano-branches delen live data. Deze registratie betreft configuratieplaatsing plus gerichte codepublicatie, geen publieke productievrijgave.

@@ -13,7 +13,7 @@ query "webhooks/nuitee-production" verb=POST {
     }
   
     util.get_raw_input {
-      encoding = "text"
+      encoding = "none"
       exclude_middleware = true
     } as $raw_body
   
