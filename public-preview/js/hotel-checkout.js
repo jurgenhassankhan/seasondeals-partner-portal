@@ -76,7 +76,9 @@
     if(!Number.isSafeInteger(dealId)||dealId<=0){say('Kies eerst een hoteldeal om je verblijf samen te stellen.');return;}
     $('hotel-checkin').value=p.get('checkin')||'';$('hotel-checkout').value=p.get('checkout')||'';
     const count=Number(p.get('guests'));if(Number.isInteger(count)&&count>=1&&count<=6)$('hotel-count').value=String(count);
-    guests();check(true);
+    guests();
+    if(!$('hotel-checkin').value||!$('hotel-checkout').value){dates.hidden=false;say('Kies je verblijfsdata en controleer de beschikbaarheid.');return;}
+    check(true);
   }
   const api={endpoints,validQuote,stripeUrl,createClient};
   if(typeof module==='object'&&module.exports)module.exports=api;else{root.SeasonDealsHotelCheckout=api;mount();}
