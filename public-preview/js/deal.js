@@ -22,11 +22,6 @@
   async function loadDeal() {
     try {
       const response = await fetch(CONFIG.dealsEndpoint, { method: "GET", mode: "cors", credentials: "omit", headers: { Accept: "application/json" } });
-      if (supplier && !response.ok && response.status === 403 && data?.message === "PRODUCTION_NOT_RELEASED") {
-        // This precise entry-gate rejection happens before any order or Stripe write.
-        try { sessionStorage.removeItem(supplierStorageKey(deal.id)); } catch (_) {}
-        throw new Error("Deze hoteldeal is nog niet beschikbaar om te boeken.");
-      }
       if (!response.ok) throw new Error(`De dealservice gaf status ${response.status}.`);
       const data = await response.json();
       deal = resolveDeals(data).find((item) => String(item?.id) === String(dealId));

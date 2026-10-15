@@ -29,3 +29,9 @@ test('double submission makes one request; expired attempt never creates new key
  let done;const h=harness(undefined,()=>new Promise(resolve=>done=resolve));const first=h.run();await h.run();assert.equal(h.calls.length,1);done({ok:false,text:async()=>'{"message":"retry"}'});await first;
  const [key,value]=[...h.memory][0],saved=JSON.parse(value);saved.created_at-=86400000;h.memory.set(key,JSON.stringify(saved));await h.run();assert.equal(h.calls.length,1);
 });
+test('full page script loads and renders a deal before checkout is selected',async()=>{
+ const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',value:'',addEventListener(){},classList:{add(){},remove(){}}});return nodes.get(id)};
+ const errors=[];
+ const c={window:{location:{search:'?id=4'},SEASONDEALS_CONFIG:{}},document:{getElementById:node,querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){},body:{style:{}}},fetch:async()=>({ok:true,json:async()=>[{id:4,status:'active',title:'Fixture deal',price:99,max_guests:2}]}),URLSearchParams,Intl,Date,console:{error:(...args)=>errors.push(args)},setTimeout};
+ vm.runInNewContext(source,c);await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(errors,[]);assert.match(node('deal-detail').innerHTML,/Fixture deal/);assert.match(node('deal-detail').innerHTML,/id="booking-form"/);
+});
