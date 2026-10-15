@@ -94,6 +94,27 @@ query "supplier-deals/{deal_id}/workflow" verb=PATCH {
           error = "Ongeldige statusovergang."
         }
       
+        api.lambda {
+          code = """
+const supplier=$var.supplier,hotel=supplier.supplier_content?.hotel||{};
+const photos=hotel.photo_gallery,urls=$var.deal.external_image_urls,rateName=supplier.supplier_mapping?.offer?.rates?.[0]?.name;
+if(hotel.photo_verification?.status!=='verified'||hotel.photo_verification?.algorithm!=='sha256+dhash64-v1'||hotel.room_photos_matched!==true||!hotel.mapped_room_id||hotel.photo_rate_name!==rateName||hotel.photo_hotel_id!==supplier.supplier_hotel_id||String(hotel.mapped_room_id)!==String(supplier.supplier_mapping?.offer?.rates?.[0]?.mappedRoomId))return false;
+if(!Array.isArray(photos)||!Array.isArray(urls)||photos.length<1||photos.length>5||urls.length!==photos.length)return false;
+const distance=(a,b)=>{let n=BigInt('0x'+a)^BigInt('0x'+b),bits=0;while(n){bits+=Number(n&1n);n>>=1n;}return bits;};
+for(let i=0;i<photos.length;i++){
+ const p=photos[i];
+ if(p.scope!=='matched_room'||p.url!==urls[i]||!/^https:\/\//.test(p.url)||!(/^[a-f0-9]{64}$/.test(p.sha256))||!(/^[a-f0-9]{16}$/.test(p.dhash)))return false;
+ for(let j=0;j<i;j++)if(p.url===photos[j].url||p.sha256===photos[j].sha256||distance(p.dhash,photos[j].dhash)<=5)return false;
+}
+return true;
+"""
+          timeout = 5
+        } as $photos_verified
+        precondition ($photos_verified) {
+          error_type = "inputerror"
+          error = "De foto's moeten eerst bij het juiste kamertype worden opgehaald en op dubbele beelden worden gecontroleerd."
+        }
+
         precondition ($deal.title != "" && $deal.short_description != null && $deal.short_description != "" && $deal.long_description != null && $deal.long_description != "" && $deal.cancellation_policy != null && $deal.cancellation_policy != "") {
           error_type = "inputerror"
           error = "Vul eerst titel, korte en uitgebreide omschrijving en annuleringsvoorwaarden in."

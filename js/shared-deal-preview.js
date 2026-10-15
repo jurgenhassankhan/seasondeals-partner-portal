@@ -79,6 +79,13 @@
         if (deal && supplier.supplier_content?.hotel) deal.hotel = supplier.supplier_content.hotel;
       }
       if (!deal) return showError("Deze deal is niet beschikbaar", "De deal is niet gevonden binnen jouw beveiligde portaal.");
+      if (isAdmin && deal.source === "provider_sync") {
+        const photoResponse = await fetch(`${CONFIG.adminEndpoint}/supplier-deals/${encodeURIComponent(dealId)}`, {headers:{Accept:"application/json",Authorization:`Bearer ${token}`},cache:"no-store"});
+        if (!photoResponse.ok) throw new Error("De kamerfoto’s konden niet worden gecontroleerd.");
+        const photoSupplier = (await photoResponse.json()).supplier_deal;
+        const photoHotel = photoSupplier?.supplier_content?.hotel;
+        deal.external_image_urls = photoHotel?.photo_verification?.status === "verified" && photoHotel.room_photos_matched === true ? photoHotel.images || [] : [];
+      }
       gallery = getImages(deal);
       renderDeal();
       bindDealEvents();
@@ -189,7 +196,7 @@
 
   function resolveDeals(data) { return [data,data?.items,data?.deals,data?.records,data?.data,data?.data?.items,data?.result,data?.result?.items].find(Array.isArray)||[]; }
   function isPublicDeal(item) { const status=String(item?.status||"").toLowerCase(); return (status==="active"||item?.is_active===true)&&(item?.deleted_at===0||item?.deleted_at===null||item?.deleted_at===undefined); }
-  function getImages(item) { const values=[...(Array.isArray(item.images)?item.images:[]),item.image,item.cover_image,item.image_url]; return [...new Set(values.map((value)=>typeof value==="string"?value:value?.url).filter(Boolean))]; }
+  function getImages(item) { const values=item.source === "provider_sync" ? (Array.isArray(item.external_image_urls)?item.external_image_urls:[]) : [...(Array.isArray(item.images)?item.images:[]),item.image,item.cover_image,item.image_url]; return [...new Set(values.map((value)=>typeof value==="string"?value:value?.url).filter(Boolean))]; }
   function getAmenities(item) { return [[item.includes_breakfast,"☕","Ontbijt inbegrepen","Begin de dag ontspannen"],[item.includes_wifi,"⌁","Wifi inbegrepen","Blijf zorgeloos verbonden"],[item.includes_parking,"P","Parkeren inbegrepen","Comfortabel aankomen"],[item.includes_late_checkout,"◷","Late check-out","Nog iets langer genieten"],[item.includes_welcome_drink,"◇","Welkomstdrankje","Een warm welkom"]].filter(([active])=>active); }
   function renderAmenity([,icon,title,subtitle]) { return `<div class="amenity"><span class="amenity-icon">${icon}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle)}</small></div></div>`; }
   function getRemaining(item) { if (availabilityPreview) return null; const direct=number(item.remaining_inventory??item.available_quantity??item.inventory); return direct===null?null:Math.max(0,direct); }
