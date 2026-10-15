@@ -98,7 +98,11 @@ query "supplier-deals/{deal_id}/workflow" verb=PATCH {
           code = """
 const supplier=$var.supplier,hotel=supplier.supplier_content?.hotel||{};
 const photos=hotel.photo_gallery,urls=$var.deal.external_image_urls,rateName=supplier.supplier_mapping?.offer?.rates?.[0]?.name;
-if(hotel.photo_verification?.status!=='verified'||hotel.photo_verification?.algorithm!=='sha256+dhash64-v1'||hotel.room_photos_matched!==true||!hotel.mapped_room_id||hotel.photo_rate_name!==rateName||hotel.photo_hotel_id!==supplier.supplier_hotel_id||String(hotel.mapped_room_id)!==String(supplier.supplier_mapping?.offer?.rates?.[0]?.mappedRoomId))return false;
+if(hotel.photo_verification?.status!=='verified'||hotel.photo_verification?.algorithm!=='sha256+dhash64-v1'||hotel.room_photos_matched!==true||!hotel.mapped_room_id||hotel.photo_rate_name!==rateName||hotel.photo_hotel_id!==supplier.supplier_hotel_id)return false;
+const rate=supplier.supplier_mapping?.offer?.rates?.[0],binding=hotel.room_photo_binding;
+const direct=rate?.mappedRoomId&&String(hotel.mapped_room_id)===String(rate.mappedRoomId);
+const confirmed=binding?.source==='provider_exact_room_name'&&binding.hotel_id===supplier.supplier_hotel_id&&binding.rate_name===rate?.name&&binding.adult_count===rate.adultCount&&binding.child_count===rate.childCount&&String(binding.mapped_room_id)===String(hotel.mapped_room_id);
+if(rate?.mappedRoomId ? !direct : !confirmed)return false;
 if(!Array.isArray(photos)||!Array.isArray(urls)||photos.length<1||photos.length>5||urls.length!==photos.length)return false;
 const distance=(a,b)=>{let n=BigInt('0x'+a)^BigInt('0x'+b),bits=0;while(n){bits+=Number(n&1n);n>>=1n;}return bits;};
 for(let i=0;i<photos.length;i++){
