@@ -108,23 +108,40 @@ function nuiteeDealContent(mapping, hotelId, contentHotel) {
 }
 // END GENERATED NUITEE CONTENT
 // BEGIN GENERATED PRICING
-// Shared price policy. Account-specific costs require evidence before configuring.
+// Owner-approved estimates; never label these as verified account tariffs.
+// Stripe EUR reserve: https://stripe.com/nl/pricing/local-payment-methods (2026-10-16).
+// Nuitée: last measured sandbox processing fee, not a confirmed production tariff.
 const supplierPricingDefaults = Object.freeze({
   mode: 'percentage', markup_percentage: 20, markup_amount: 0, override_amount: 0,
   discount_percentage: 0, min_margin_amount: 20, rounding: 'none',
-  processing_fee: null, stripe_fee_percentage: null, stripe_fee_fixed: null,
-  calculation_basis: 'costs_included_v2', defaults_version: '20261016-1',
-  production_costs_verified: false, cost_evidence: null, payment_method: 'ACC_CREDIT_CARD'
+  processing_fee: 2.30, stripe_fee_percentage: 3.15, stripe_fee_fixed: 0.25,
+  calculation_basis: 'costs_included_v2', defaults_version: '20261016-2',
+  production_costs_verified: false, cost_status: 'estimated',
+  cost_policy: 'owner_approved_estimate_v1',
+  cost_evidence: 'Owner-approved estimate 2026-10-16: Nuitée sandbox 2.30 EUR; Stripe EUR card reserve 3.15% + 0.25 EUR; iDEAL reference 0.29 EUR. Account tariffs not verified.',
+  payment_method: 'ACC_CREDIT_CARD'
 });
 
 function supplierPricingConfig(saved = {}, proposal = false) {
   const config = {...supplierPricingDefaults, ...saved};
-  // Null means unknown, never zero. Fill only with confirmed central defaults.
+  // Missing stored costs inherit approved estimates; explicit zero stays zero.
   for (const key of ['processing_fee','stripe_fee_percentage','stripe_fee_fixed']) {
     config[key] = saved[key] ?? supplierPricingDefaults[key];
   }
+  if (['processing_fee','stripe_fee_percentage','stripe_fee_fixed'].some(key=>saved[key] == null) || saved.production_costs_verified !== true) {
+    config.production_costs_verified = false;
+    config.cost_status = 'estimated';
+    config.cost_policy = supplierPricingDefaults.cost_policy;
+    config.cost_evidence = saved.cost_evidence || supplierPricingDefaults.cost_evidence;
+  }
   if (proposal) config.mode = 'percentage';
   return config;
+}
+
+function acceptedSupplierCosts(config) {
+  return !!config && config.payment_method === 'ACC_CREDIT_CARD' && !!config.cost_evidence &&
+    (config.production_costs_verified === true ||
+     (config.cost_status === 'estimated' && config.cost_policy === 'owner_approved_estimate_v1'));
 }
 
 function calculateSupplierPrice(base, config) {
@@ -301,7 +318,7 @@ function calculateSupplierPrice(base, config) {
         <details class="price-settings"><summary>Kosten aanpassen <span id="supplier-cost-status"></span></summary>
           ${numberInput("processing_fee","Nuitée kosten")}
           <fieldset><legend>Stripe kosten</legend><div class="price-columns">${numberInput("stripe_fee_percentage","Percentage","%")}${numberInput("stripe_fee_fixed","Vast bedrag")}</div></fieldset>
-          <p class="price-help">Deze bedragen gelden voor deze deal. Onbekende tarieven worden niet als nul gerekend.</p>
+          <p class="price-help">Vooraf ingevulde schattingen, bewerkbaar per deal. Nuitée: €2,30 op basis van onze test. Stripe: 3,15% + €0,25 reserve voor kaartbetalingen; iDEAL is normaal €0,29 bij het standaardtarief en zonder valutaomwisseling. Werkelijke kosten worden achteraf vergeleken.</p>
         </details>
         <details class="price-settings"><summary>Overige instellingen</summary>
           ${numberInput("discount_percentage","Korting","%")}${numberInput("min_margin_amount","Minimaal overhouden")}
@@ -358,11 +375,11 @@ function calculateSupplierPrice(base, config) {
     form.querySelectorAll('[data-price-mode]').forEach(row => { row.hidden = row.dataset.priceMode !== config.mode; });
     document.getElementById("supplier-basis-help").textContent = config.mode === "override" ? "Het totale bedrag dat de klant betaalt." : "Boven op de inkoopprijs, Nuitée kosten en Stripe kosten.";
     const missing = ['processing_fee','stripe_fee_percentage','stripe_fee_fixed'].some(key=>config[key] == null);
-    document.getElementById("supplier-cost-status").textContent = missing ? "Nog te bevestigen" : "";
+    document.getElementById("supplier-cost-status").textContent = missing ? "Vul de kosten in" : "Schatting · bewerkbaar";
     const submit = form.querySelector('button[type="submit"]');
     try {
       const result = calculatePreview(config);
-      target.innerHTML = `<span>Verkoopprijs</span><strong>${core.money(result.amount)}</strong><div><span>Wat je overhoudt</span><b>${core.money(result.estimatedMargin)}</b></div><small>Na inkoop, Nuitée kosten en Stripe kosten (${core.money(result.stripeCost)}). Vóór overige bedrijfskosten en belastingen.</small>`;
+      target.innerHTML = `<span>Verkoopprijs · kosten geschat</span><strong>${core.money(result.amount)}</strong><div><span>Verwacht over</span><b>${core.money(result.estimatedMargin)}</b></div><small>Na inkoop, Nuitée kosten en Stripe kosten (${core.money(result.stripeCost)}). Vóór overige bedrijfskosten en belastingen.</small>`;
       if(submit) submit.disabled=false;
     } catch (error) {
       target.innerHTML = '<span>Verkoopprijs</span><strong>—</strong><small>' + core.escapeHtml(error.message) + '</small>';

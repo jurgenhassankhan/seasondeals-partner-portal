@@ -30,3 +30,11 @@ assert.ok(html.includes('&lt;script&gt;bad&lt;/script&gt;'));
 assert.ok(!html.includes('SANDBOXTEST'));
 assert.throws(()=>rendering({}, {confirmation:{...confirmation,booking:{...confirmation.booking,sandbox:1}}}));
 console.log('12 policy/renderer assertions passed; synthetic data only, no network or database calls.');
+
+const approvedEstimate={...supplier,pricing_config:{...supplier.pricing_config,production_costs_verified:false,cost_status:'estimated',cost_policy:'owner_approved_estimate_v1'}};
+assert.equal(validate({deal,supplier:approvedEstimate},request).valid,true);
+assert.equal(prep({...vars,supplier:approvedEstimate,before_supplier:approvedEstimate},request).ready,true);
+const invalidEstimate={...approvedEstimate,pricing_config:{...approvedEstimate.pricing_config,processing_fee:null}};
+assert.equal(validate({deal,supplier:invalidEstimate},request).valid,false);
+assert.equal(prep({...vars,supplier:invalidEstimate,before_supplier:invalidEstimate},request).ready,false);
+console.log('4 additional owner-approved estimate and missing-cost checks passed.');

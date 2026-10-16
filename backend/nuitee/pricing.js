@@ -1,20 +1,37 @@
-// Shared price policy. Account-specific costs require evidence before configuring.
+// Owner-approved estimates; never label these as verified account tariffs.
+// Stripe EUR reserve: https://stripe.com/nl/pricing/local-payment-methods (2026-10-16).
+// Nuitée: last measured sandbox processing fee, not a confirmed production tariff.
 const supplierPricingDefaults = Object.freeze({
   mode: 'percentage', markup_percentage: 20, markup_amount: 0, override_amount: 0,
   discount_percentage: 0, min_margin_amount: 20, rounding: 'none',
-  processing_fee: null, stripe_fee_percentage: null, stripe_fee_fixed: null,
-  calculation_basis: 'costs_included_v2', defaults_version: '20261016-1',
-  production_costs_verified: false, cost_evidence: null, payment_method: 'ACC_CREDIT_CARD'
+  processing_fee: 2.30, stripe_fee_percentage: 3.15, stripe_fee_fixed: 0.25,
+  calculation_basis: 'costs_included_v2', defaults_version: '20261016-2',
+  production_costs_verified: false, cost_status: 'estimated',
+  cost_policy: 'owner_approved_estimate_v1',
+  cost_evidence: 'Owner-approved estimate 2026-10-16: Nuitée sandbox 2.30 EUR; Stripe EUR card reserve 3.15% + 0.25 EUR; iDEAL reference 0.29 EUR. Account tariffs not verified.',
+  payment_method: 'ACC_CREDIT_CARD'
 });
 
 function supplierPricingConfig(saved = {}, proposal = false) {
   const config = {...supplierPricingDefaults, ...saved};
-  // Null means unknown, never zero. Fill only with confirmed central defaults.
+  // Missing stored costs inherit approved estimates; explicit zero stays zero.
   for (const key of ['processing_fee','stripe_fee_percentage','stripe_fee_fixed']) {
     config[key] = saved[key] ?? supplierPricingDefaults[key];
   }
+  if (['processing_fee','stripe_fee_percentage','stripe_fee_fixed'].some(key=>saved[key] == null) || saved.production_costs_verified !== true) {
+    config.production_costs_verified = false;
+    config.cost_status = 'estimated';
+    config.cost_policy = supplierPricingDefaults.cost_policy;
+    config.cost_evidence = saved.cost_evidence || supplierPricingDefaults.cost_evidence;
+  }
   if (proposal) config.mode = 'percentage';
   return config;
+}
+
+function acceptedSupplierCosts(config) {
+  return !!config && config.payment_method === 'ACC_CREDIT_CARD' && !!config.cost_evidence &&
+    (config.production_costs_verified === true ||
+     (config.cost_status === 'estimated' && config.cost_policy === 'owner_approved_estimate_v1'));
 }
 
 function calculateSupplierPrice(base, config) {
@@ -49,4 +66,4 @@ function calculateSupplierPrice(base, config) {
   if (!Number.isFinite(amount) || amount <= 0 || estimatedMargin + 1e-9 < config.min_margin_amount) throw Error('Je houdt minder over dan het ingestelde minimum.');
   return {amount, estimatedMargin, stripeCost, totalCost: base + config.processing_fee + stripeCost};
 }
-if (typeof module !== 'undefined') module.exports = {supplierPricingDefaults,supplierPricingConfig,calculateSupplierPrice};
+if (typeof module !== 'undefined') module.exports = {supplierPricingDefaults,supplierPricingConfig,calculateSupplierPrice,acceptedSupplierCosts};
