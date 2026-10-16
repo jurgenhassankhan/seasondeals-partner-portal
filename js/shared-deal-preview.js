@@ -130,17 +130,21 @@ function nuiteeDealContent(mapping, hotelId) {
         if (deal && supplier.supplier_content?.hotel) deal.hotel = supplier.supplier_content.hotel;
       }
       if (!deal) return showError("Deze deal is niet beschikbaar", "De deal is niet gevonden binnen jouw beveiligde portaal.");
-      if (isAdmin && deal.source === "provider_sync") {
-        const photoResponse = await fetch(`${CONFIG.adminEndpoint}/supplier-deals/${encodeURIComponent(dealId)}`, {headers:{Accept:"application/json",Authorization:`Bearer ${token}`},cache:"no-store"});
-        if (!photoResponse.ok) throw new Error("De kamerfoto’s konden niet worden gecontroleerd.");
-        const photoSupplier = (await photoResponse.json()).supplier_deal;
-        const photoHotel = photoSupplier?.supplier_content?.hotel;
-        if (!availabilityPreview) supplier = photoSupplier;
-        if (photoHotel) deal.hotel = photoHotel;
-        const content = nuiteeDealContent(photoSupplier?.supplier_mapping, photoSupplier?.supplier_hotel_id);
-        const {title,short_description,long_description,...facts} = content;
-        Object.assign(deal, facts);
-        deal.external_image_urls = photoHotel?.photo_verification?.status === "verified" && photoHotel.room_photos_matched === true ? photoHotel.images || [] : [];
+      // Older admin preview contracts omit source; resolve it through the authenticated supplier reader.
+      if (isAdmin && (!deal.source || deal.source === "provider_sync")) {
+        const supplierResponse = supplier ? null : await fetch(`${CONFIG.adminEndpoint}/supplier-deals/${encodeURIComponent(dealId)}`, {headers:{Accept:"application/json",Authorization:`Bearer ${token}`},cache:"no-store"});
+        if (supplierResponse && !supplierResponse.ok && !(supplierResponse.status === 404 && !deal.source)) throw new Error("De leveranciersgegevens konden niet worden gecontroleerd.");
+        const confirmedSupplier = supplier || (supplierResponse?.ok ? (await supplierResponse.json()).supplier_deal : null);
+        if (confirmedSupplier) {
+          if (confirmedSupplier.provider !== "nuitee" || String(confirmedSupplier.deal_id) !== String(dealId)) throw new Error("De leverancierskoppeling komt niet overeen met deze deal.");
+          supplier = confirmedSupplier;
+          const hotel = supplier.supplier_content?.hotel;
+          const content = nuiteeDealContent(supplier.supplier_mapping, supplier.supplier_hotel_id);
+          const {title,short_description,long_description,...facts} = content;
+          Object.assign(deal, facts, {source:"provider_sync"});
+          if (hotel) deal.hotel = hotel;
+          deal.external_image_urls = hotel?.photo_verification?.status === "verified" && hotel.room_photos_matched === true ? hotel.images || [] : [];
+        } else if (deal.source === "provider_sync") throw new Error("De leveranciersgegevens ontbreken.");
       }
       gallery = getImages(deal);
       renderDeal();
