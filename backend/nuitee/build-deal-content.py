@@ -12,9 +12,16 @@ targets = {
     'backend/xano/approval-publication/detail64.xs': 'const fields = ',
     'backend/xano/approval-publication/detail71.xs': 'const fields = ',
     'js/shared-deal-preview.js': '  const params = ',
+    'admin/js/deal-detail-v5.js': '  const core = ',
 }
 for name, marker in targets.items():
     path = root / name
     source = re.sub(r'// BEGIN GENERATED NUITEE CONTENT\n[\s\S]*?// END GENERATED NUITEE CONTENT\n', '', path.read_text())
     assert source.count(marker) == 1, name
     path.write_text(source.replace(marker, block + marker, 1))
+
+path = root / 'backend/xano/production/import-first-nhow-draft.xs'
+source = path.read_text()
+marker = 'const p=$var.prepared,r=p.offer.rates[0]'
+source = source.replace(marker, block + marker, 1)
+path.write_text(source)

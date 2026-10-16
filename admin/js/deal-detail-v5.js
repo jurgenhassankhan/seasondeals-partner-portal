@@ -1,5 +1,93 @@
 (() => {
   "use strict";
+// BEGIN GENERATED NUITEE CONTENT
+// One projection for import, review, protected preview and public responses.
+// Source: https://docs.liteapi.travel/reference/post_hotels-rates
+function nuiteeDealContent(mapping, hotelId, contentHotel) {
+  const hotel = mapping?.hotel, request = mapping?.request;
+  const rates = mapping?.offer?.rates;
+  const clean = value => typeof value === 'string' ? value.trim() : '';
+  const date = value => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) throw Error('Verblijfsdatums ontbreken.');
+    const ms = Date.parse(value + 'T00:00:00Z');
+    if (!Number.isFinite(ms) || new Date(ms).toISOString().slice(0,10) !== value) throw Error('Ongeldige verblijfsdatum.');
+    return ms;
+  };
+  if (!hotelId || String(hotel?.id) !== String(hotelId) || !clean(hotel?.name) || !request?.hotel_ids?.some(id => String(id) === String(hotelId))) throw Error('Bevestigde hotelgegevens ontbreken.');
+  if (!Array.isArray(rates) || rates.length !== 1) throw Error('Eén bevestigd kameraanbod vereist.');
+  const rate = rates[0], room = clean(rate.name);
+  const nights = (date(request.checkout) - date(request.checkin)) / 86400000;
+  if (!Number.isInteger(nights) || nights < 1 || !room) throw Error('Bevestigde kamer en verblijfsduur ontbreken.');
+  const adults = rate.adultCount, children = rate.childCount;
+  const occupancy = request.occupancies?.[0];
+  if (!Number.isInteger(adults) || adults < 1 || !Number.isInteger(children) || children < 0 || request.occupancies?.length !== 1 || occupancy?.adults !== adults || (occupancy.children?.length || 0) !== children) throw Error('Kamerbezetting komt niet overeen met het aanbod.');
+  const boards = {
+    RO: ['Alleen verblijf', false], BI: ['Ontbijt inbegrepen', true],
+    HB: ['Halfpension inbegrepen', true], FB: ['Volpension inbegrepen', true],
+    AI: ['All-inclusive', true], DI: ['Diner inbegrepen', false],
+    LI: ['Lunch inbegrepen', false], BDI: ['Ontbijt en diner inbegrepen', true],
+    BLI: ['Ontbijt en lunch inbegrepen', true], LDI: ['Lunch en diner inbegrepen', false]
+  };
+  const board = Object.hasOwn(boards, rate.boardType) ? boards[rate.boardType] : null;
+  if (!board) throw Error('Bevestigde maaltijdvoorwaarden ontbreken.');
+  const stay = `${nights} ${nights === 1 ? 'overnachting' : 'overnachtingen'}`;
+  const guests = `${adults} ${adults === 1 ? 'volwassene' : 'volwassenen'}${children ? ` en ${children} ${children === 1 ? 'kind' : 'kinderen'}` : ''}`;
+  const dutchDate = value => { const d = new Date(date(value)); return `${d.getUTCDate()} ${['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'][d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+  const details = contentHotel?.supplier_details || hotel.supplier_details;
+  if (details && String(details.id) !== String(hotelId)) throw Error('Hotelvoorzieningen horen niet bij dit hotel.');
+  const facilityNames = [...(Array.isArray(details?.hotelFacilities) ? details.hotelFacilities : []), ...(Array.isArray(details?.facilities) ? details.facilities.map(f => f?.name) : [])].map(clean).filter(Boolean);
+  const definitions = [
+    ['wifi','Wifi','⌁',/\b(?:wi[ -]?fi|wireless internet)\b/i],
+    ['parking','Parkeren','P',/\b(?:parking|parkeren|parkeergelegenheid)\b/i],
+    ['late_checkout','Late check-out','◷',/\b(?:late check[ -]?out|laat uitchecken)\b/i],
+    ['welcome_drink','Welkomstdrankje','♧',/\b(?:welcome drink|welkomstdrankje)\b/i]
+  ];
+  const perks = (Array.isArray(rate.perks) ? rate.perks : []).filter(p => clean(p?.name) && ['HOTEL','RATE','ROOM'].includes(p.level));
+  const conditional = /if available|subject to|on request|upon request|availability|op aanvraag|beschikbaarheid|voorwaarden/i;
+  const unavailable = /\b(?:no|not available|unavailable|niet beschikbaar|geen)\b/i;
+  const paid = /surcharge|additional (?:charge|cost)|paid|fee|tegen betaling|toeslag|kosten|\b(?:EUR|USD|GBP)\s*\d|[€$£]\s*\d/i;
+  const extras = definitions.map(([key,label,icon,match]) => {
+    const benefits = perks.filter(p => match.test(p.name));
+    const names = facilityNames.filter(n => match.test(n));
+    if (key === 'parking' && clean(details?.parking)) names.push(clean(details.parking));
+    const evidence = [...new Set(benefits.length ? benefits.map(p => clean(p.name)) : names)];
+    let status = 'unconfirmed';
+    if (evidence.some(n => unavailable.test(n))) status = 'unconfirmed';
+    else if (benefits.length) status = evidence.some(n => conditional.test(n) || paid.test(n)) ? 'conditional' : 'included';
+    else if (names.length) {
+      // Only explicit whole facility labels certify a complimentary service. No inference from hotel prose.
+      const free = /^(?:free (?:wi[ -]?fi|wireless internet|parking|self parking)|gratis (?:wifi|wi-fi|parkeren))$/i;
+      status = names.some(n => paid.test(n)) ? 'paid' : names.some(n => conditional.test(n)) ? 'conditional' : names.every(n => free.test(n)) ? 'included' : 'available';
+    }
+    const displayEvidence = evidence.map(n => n.replace(/\b(?:free|gratis|complimentary)\b/gi, '').replace(/\s{2,}/g, ' ').trim());
+    const statusText = {included:'Inbegrepen',paid:'Tegen betaling',conditional:'Onder voorwaarden',available:'Beschikbaar; kosten niet bevestigd',unconfirmed:'Niet bevestigd door de leverancier'}[status];
+    return {key,icon,label,status,detail:[statusText,...displayEvidence].join(' · ')};
+  });
+  const breakfastPerks = perks.filter(p => /\b(?:breakfast|ontbijt)\b/i.test(p.name));
+  const breakfast = board[1] || breakfastPerks.some(p => !conditional.test(p.name) && !paid.test(p.name));
+  const included = [
+    {icon:'☾',label:stay,detail:`Van ${dutchDate(request.checkin)} tot ${dutchDate(request.checkout)}`},
+    {icon:'▱',label:room,detail:'Het aangeboden kamertype'},
+    {icon:'♧',label:`Voor ${guests}`,detail:'Bezetting van de aangeboden kamer'}
+  ];
+  if (rate.boardType !== 'RO') included.push({icon:'☕',label:board[0],detail:'Volgens het geselecteerde tarief'});
+  if (!board[1]) for (const perk of breakfastPerks) included.push({icon:'☕',label:'Ontbijt volgens tariefvoorwaarden',detail:clean(perk.name).replace(/\b(?:free|gratis|complimentary)\b/gi,'').trim()});
+  for (const extra of extras.filter(e => e.status === 'included')) included.push({icon:extra.icon,label:extra.label,detail:extra.detail});
+  // Preserve original benefit conditions; amount is benefit value, never a customer charge.
+  return {
+    content_verified:true, hotel_name:clean(hotel.name), room_type:room,
+    minimum_nights:nights, max_guests:adults+children,
+    includes_breakfast:breakfast, board_type:rate.boardType,
+    ...Object.fromEntries(extras.map(e => [`includes_${e.key}`,e.status === 'included'])),
+    extra_conditions:extras, facility_items:extras.filter(e => !['included','unconfirmed'].includes(e.status)),
+    included_items:included, excluded_items:board[1] || breakfastPerks.length ? [] : ['Ontbijt'],
+    travel_period_start:date(request.checkin), travel_period_end:date(request.checkout),
+    title:`${stay} bij ${clean(hotel.name)}`,
+    short_description:`${stay} in ${room} voor ${guests}.${rate.boardType === 'RO' ? '' : ' ' + board[0] + '.'}`,
+    long_description:`Verblijf van ${dutchDate(request.checkin)} tot ${dutchDate(request.checkout)} bij ${clean(hotel.name)}. Eén ${room} voor ${guests}. ${rate.boardType === 'RO' ? '' : board[0] + '.'}${breakfastPerks.length ? ' ' + breakfastPerks.map(p => clean(p.name).replace(/\b(?:free|gratis|complimentary)\b/gi,'').trim()).join('. ') + '.' : ''}`
+  };
+}
+// END GENERATED NUITEE CONTENT
   const core = window.AdminCore;
   const dealId = new URLSearchParams(location.search).get("id");
   let admin;
@@ -29,6 +117,11 @@
         supplierDeal = supplier?.supplier_deal || null;
       } catch (error) { supplierError = error.message; }
     }
+    if (supplierDeal?.provider === "nuitee") {
+      if (String(supplierDeal.deal_id) !== String(dealId)) throw new Error("Verkeerde leverancierskoppeling.");
+      const {title,short_description,long_description,...facts} = nuiteeDealContent(supplierDeal.supplier_mapping, supplierDeal.supplier_hotel_id, supplierDeal.supplier_content?.hotel);
+      Object.assign(deal, facts);
+    }
     render();
   }
 
@@ -39,12 +132,12 @@
     const photoValues = supplierDeal ? (supplierHotel?.photo_verification?.status === "verified" && supplierHotel.room_photos_matched ? supplierHotel.images || [] : []) : (Array.isArray(deal.images) ? deal.images : []);
     const photos = [...new Set(photoValues.map(value => typeof value === "string" ? value : value?.url).filter(url => typeof url === "string" && url.startsWith("https://")))];
     const image = photos[0] || (supplierDeal ? "" : core.imageUrl(deal.images));
-    const inclusions = [["includes_breakfast", "Ontbijt"], ["includes_wifi", "Wifi"], ["includes_parking", "Parkeren"], ["includes_late_checkout", "Late check-out"], ["includes_welcome_drink", "Welkomstdrankje"]].filter(([field]) => deal[field]).map(([, text]) => `<span class="inclusion">✓ ${text}</span>`).join("");
+    const inclusions = supplierDeal?.provider === "nuitee" ? [...deal.included_items, ...deal.extra_conditions.filter(e => !["included","unconfirmed"].includes(e.status))].map(row => `<span class="inclusion">${core.escapeHtml(row.label)} · ${core.escapeHtml(row.detail)}</span>`).join("") : [["includes_breakfast", "Ontbijt"], ["includes_wifi", "Wifi"], ["includes_parking", "Parkeren"], ["includes_late_checkout", "Late check-out"], ["includes_welcome_drink", "Welkomstdrankje"]].filter(([field]) => deal[field] === true).map(([, text]) => `<span class="inclusion">✓ ${text}</span>`).join("");
     const environment = String(deal.integration_environment || "").toLowerCase();
     const isTestDeal = environment === "test";
     const reviewAllowed = core.canReview(admin) && !supplierError && deal.status === "pending_approval" && (!supplierDeal || ["sandbox", "production"].includes(supplierDeal.environment));
     target.className = "detail-layout";
-    target.innerHTML = `<article class="panel">${image ? `<div class="admin-photo-gallery"><img id="admin-gallery-image" class="deal-hero" src="${core.escapeHtml(image)}" alt="${core.escapeHtml(deal.title || "Deal")}">${photos.length > 1 ? `<p id="admin-gallery-count" class="admin-gallery-count" aria-live="polite">Foto 1 van ${photos.length} · Kamerfoto’s</p><div class="admin-gallery-thumbnails" aria-label="Losse hotelfoto’s">${photos.map((url,index)=>`<button type="button" data-gallery-index="${index}" aria-label="Foto ${index + 1} bekijken" aria-pressed="${index === 0}"><img loading="lazy" src="${core.escapeHtml(url)}" alt="Kamerfoto ${index + 1}"></button>`).join("")}</div>` : ""}</div>` : '<div class="deal-hero deal-hero-placeholder">Nog geen bevestigde kamerfoto’s</div>'}<div class="deal-body"><div class="deal-title-row"><div><h2>${core.escapeHtml(deal.title || "Naamloze deal")}</h2><p class="hotel-line">${core.escapeHtml(hotel.name || deal.hotel_name || "Onbekend hotel")} · ${core.escapeHtml(hotel.city || deal.city || "")}</p></div>${core.statusBadge(deal.status)}</div><div class="fact-grid"><div class="fact"><span>Dealprijs</span><strong>${core.money(deal.price)}</strong></div><div class="fact"><span>Oorspronkelijke prijs</span><strong>${core.money(deal.original_price)}</strong></div><div class="fact"><span>Voorraad</span><strong>${core.escapeHtml(deal.inventory ?? 0)} beschikbaar</strong></div><div class="fact"><span>Verblijf</span><strong>${core.escapeHtml(deal.minimum_nights || 1)} nacht(en) · max. ${core.escapeHtml(deal.max_guests || 0)} gasten</strong></div><div class="fact"><span>Reisperiode</span><strong>${core.date(deal.travel_period_start)} – ${core.date(deal.travel_period_end)}</strong></div><div class="fact"><span>Ingediend</span><strong>${core.date(deal.submitted_at, true)}</strong></div></div>${inclusions ? `<div class="inclusion-list">${inclusions}</div>` : ""}<section class="deal-copy"><h3>Korte omschrijving</h3><p>${core.escapeHtml(deal.short_description || "Geen korte omschrijving.")}</p></section><section class="deal-copy"><h3>Uitgebreide omschrijving</h3><p>${core.escapeHtml(deal.long_description || "Geen uitgebreide omschrijving.")}</p></section><section class="deal-copy"><h3>Annuleringsvoorwaarden</h3><p>${core.escapeHtml(deal.cancellation_policy || "Niet opgegeven.")}</p></section></div></article><aside class="detail-sidebar"><section class="panel review-card"><span class="eyebrow">Beveiligde weergave</span><h3>Testpreview</h3><p class="notice">Bekijk deze deal in de nieuwe SeasonDeals-stijl. Boeken, betalen en voorraadwijzigingen zijn uitgeschakeld.</p><a class="secondary-button" href="../deal-preview.html?portal=admin&id=${encodeURIComponent(deal.id)}">Testpreview openen</a>${supplierDeal?.provider === "nuitee" && supplierDeal.environment === "sandbox" && deal.status === "active" ? `<a class="secondary-button" href="../nuitee-availability-preview.html?portal=admin&id=${encodeURIComponent(deal.id)}">Actuele beschikbaarheid testen</a>` : ""}</section><section class="panel review-card"><span class="eyebrow">Beoordeling</span><h3>${reviewAllowed ? "Neem een besluit" : "Beoordelingsstatus"}</h3>${reviewAllowed ? `<label for="review-notes">Interne notitie (optioneel)</label><textarea id="review-notes" class="review-input" placeholder="Notitie voor het auditdossier"></textarea><label for="rejection-reason">Reden bij afwijzing</label><textarea id="rejection-reason" class="review-input" placeholder="Verplicht wanneer je de deal afwijst"></textarea><div class="review-actions"><button id="approve-deal" class="primary-button" type="button">Goedkeuren</button><button id="reject-deal" class="danger-button" type="button">Afwijzen</button></div>` : reviewSummary()}${!core.canReview(admin) && deal.status === "pending_approval" ? '<p class="notice">Je account mag deals bekijken, maar alleen superadmins en platformadmins kunnen besluiten nemen.</p>' : ""}</section><section class="panel review-card"><span class="eyebrow">Hotelpartner</span><h3>${core.escapeHtml(hotel.name || "Onbekend hotel")}</h3><div class="meta-list"><div class="meta-row"><span>Plaats</span><strong>${core.escapeHtml(hotel.city || "—")}</strong></div><div class="meta-row"><span>Land</span><strong>${core.escapeHtml(hotel.country || "—")}</strong></div><div class="meta-row"><span>E-mail</span><strong>${core.escapeHtml(hotel.email || "—")}</strong></div><div class="meta-row"><span>Telefoon</span><strong>${core.escapeHtml(hotel.phone || "—")}</strong></div><div class="meta-row"><span>Deal-ID</span><strong>#${core.escapeHtml(deal.id)}</strong></div></div></section></aside>`;
+    target.innerHTML = `<article class="panel">${image ? `<div class="admin-photo-gallery"><img id="admin-gallery-image" class="deal-hero" src="${core.escapeHtml(image)}" alt="${core.escapeHtml(deal.title || "Deal")}">${photos.length > 1 ? `<p id="admin-gallery-count" class="admin-gallery-count" aria-live="polite">Foto 1 van ${photos.length} · Kamerfoto’s</p><div class="admin-gallery-thumbnails" aria-label="Losse hotelfoto’s">${photos.map((url,index)=>`<button type="button" data-gallery-index="${index}" aria-label="Foto ${index + 1} bekijken" aria-pressed="${index === 0}"><img loading="lazy" src="${core.escapeHtml(url)}" alt="Kamerfoto ${index + 1}"></button>`).join("")}</div>` : ""}</div>` : '<div class="deal-hero deal-hero-placeholder">Nog geen bevestigde kamerfoto’s</div>'}<div class="deal-body"><div class="deal-title-row"><div><h2>${core.escapeHtml(deal.title || "Naamloze deal")}</h2><p class="hotel-line">${core.escapeHtml(hotel.name || deal.hotel_name || "Onbekend hotel")} · ${core.escapeHtml(hotel.city || deal.city || "")}</p></div>${core.statusBadge(deal.status)}</div><div class="fact-grid"><div class="fact"><span>Dealprijs</span><strong>${core.money(deal.price)}</strong></div><div class="fact"><span>Oorspronkelijke prijs</span><strong>${core.money(deal.original_price)}</strong></div><div class="fact"><span>Voorraad</span><strong>${supplierDeal ? "Op basis van actuele beschikbaarheid" : `${core.escapeHtml(deal.inventory ?? 0)} beschikbaar`}</strong></div><div class="fact"><span>Verblijf</span><strong>${core.escapeHtml(deal.minimum_nights || 1)} nacht(en) · max. ${core.escapeHtml(deal.max_guests || 0)} gasten</strong></div><div class="fact"><span>Reisperiode</span><strong>${core.date(deal.travel_period_start)} – ${core.date(deal.travel_period_end)}</strong></div><div class="fact"><span>Ingediend</span><strong>${core.date(deal.submitted_at, true)}</strong></div></div>${inclusions ? `<div class="inclusion-list">${inclusions}</div>` : ""}<section class="deal-copy"><h3>Korte omschrijving</h3><p>${core.escapeHtml(deal.short_description || "Geen korte omschrijving.")}</p></section><section class="deal-copy"><h3>Uitgebreide omschrijving</h3><p>${core.escapeHtml(deal.long_description || "Geen uitgebreide omschrijving.")}</p></section><section class="deal-copy"><h3>Annuleringsvoorwaarden</h3><p>${core.escapeHtml(deal.cancellation_policy || "Niet opgegeven.")}</p></section></div></article><aside class="detail-sidebar"><section class="panel review-card"><span class="eyebrow">Beveiligde weergave</span><h3>Testpreview</h3><p class="notice">Bekijk deze deal in de nieuwe SeasonDeals-stijl. Boeken, betalen en voorraadwijzigingen zijn uitgeschakeld.</p><a class="secondary-button" href="../deal-preview.html?portal=admin&id=${encodeURIComponent(deal.id)}">Testpreview openen</a>${supplierDeal?.provider === "nuitee" && supplierDeal.environment === "sandbox" && deal.status === "active" ? `<a class="secondary-button" href="../nuitee-availability-preview.html?portal=admin&id=${encodeURIComponent(deal.id)}">Actuele beschikbaarheid testen</a>` : ""}</section><section class="panel review-card"><span class="eyebrow">Beoordeling</span><h3>${reviewAllowed ? "Neem een besluit" : "Beoordelingsstatus"}</h3>${reviewAllowed ? `<label for="review-notes">Interne notitie (optioneel)</label><textarea id="review-notes" class="review-input" placeholder="Notitie voor het auditdossier"></textarea><label for="rejection-reason">Reden bij afwijzing</label><textarea id="rejection-reason" class="review-input" placeholder="Verplicht wanneer je de deal afwijst"></textarea><div class="review-actions"><button id="approve-deal" class="primary-button" type="button">Goedkeuren</button><button id="reject-deal" class="danger-button" type="button">Afwijzen</button></div>` : reviewSummary()}${!core.canReview(admin) && deal.status === "pending_approval" ? '<p class="notice">Je account mag deals bekijken, maar alleen superadmins en platformadmins kunnen besluiten nemen.</p>' : ""}</section><section class="panel review-card"><span class="eyebrow">Hotel</span><h3>${core.escapeHtml(hotel.name || "Onbekend hotel")}</h3><div class="meta-list"><div class="meta-row"><span>Plaats</span><strong>${core.escapeHtml(hotel.city || "—")}</strong></div><div class="meta-row"><span>Land</span><strong>${core.escapeHtml(hotel.country || "—")}</strong></div><div class="meta-row"><span>E-mail</span><strong>${core.escapeHtml(hotel.email || "—")}</strong></div><div class="meta-row"><span>Telefoon</span><strong>${core.escapeHtml(hotel.phone || "—")}</strong></div><div class="meta-row"><span>Deal-ID</span><strong>#${core.escapeHtml(deal.id)}</strong></div></div></section></aside>`;
     target.querySelectorAll("[data-gallery-index]").forEach(button => button.addEventListener("click", () => {
       const index = Number(button.dataset.galleryIndex);
       document.getElementById("admin-gallery-image").src = photos[index];

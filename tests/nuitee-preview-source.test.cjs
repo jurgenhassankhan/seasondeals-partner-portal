@@ -24,6 +24,6 @@ test('supplier lookup failures and wrong deal binding cannot silently become a p
   const result=await run(async url=>url.endsWith('/preview')?response({preview:{enabled:true,public:false,bookable:false},deal:{id:18}}):supplierResult,nuiteeDealContent);
   assert.equal(result.rendered,false);assert.ok(result.error);
  }
- const partner=await run(async url=>url.endsWith('/preview')?response({preview:{enabled:true,public:false,bookable:false},deal:{id:18}}):response({},404),nuiteeDealContent);
- assert.equal(partner.rendered,true);assert.equal(partner.deal.source,undefined);
+ const partner=await run(async url=>url.endsWith('/preview')?response({preview:{enabled:true,public:false,bookable:false},deal:{id:18}}):url.includes('/supplier-deals/')?response({},404):response({id:18,hotel:{name:'Partnerhotel'}}),nuiteeDealContent);
+ assert.equal(partner.rendered,true);assert.equal(partner.deal.source,undefined);assert.equal(partner.deal.hotel_name,'Partnerhotel');
 });

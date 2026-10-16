@@ -2,6 +2,7 @@
   "use strict";
   const core = window.AdminCore;
   const params = new URLSearchParams(location.search);
+  const hotelCache = new Map();
   let page = Math.max(1, Number(params.get("page")) || 1);
 
   init();
@@ -38,7 +39,25 @@
         page = Math.min(page, pages);
         data = {items: filtered.slice((page - 1) * 25, page * 25), itemsTotal: filtered.length, pageTotal: pages, curPage: page};
       } else { data = await core.request(`/deals?${query}`); }
-      render(resolveItems(data));
+      const rows = resolveItems(data);
+      // Only enrich the current page when the legacy list omits the supplier hotel.
+      // Bound concurrency and cache within this page session; never load all supplier details.
+      const missing = rows.filter(d => d.source === "provider_sync" && !d.hotel?.name && !d.hotel_name);
+      let next = 0;
+      await Promise.all(Array.from({length:Math.min(4,missing.length)},async () => {
+        while (next < missing.length) {
+          const deal = missing[next++];
+          if (!hotelCache.has(deal.id)) {
+            const result = await core.request(`/supplier-deals/${encodeURIComponent(deal.id)}`);
+            const supplier = result?.supplier_deal;
+            if (supplier && String(supplier.deal_id) !== String(deal.id)) throw new Error("Verkeerde hotelkoppeling.");
+            hotelCache.set(deal.id, supplier?.supplier_content?.hotel || supplier?.supplier_mapping?.hotel || null);
+          }
+          const hotel = hotelCache.get(deal.id);
+          if (hotel?.name) { deal.hotel_name = hotel.name; deal.hotel = hotel; }
+        }
+      }));
+      render(rows);
       renderPagination(data);
     } catch (error) { showError(error.message); }
   }
@@ -47,7 +66,7 @@
     const content = document.getElementById("deals-content");
     if (!items.length) { content.className = "empty-state"; content.innerHTML = "<strong>Geen deals gevonden</strong><span>Pas de zoekopdracht of het statusfilter aan.</span>"; return; }
     content.className = "table-wrap";
-    content.innerHTML = `<table class="data-table"><thead><tr><th>Deal</th><th>Status</th><th>Voorraad</th><th>Ingediend</th><th>Prijs</th><th></th></tr></thead><tbody>${items.map((deal) => { const image = core.imageUrl(deal.images) || core.imageUrl(deal.external_image_urls); return `<tr><td><div class="deal-cell">${image ? `<img class="deal-thumb" src="${core.escapeHtml(image)}" alt="">` : '<span class="deal-thumb deal-thumb-placeholder">S</span>'}<div><strong>${core.escapeHtml(deal.title || "Naamloze deal")}</strong><span>${core.escapeHtml(deal.hotel?.name || deal.hotel_name || "Onbekend hotel")} · ${core.escapeHtml(deal.hotel?.city || deal.city || "")}</span></div></div></td><td>${core.statusBadge(deal.status)}</td><td>${core.escapeHtml(deal.inventory ?? 0)}</td><td>${core.date(deal.submitted_at || deal.created_at)}</td><td>${core.money(deal.price)}</td><td><a class="row-link" href="deal-detail.html?id=${encodeURIComponent(deal.id)}">Openen →</a></td></tr>`; }).join("")}</tbody></table>`;
+    content.innerHTML = `<table class="data-table"><thead><tr><th>Deal</th><th>Status</th><th>Voorraad</th><th>Ingediend</th><th>Prijs</th><th></th></tr></thead><tbody>${items.map((deal) => { const image = core.imageUrl(deal.images) || core.imageUrl(deal.external_image_urls); return `<tr><td><div class="deal-cell">${image ? `<img class="deal-thumb" src="${core.escapeHtml(image)}" alt="">` : '<span class="deal-thumb deal-thumb-placeholder">S</span>'}<div><strong>${core.escapeHtml(deal.title || "Naamloze deal")}</strong><span>${core.escapeHtml(deal.hotel?.name || deal.hotel_name || "Onbekend hotel")} · ${core.escapeHtml(deal.hotel?.city || deal.city || "")}</span></div></div></td><td>${core.statusBadge(deal.status)}</td><td>${deal.source === "provider_sync" ? "Actuele beschikbaarheid" : core.escapeHtml(deal.inventory ?? 0)}</td><td>${core.date(deal.submitted_at || deal.created_at)}</td><td>${core.money(deal.price)}</td><td><a class="row-link" href="deal-detail.html?id=${encodeURIComponent(deal.id)}">Openen →</a></td></tr>`; }).join("")}</tbody></table>`;
     content.querySelectorAll("tbody tr").forEach((row, index) => {
       const cell = row.children[1];
       if (!cell) return;

@@ -72,7 +72,7 @@ const photos=(room?.photos||[]).map(p=>({url:p.hd_url||p.url,caption:old.name||'
 const unique=[...new Map(photos.filter(p=>typeof p.url==='string'&&p.url.startsWith('https://')).map(p=>[p.url,p])).values()];
 const candidates=unique;
 if(!room||!candidates.length)return {valid:false,reason:'Confirmed room mapping and room photos required'};
-return {valid:true,preview:$input.save!==true,photos:candidates,room_matched:true,mapped_room_id:mapped,rate_name:old.name,binding,checked_at:Date.now()};
+return {valid:true,supplier_details:{id:h.id,hotelFacilities:Array.isArray(h.hotelFacilities)?h.hotelFacilities:[],facilities:Array.isArray(h.facilities)?h.facilities.map(f=>({facilityId:f.facilityId,name:f.name})):[],parking:typeof h.parking==='string'?h.parking:'',checked_at:Date.now()},preview:$input.save!==true,photos:candidates,room_matched:true,mapped_room_id:mapped,rate_name:old.name,binding,checked_at:Date.now()};
 """
       timeout = 5
     } as $prepared
@@ -105,7 +105,7 @@ return {valid:true,preview:$input.save!==true,photos:candidates,room_matched:tru
           code = """
 const content=$var.locked_supplier.supplier_content||{},hotel=content.hotel||{};
 if(JSON.stringify($var.locked_supplier.supplier_mapping)!==JSON.stringify($var.supplier.supplier_mapping)||$var.locked_supplier.supplier_hotel_id!==$var.supplier.supplier_hotel_id)throw new Error('Room mapping changed; fetch photos again');
-return {...content,hotel:{...hotel,images:$var.prepared.images,photo_gallery:$var.prepared.photos,photos_checked_at:$var.prepared.checked_at,room_photos_matched:$var.prepared.room_matched,photo_hotel_id:$var.locked_supplier.supplier_hotel_id,mapped_room_id:$var.prepared.mapped_room_id,photo_rate_name:$var.prepared.rate_name,room_photo_binding:$var.prepared.binding,photo_verification:{status:'verified',algorithm:$var.prepared.algorithm,max_photos:5,checked_at:$var.prepared.checked_at},previous_images:hotel.previous_images||hotel.images||[]}};
+return {...content,hotel:{...hotel,supplier_details:$var.prepared.supplier_details,previous_supplier_details:hotel.supplier_details||null,images:$var.prepared.images,photo_gallery:$var.prepared.photos,photos_checked_at:$var.prepared.checked_at,room_photos_matched:$var.prepared.room_matched,photo_hotel_id:$var.locked_supplier.supplier_hotel_id,mapped_room_id:$var.prepared.mapped_room_id,photo_rate_name:$var.prepared.rate_name,room_photo_binding:$var.prepared.binding,photo_verification:{status:'verified',algorithm:$var.prepared.algorithm,max_photos:5,checked_at:$var.prepared.checked_at},previous_images:hotel.previous_images||hotel.images||[]}};
 """
           timeout = 5
         } as $content

@@ -4,7 +4,7 @@
 // BEGIN GENERATED NUITEE CONTENT
 // One projection for import, review, protected preview and public responses.
 // Source: https://docs.liteapi.travel/reference/post_hotels-rates
-function nuiteeDealContent(mapping, hotelId) {
+function nuiteeDealContent(mapping, hotelId, contentHotel) {
   const hotel = mapping?.hotel, request = mapping?.request;
   const rates = mapping?.offer?.rates;
   const clean = value => typeof value === 'string' ? value.trim() : '';
@@ -33,22 +33,59 @@ function nuiteeDealContent(mapping, hotelId) {
   if (!board) throw Error('Bevestigde maaltijdvoorwaarden ontbreken.');
   const stay = `${nights} ${nights === 1 ? 'overnachting' : 'overnachtingen'}`;
   const guests = `${adults} ${adults === 1 ? 'volwassene' : 'volwassenen'}${children ? ` en ${children} ${children === 1 ? 'kind' : 'kinderen'}` : ''}`;
+  const dutchDate = value => { const d = new Date(date(value)); return `${d.getUTCDate()} ${['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'][d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+  const details = contentHotel?.supplier_details || hotel.supplier_details;
+  if (details && String(details.id) !== String(hotelId)) throw Error('Hotelvoorzieningen horen niet bij dit hotel.');
+  const facilityNames = [...(Array.isArray(details?.hotelFacilities) ? details.hotelFacilities : []), ...(Array.isArray(details?.facilities) ? details.facilities.map(f => f?.name) : [])].map(clean).filter(Boolean);
+  const definitions = [
+    ['wifi','Wifi','⌁',/\b(?:wi[ -]?fi|wireless internet)\b/i],
+    ['parking','Parkeren','P',/\b(?:parking|parkeren|parkeergelegenheid)\b/i],
+    ['late_checkout','Late check-out','◷',/\b(?:late check[ -]?out|laat uitchecken)\b/i],
+    ['welcome_drink','Welkomstdrankje','♧',/\b(?:welcome drink|welkomstdrankje)\b/i]
+  ];
+  const perks = (Array.isArray(rate.perks) ? rate.perks : []).filter(p => clean(p?.name) && ['HOTEL','RATE','ROOM'].includes(p.level));
+  const conditional = /if available|subject to|on request|upon request|availability|op aanvraag|beschikbaarheid|voorwaarden/i;
+  const unavailable = /\b(?:no|not available|unavailable|niet beschikbaar|geen)\b/i;
+  const paid = /surcharge|additional (?:charge|cost)|paid|fee|tegen betaling|toeslag|kosten|\b(?:EUR|USD|GBP)\s*\d|[€$£]\s*\d/i;
+  const extras = definitions.map(([key,label,icon,match]) => {
+    const benefits = perks.filter(p => match.test(p.name));
+    const names = facilityNames.filter(n => match.test(n));
+    if (key === 'parking' && clean(details?.parking)) names.push(clean(details.parking));
+    const evidence = [...new Set(benefits.length ? benefits.map(p => clean(p.name)) : names)];
+    let status = 'unconfirmed';
+    if (evidence.some(n => unavailable.test(n))) status = 'unconfirmed';
+    else if (benefits.length) status = evidence.some(n => conditional.test(n) || paid.test(n)) ? 'conditional' : 'included';
+    else if (names.length) {
+      // Only explicit whole facility labels certify a complimentary service. No inference from hotel prose.
+      const free = /^(?:free (?:wi[ -]?fi|wireless internet|parking|self parking)|gratis (?:wifi|wi-fi|parkeren))$/i;
+      status = names.some(n => paid.test(n)) ? 'paid' : names.some(n => conditional.test(n)) ? 'conditional' : names.every(n => free.test(n)) ? 'included' : 'available';
+    }
+    const displayEvidence = evidence.map(n => n.replace(/\b(?:free|gratis|complimentary)\b/gi, '').replace(/\s{2,}/g, ' ').trim());
+    const statusText = {included:'Inbegrepen',paid:'Tegen betaling',conditional:'Onder voorwaarden',available:'Beschikbaar; kosten niet bevestigd',unconfirmed:'Niet bevestigd door de leverancier'}[status];
+    return {key,icon,label,status,detail:[statusText,...displayEvidence].join(' · ')};
+  });
+  const breakfastPerks = perks.filter(p => /\b(?:breakfast|ontbijt)\b/i.test(p.name));
+  const breakfast = board[1] || breakfastPerks.some(p => !conditional.test(p.name) && !paid.test(p.name));
   const included = [
-    {icon:'☾',label:stay,detail:`Van ${request.checkin} tot ${request.checkout}`},
+    {icon:'☾',label:stay,detail:`Van ${dutchDate(request.checkin)} tot ${dutchDate(request.checkout)}`},
     {icon:'▱',label:room,detail:'Het aangeboden kamertype'},
     {icon:'♧',label:`Voor ${guests}`,detail:'Bezetting van de aangeboden kamer'}
   ];
   if (rate.boardType !== 'RO') included.push({icon:'☕',label:board[0],detail:'Volgens het geselecteerde tarief'});
-  // Hotel facilities and room names are not evidence of complimentary extras.
+  if (!board[1]) for (const perk of breakfastPerks) included.push({icon:'☕',label:'Ontbijt volgens tariefvoorwaarden',detail:clean(perk.name).replace(/\b(?:free|gratis|complimentary)\b/gi,'').trim()});
+  for (const extra of extras.filter(e => e.status === 'included')) included.push({icon:extra.icon,label:extra.label,detail:extra.detail});
+  // Preserve original benefit conditions; amount is benefit value, never a customer charge.
   return {
     content_verified:true, hotel_name:clean(hotel.name), room_type:room,
     minimum_nights:nights, max_guests:adults+children,
-    includes_breakfast:board[1], board_type:rate.boardType,
-    included_items:included, excluded_items:board[1] ? [] : ['Ontbijt'],
+    includes_breakfast:breakfast, board_type:rate.boardType,
+    ...Object.fromEntries(extras.map(e => [`includes_${e.key}`,e.status === 'included'])),
+    extra_conditions:extras, facility_items:extras.filter(e => !['included','unconfirmed'].includes(e.status)),
+    included_items:included, excluded_items:board[1] || breakfastPerks.length ? [] : ['Ontbijt'],
     travel_period_start:date(request.checkin), travel_period_end:date(request.checkout),
     title:`${stay} bij ${clean(hotel.name)}`,
-    short_description:`${stay} in ${room} voor ${guests}. ${board[0]}.`,
-    long_description:`Verblijf van ${request.checkin} tot ${request.checkout} bij ${clean(hotel.name)}. Eén ${room} voor ${guests}. ${board[0]}.${board[1] ? '' : ' Ontbijt is niet inbegrepen.'}`
+    short_description:`${stay} in ${room} voor ${guests}.${rate.boardType === 'RO' ? '' : ' ' + board[0] + '.'}`,
+    long_description:`Verblijf van ${dutchDate(request.checkin)} tot ${dutchDate(request.checkout)} bij ${clean(hotel.name)}. Eén ${room} voor ${guests}. ${rate.boardType === 'RO' ? '' : board[0] + '.'}${breakfastPerks.length ? ' ' + breakfastPerks.map(p => clean(p.name).replace(/\b(?:free|gratis|complimentary)\b/gi,'').trim()).join('. ') + '.' : ''}`
   };
 }
 // END GENERATED NUITEE CONTENT
@@ -139,12 +176,21 @@ function nuiteeDealContent(mapping, hotelId) {
           if (confirmedSupplier.provider !== "nuitee" || String(confirmedSupplier.deal_id) !== String(dealId)) throw new Error("De leverancierskoppeling komt niet overeen met deze deal.");
           supplier = confirmedSupplier;
           const hotel = supplier.supplier_content?.hotel;
-          const content = nuiteeDealContent(supplier.supplier_mapping, supplier.supplier_hotel_id);
+          const content = nuiteeDealContent(supplier.supplier_mapping, supplier.supplier_hotel_id, hotel);
           const {title,short_description,long_description,...facts} = content;
           Object.assign(deal, facts, {source:"provider_sync"});
           if (hotel) deal.hotel = hotel;
           deal.external_image_urls = hotel?.photo_verification?.status === "verified" && hotel.room_photos_matched === true ? hotel.images || [] : [];
         } else if (deal.source === "provider_sync") throw new Error("De leveranciersgegevens ontbreken.");
+      }
+      if (isAdmin && !supplier && !deal.hotel?.name && !deal.hotel_name) {
+        const hotelResponse = await fetch(`${CONFIG.adminEndpoint}/deals/${encodeURIComponent(dealId)}`, {headers:{Accept:"application/json",Authorization:`Bearer ${token}`},cache:"no-store"});
+        if (!hotelResponse.ok) throw new Error("De hotelnaam kon niet worden gecontroleerd.");
+        const detailData = await hotelResponse.json();
+        const detail = detailData.deal || detailData;
+        if (String(detail.id) !== String(dealId)) throw new Error("De hotelgegevens horen niet bij deze deal.");
+        deal.hotel = detail.hotel;
+        deal.hotel_name = detail.hotel_name || detail.hotel?.name;
       }
       gallery = getImages(deal);
       renderDeal();
@@ -195,7 +241,8 @@ function nuiteeDealContent(mapping, hotelId) {
       <header class="detail-heading"><div><span class="detail-kicker">${escapeHtml(formatCategory(getCategory(deal)))}${location ? ` · ${escapeHtml(location)}` : ""}</span><h1>${escapeHtml(title)}</h1><div class="detail-subline"><strong>${escapeHtml(hotel)}</strong>${rating > 0 ? `<span class="detail-rating">★ ${escapeHtml(formatDecimal(rating))}${reviews > 0 ? ` · ${escapeHtml(formatNumber(reviews))} beoordelingen` : ""}</span>` : ""}${deal.star_rating > 0 ? `<span>${"★".repeat(Math.min(5, Math.round(deal.star_rating)))} hotel</span>` : ""}${remaining !== null ? `<span class="detail-stock${remaining <= 5 ? " is-low" : ""}">● ${remaining === 0 ? "Uitverkocht" : `Actuele voorraad: ${formatNumber(remaining)}`}</span>` : ""}</div></div><div class="detail-heading-actions"><button class="detail-icon-button" id="share-deal" type="button" aria-label="Deal delen">↗</button><button class="detail-icon-button" id="save-deal" type="button" aria-label="Deal opslaan">♡</button></div></header>
       <div class="detail-layout"><article class="detail-content">
         <section><span class="detail-section-label">Over deze deal</span><h2>Een bijzonder moment voor een mooie prijs.</h2><p>${escapeHtml(mainDescription)}</p>${longDescription && longDescription !== mainDescription ? `<p class="detail-description-long">${formatText(longDescription)}</p>` : ""}</section>
-        ${amenities.length ? `<section><span class="detail-section-label">Dit is inbegrepen</span><h2>Jouw verblijf</h2><div class="amenities-grid">${amenities.map(renderAmenity).join("")}</div>${excluded.length ? `<p><strong>Niet inbegrepen:</strong> ${excluded.map(escapeHtml).join(", ")}.</p>` : ""}</section>` : ""}
+        ${amenities.length ? `<section><span class="detail-section-label">Dit is inbegrepen</span><h2>Jouw verblijf</h2><div class="amenities-grid">${amenities.map(renderAmenity).join("")}</div></section>` : ""}
+        ${Array.isArray(deal.facility_items) && deal.facility_items.length ? `<section><h2>Voorzieningen en voorwaarden</h2><div class="amenities-grid">${deal.facility_items.map(row => renderAmenity([true,row.icon,row.label,row.detail])).join("")}</div></section>` : ""}
         <section><span class="detail-section-label">Geldigheid</span><h2>Plan jouw moment.</h2><div class="period-card"><div><span>Te gebruiken vanaf</span><strong>${travelStart ? formatDate(travelStart) : "Zie dealvoorwaarden"}</strong></div><div><span>Te gebruiken tot en met</span><strong>${travelEnd ? formatDate(travelEnd) : "Zie dealvoorwaarden"}</strong></div></div></section>
         <section><span class="detail-section-label">Annuleren en wijzigen</span><h2>Goed om vooraf te weten.</h2><div class="policy-card">${formatText(policy)}</div></section>
       </article>
@@ -263,7 +310,7 @@ function nuiteeDealContent(mapping, hotelId) {
     return [[item.includes_breakfast === true,"☕","Ontbijt inbegrepen","Bij deze aanbieding"],[item.includes_wifi === true,"⌁","Wifi inbegrepen","Bij deze aanbieding"],[item.includes_parking === true,"P","Parkeren inbegrepen","Bij deze aanbieding"],[item.includes_late_checkout === true,"◷","Late check-out","Volgens de dealvoorwaarden"],[item.includes_welcome_drink === true,"◇","Welkomstdrankje","Bij deze aanbieding"]].filter(([active])=>active);
   }
   function renderAmenity([,icon,title,subtitle]) { return `<div class="amenity"><span class="amenity-icon">${icon}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle)}</small></div></div>`; }
-  function getRemaining(item) { if (availabilityPreview) return null; const direct=number(item.remaining_inventory??item.available_quantity??item.inventory); return direct===null?null:Math.max(0,direct); }
+  function getRemaining(item) { if (availabilityPreview || item.source === "provider_sync") return null; const direct=number(item.remaining_inventory??item.available_quantity??item.inventory); return direct===null?null:Math.max(0,direct); }
   function getCategory(item) { const raw=[item.category_slug,item.category?.slug,item.category?.name,item.category,item.deal_type,item.package_type,item.type].filter(v=>typeof v==="string").join(" ").toLowerCase(); if(/wellness|spa|sauna/.test(raw))return"wellness";if(/massage|beauty|behandeling/.test(raw))return"massage";if(/ticket|event|concert|festival/.test(raw))return"tickets";if(/attract|uitje|park|museum|activiteit/.test(raw))return"attraction";return"hotel"; }
   function formatCategory(value){return({hotel:"Hotel",wellness:"Wellness",massage:"Massage",tickets:"Tickets",attraction:"Attractie"})[value]||"Deal";}
   function toDate(value){if(!value)return null;const raw=Number(value);const date=Number.isFinite(raw)?new Date(raw<1e11?raw*1000:raw):new Date(value);return Number.isNaN(date.getTime())?null:date;}
