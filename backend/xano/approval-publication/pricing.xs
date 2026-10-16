@@ -40,74 +40,86 @@ query "supplier-deals/{deal_id}/pricing" verb=PATCH {
       error = "Nuitee-koppeling niet gevonden."
     }
   
-    var $config {
-      value = $input.pricing_config
-    }
-  
-    precondition ($config.processing_fee != null && $config.stripe_fee_percentage != null && $config.stripe_fee_fixed != null && $config.markup_percentage >= 0 && $config.markup_amount >= 0 && $config.override_amount >= 0 && $config.discount_percentage >= 0 && $config.discount_percentage < 100 && $config.min_margin_amount >= 0 && $config.processing_fee >= 0 && $config.stripe_fee_percentage >= 0 && $config.stripe_fee_percentage < 100 && $config.stripe_fee_fixed >= 0) {
+    api.lambda {
+      code = """
+// BEGIN GENERATED PRICING
+// Shared price policy. Account-specific costs require evidence before configuring.
+const supplierPricingDefaults = Object.freeze({
+  mode: 'percentage', markup_percentage: 20, markup_amount: 0, override_amount: 0,
+  discount_percentage: 0, min_margin_amount: 20, rounding: 'none',
+  processing_fee: null, stripe_fee_percentage: null, stripe_fee_fixed: null,
+  calculation_basis: 'costs_included_v2', defaults_version: '20261016-1',
+  production_costs_verified: false, cost_evidence: null, payment_method: 'ACC_CREDIT_CARD'
+});
+
+function supplierPricingConfig(saved = {}, proposal = false) {
+  const config = {...supplierPricingDefaults, ...saved};
+  // Null means unknown, never zero. Fill only with confirmed central defaults.
+  for (const key of ['processing_fee','stripe_fee_percentage','stripe_fee_fixed']) {
+    config[key] = saved[key] ?? supplierPricingDefaults[key];
+  }
+  if (proposal) config.mode = 'percentage';
+  return config;
+}
+
+function calculateSupplierPrice(base, config) {
+  const names = {processing_fee:'Nuitée kosten',stripe_fee_percentage:'Stripe kosten (%)',stripe_fee_fixed:'Stripe kosten (€)',markup_percentage:'Jouw opslag (%)',markup_amount:'Jouw opslag (€)',override_amount:'Verkoopprijs',discount_percentage:'Korting',min_margin_amount:'Minimaal overhouden'};
+  const active = config.mode === 'percentage' ? 'markup_percentage' : config.mode === 'fixed' ? 'markup_amount' : 'override_amount';
+  if (!['percentage','fixed','override'].includes(config.mode)) throw Error('Kies een geldige prijsregel.');
+  for (const key of ['processing_fee','stripe_fee_percentage','stripe_fee_fixed','discount_percentage','min_margin_amount',active]) {
+    if (config[key] == null || config[key] === '') throw Error(names[key] + ': standaardtarief nog te bevestigen.');
+    if (typeof config[key] !== 'number' || !Number.isFinite(config[key]) || config[key] < 0) throw Error(names[key] + ': vul een geldig bedrag in.');
+  }
+  if (!Number.isFinite(base) || base <= 0) throw Error('Inkoopprijs (Nuitée) ontbreekt.');
+  const rate = config.stripe_fee_percentage / 100;
+  const discount = 1 - config.discount_percentage / 100;
+  if (rate >= 1 || discount <= 0 || discount > 1) throw Error('Kosten en korting moeten lager zijn dan 100%.');
+  const fixedCost = base + config.processing_fee + config.stripe_fee_fixed;
+  let raw = config.override_amount;
+  if (config.mode === 'percentage') {
+    const factor = 1 + config.markup_percentage / 100;
+    const denominator = 1 - factor * rate;
+    if (denominator <= 0) throw Error('Deze opslag en Stripe kosten leveren geen geldige verkoopprijs op.');
+    raw = fixedCost * factor / denominator;
+  } else if (config.mode === 'fixed') {
+    raw = (fixedCost + config.markup_amount) / (1 - rate);
+  }
+  raw *= discount;
+  // Avoid adding a cent to an exact integer due to floating-point noise.
+  const ceil = n => Math.ceil(n - 1e-9);
+  if (!['none','whole','99'].includes(config.rounding)) throw Error('Kies een geldige afronding.');
+  const amount = config.rounding === 'whole' ? ceil(raw) : config.rounding === '99' ? (ceil(raw - .99) * 100 + 99) / 100 : ceil(raw * 100) / 100;
+  const stripeCost = amount * rate + config.stripe_fee_fixed;
+  const estimatedMargin = amount - base - config.processing_fee - stripeCost;
+  if (!Number.isFinite(amount) || amount <= 0 || estimatedMargin + 1e-9 < config.min_margin_amount) throw Error('Je houdt minder over dan het ingestelde minimum.');
+  return {amount, estimatedMargin, stripeCost, totalCost: base + config.processing_fee + stripeCost};
+}
+// END GENERATED PRICING
+const incoming=$input.pricing_config || {}, previous=$var.supplier.pricing_config || {};
+try {
+  const config = supplierPricingConfig(previous);
+  for (const key of ['mode','rounding','markup_percentage','markup_amount','override_amount','discount_percentage','min_margin_amount','processing_fee','stripe_fee_percentage','stripe_fee_fixed']) {
+    if (Object.hasOwn(incoming,key)) config[key] = incoming[key];
+  }
+  config.calculation_basis = 'costs_included_v2';
+  const result = calculateSupplierPrice(Number($var.supplier.supplier_base_amount),config);
+  const costsChanged = ['processing_fee','stripe_fee_percentage','stripe_fee_fixed'].some(key=>config[key] !== previous[key]);
+  // Never accept client assertions of verified commercial costs.
+  if (costsChanged) { config.production_costs_verified=false; config.cost_evidence=null; }
+  config.price_status='saved_requires_review';
+  return {valid:true,config,...result};
+} catch(error) { return {valid:false,reason:error.message}; }
+      """
+      timeout = 5
+    } as $calculated
+    precondition ($calculated.valid) {
       error_type = "inputerror"
-      error = "Ongeldige prijswaarden."
+      error = $calculated.reason
     }
-  
-    precondition ($config.mode == "percentage" || $config.mode == "fixed" || $config.mode == "override") {
-      error_type = "inputerror"
-      error = "Ongeldige prijsregel."
-    }
-  
-    var $raw_price {
-      value = $config.override_amount
-    }
-  
-    conditional {
-      if ($config.mode == "percentage") {
-        var.update $raw_price {
-          value = $supplier.supplier_base_amount * (1 + $config.markup_percentage / 100)
-        }
-      }
-    
-      elseif ($config.mode == "fixed") {
-        var.update $raw_price {
-          value = $supplier.supplier_base_amount + $config.markup_amount
-        }
-      }
-    }
-  
-    var $discounted {
-      value = $raw_price * (1 - $config.discount_percentage / 100)
-    }
-  
-    var $price {
-      value = ($discounted * 100|ceil) / 100
-    }
-  
-    precondition ($config.rounding == "none" || $config.rounding == "whole" || $config.rounding == "99") {
-      error_type = "inputerror"
-      error = "Ongeldige afronding."
-    }
-  
-    conditional {
-      if ($config.rounding == "whole") {
-        var.update $price {
-          value = $discounted|ceil
-        }
-      }
-    
-      elseif ($config.rounding == "99") {
-        var.update $price {
-          value = (($discounted - 0.99)|ceil) + 0.99
-        }
-      }
-    }
-  
-    var $margin {
-      value = $price - $supplier.supplier_base_amount - $config.processing_fee - ($price * $config.stripe_fee_percentage / 100) - $config.stripe_fee_fixed
-    }
-  
-    precondition ($price > 0 && $margin >= $config.min_margin_amount) {
-      error_type = "inputerror"
-      error = "Minimummarge na kostenreserve niet gehaald."
-    }
-  
+    var $config { value = $calculated.config }
+    var $price { value = $calculated.amount }
+    var $margin { value = $calculated.estimatedMargin }
+
         db.edit supplier_deals {
           field_name = "id"
           field_value = $supplier.id

@@ -1191,3 +1191,15 @@ Eerstvolgende actie: vragen van Jurgen over stap1 behandelen en vervolgens de be
 ### Vastlegging en terugval
 
 Documentatierelease: bron GitHub main ff71923120ddacc53775ec8c1849a6a3bc5eebfa; bestemming dezelfde repository/main, uitsluitend SEASONDEALS_LIVEGANG.md en SEASONDEALS_STATUS.md. Beide bevatten dezelfde route en eigenaarafspraak. Bewijs: zes concrete stappen uit het gesprek en expliciete opdracht om deze te bewaren. Geen software, Xano-configuratie, dealgegevens, prijzen of verkooppoorten gewijzigd. Terugval: alleen deze documentatieaanvulling gericht terugdraaien; historisch bewijs behouden.
+
+
+## REL-20261016-PRICING — LG-01 / SD-02
+
+- Eigenaar akkoord: compacte prijskaart met Inkoopprijs (Nuitée), Nuitée kosten, Stripe kosten en Jouw opslag; standaard20% opslag boven op inkoop inclusief kosten, bewerkbaar. Percentage, vaste opslag en vaste verkoopprijs blijven beschikbaar. Alleen gekozen prijsveld tonen; overige instellingen uitklapbaar.
+- Bron main7cab2e1b4c0a735e81b456a7bcfb777bab7f8f33; bestemming main/Pages, Xano v1 Admin902 en productie-import802. Centrale prijsbron met standaardwaarden wordt naar beide runtimes gegenereerd. Geen bulkherberekening van bestaande deals, statuswijziging, echte transactie of verkoopvrijgave.
+- Kostenbewijs: bestaande documentatie bevat uitsluitend sandboxprocessing1,30/2,30 en Stripe-reserve3%+0,25 plus één sandbox-iDEAL-afschrijving0,29. Vaste productietarieven TE VERIFIËREN; niet als bevestigde defaults gebruiken. Onbekende kosten blijven expliciet onbekend en blokkeren prijsopslag.
+- Bouw/plaatsing/testbewijs volgt. Terugval: gerichte revert van geselecteerde bronnen; opgeslagen prijswijzigingen zijn afzonderlijke data en worden niet door code-revert hersteld.
+
+- Bouw: één centrale prijsbron backend/nuitee/pricing.js, gegenereerd in admin,902 en802. Percentage gebruikt P=(inkoop+Nuitée+vaste Stripe)*(1+opslag)/(1-Stripepercentage*(1+opslag)); vaste opslag omvat eveneens kosten, vaste verkoopprijs blijft gekozen klantbedrag. Onbekende kosten/ongeldige invoer/onvoldoende minimum blokkeren.20% is opslag op totale kosten, geen20% omzetmarge.
+- UI: compacte bediening, uitsluitend actief prijsveld zichtbaar; kosten en overige instellingen uitklapbaar. Bestaande opgeslagen keuzes blijven behouden, onbeoordeelde importvoorstellen openen met percentage. Centrale kosten blijven null totdat accounttarieven bevestigd zijn; geen testbedragen als vaste productietarieven ingevuld. Kostentarieven zijn per deal bewerkbaar; centrale defaults worden in de gedeelde configuratie beheerd, niet via een nieuwe algemene admininstellingenpagina.
+- Elf gerichte lokale tests geslaagd: kosten inclusief Stripe over verkoopprijs,3 prijsmodi, afronding/korting, onbekende/ongeldige kosten en minimum, behoud serverzijdig kostenbewijs, geen vervalste clientverificatie, import-/goedkeuringsregressie. Syntax en diffcontrole geslaagd. Xano902/802 als exact2drafts geselecteerd voor publicatie; eindcontrole volgt. Geen dealgegevens gewijzigd.

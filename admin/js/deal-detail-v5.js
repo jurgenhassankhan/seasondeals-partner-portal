@@ -107,6 +107,59 @@ function nuiteeDealContent(mapping, hotelId, contentHotel) {
   };
 }
 // END GENERATED NUITEE CONTENT
+// BEGIN GENERATED PRICING
+// Shared price policy. Account-specific costs require evidence before configuring.
+const supplierPricingDefaults = Object.freeze({
+  mode: 'percentage', markup_percentage: 20, markup_amount: 0, override_amount: 0,
+  discount_percentage: 0, min_margin_amount: 20, rounding: 'none',
+  processing_fee: null, stripe_fee_percentage: null, stripe_fee_fixed: null,
+  calculation_basis: 'costs_included_v2', defaults_version: '20261016-1',
+  production_costs_verified: false, cost_evidence: null, payment_method: 'ACC_CREDIT_CARD'
+});
+
+function supplierPricingConfig(saved = {}, proposal = false) {
+  const config = {...supplierPricingDefaults, ...saved};
+  // Null means unknown, never zero. Fill only with confirmed central defaults.
+  for (const key of ['processing_fee','stripe_fee_percentage','stripe_fee_fixed']) {
+    config[key] = saved[key] ?? supplierPricingDefaults[key];
+  }
+  if (proposal) config.mode = 'percentage';
+  return config;
+}
+
+function calculateSupplierPrice(base, config) {
+  const names = {processing_fee:'Nuitée kosten',stripe_fee_percentage:'Stripe kosten (%)',stripe_fee_fixed:'Stripe kosten (€)',markup_percentage:'Jouw opslag (%)',markup_amount:'Jouw opslag (€)',override_amount:'Verkoopprijs',discount_percentage:'Korting',min_margin_amount:'Minimaal overhouden'};
+  const active = config.mode === 'percentage' ? 'markup_percentage' : config.mode === 'fixed' ? 'markup_amount' : 'override_amount';
+  if (!['percentage','fixed','override'].includes(config.mode)) throw Error('Kies een geldige prijsregel.');
+  for (const key of ['processing_fee','stripe_fee_percentage','stripe_fee_fixed','discount_percentage','min_margin_amount',active]) {
+    if (config[key] == null || config[key] === '') throw Error(names[key] + ': standaardtarief nog te bevestigen.');
+    if (typeof config[key] !== 'number' || !Number.isFinite(config[key]) || config[key] < 0) throw Error(names[key] + ': vul een geldig bedrag in.');
+  }
+  if (!Number.isFinite(base) || base <= 0) throw Error('Inkoopprijs (Nuitée) ontbreekt.');
+  const rate = config.stripe_fee_percentage / 100;
+  const discount = 1 - config.discount_percentage / 100;
+  if (rate >= 1 || discount <= 0 || discount > 1) throw Error('Kosten en korting moeten lager zijn dan 100%.');
+  const fixedCost = base + config.processing_fee + config.stripe_fee_fixed;
+  let raw = config.override_amount;
+  if (config.mode === 'percentage') {
+    const factor = 1 + config.markup_percentage / 100;
+    const denominator = 1 - factor * rate;
+    if (denominator <= 0) throw Error('Deze opslag en Stripe kosten leveren geen geldige verkoopprijs op.');
+    raw = fixedCost * factor / denominator;
+  } else if (config.mode === 'fixed') {
+    raw = (fixedCost + config.markup_amount) / (1 - rate);
+  }
+  raw *= discount;
+  // Avoid adding a cent to an exact integer due to floating-point noise.
+  const ceil = n => Math.ceil(n - 1e-9);
+  if (!['none','whole','99'].includes(config.rounding)) throw Error('Kies een geldige afronding.');
+  const amount = config.rounding === 'whole' ? ceil(raw) : config.rounding === '99' ? (ceil(raw - .99) * 100 + 99) / 100 : ceil(raw * 100) / 100;
+  const stripeCost = amount * rate + config.stripe_fee_fixed;
+  const estimatedMargin = amount - base - config.processing_fee - stripeCost;
+  if (!Number.isFinite(amount) || amount <= 0 || estimatedMargin + 1e-9 < config.min_margin_amount) throw Error('Je houdt minder over dan het ingestelde minimum.');
+  return {amount, estimatedMargin, stripeCost, totalCost: base + config.processing_fee + stripeCost};
+}
+// END GENERATED PRICING
   const core = window.AdminCore;
   const dealId = new URLSearchParams(location.search).get("id");
   let admin;
@@ -232,10 +285,33 @@ function nuiteeDealContent(mapping, hotelId, contentHotel) {
 
   function supplierPanel() {
     if (supplierError) return '<section class="panel review-card"><h3>Nuitée-gegevens niet beschikbaar</h3><p class="notice">' + core.escapeHtml(supplierError) + '</p><p>Beoordeling wacht totdat de leveranciersgegevens zijn opgehaald.</p></section>';
-    const config = supplierDeal.pricing_config || {};
+    const saved = supplierDeal.pricing_config || {};
+    const config = supplierPricingConfig(saved, deal.status === "draft" && String(saved.price_status || "").startsWith("proposal_"));
     const writable = core.canReview(admin) && deal.status === "draft";
-    const numberInput = (key, label, fallback = 0) => `<label for="supplier-${key}">${label}</label><input id="supplier-${key}" name="${key}" class="review-input" type="number" min="0" step="0.01" ${supplierDeal.environment === "production" ? "required" : ""} value="${core.escapeHtml(config[key] ?? (supplierDeal.environment === "production" && ["processing_fee","stripe_fee_percentage","stripe_fee_fixed"].includes(key) ? "" : fallback))}" ${writable ? "" : "disabled"}>`;
-    return `<section class="panel review-card"><span class="eyebrow">Nuitée-conceptdeal</span><h3>Prijs en marge</h3><p class="notice">De inkoopprijs is alleen-lezen. Dit is een prijsvoorbeeld; actuele kosten en beschikbaarheid worden bij het boeken opnieuw gecontroleerd.</p><div class="meta-list"><div class="meta-row"><span>Inkoopprijs</span><strong>${core.money(supplierDeal.supplier_base_amount)}</strong></div><div class="meta-row"><span>Leveranciershotel</span><strong>${core.escapeHtml(supplierDeal.supplier_hotel_id)}</strong></div><div class="meta-row"><span>Omgeving</span><strong>${core.escapeHtml(supplierDeal.environment)}</strong></div></div><form id="supplier-pricing"><label for="supplier-mode">Prijsregel</label><select id="supplier-mode" name="mode" class="review-input" ${writable ? "" : "disabled"}>${[["percentage","Opslag in procenten"],["fixed","Vaste opslag"],["override","Vaste verkoopprijs"]].map(([value,label])=>`<option value="${value}" ${(config.mode || "percentage")===value?"selected":""}>${label}</option>`).join("")}</select>${numberInput("markup_percentage","Opslag (%)")}${numberInput("markup_amount","Vaste opslag (€)")}${numberInput("override_amount","Vaste verkoopprijs (€)")}${numberInput("discount_percentage","Korting op berekende prijs (%)")}${numberInput("min_margin_amount","Minimummarge na kostenreserve (€)")}${numberInput("processing_fee","Nuitée-processingkosten (€)")}${numberInput("stripe_fee_percentage","Stripe-kostenreserve (%)",3)}${numberInput("stripe_fee_fixed","Stripe-kostenreserve vast (€)",0.25)}<label for="supplier-rounding">Afronding omhoog</label><select id="supplier-rounding" name="rounding" class="review-input" ${writable ? "" : "disabled"}>${[["none","Op centen"],["whole","Op hele euro"],["99","Op € …,99"]].map(([value,label])=>`<option value="${value}" ${(config.rounding || "none")===value?"selected":""}>${label}</option>`).join("")}</select><p id="supplier-price-preview" class="notice" aria-live="polite"></p>${writable ? '<button type="submit" class="primary-button">Prijsregels opslaan</button>' : '<p class="notice">Prijsregels kunnen alleen bij een conceptdeal door een bevoegde beheerder worden gewijzigd.</p>'}</form>${writable ? supplierContentForm() + '<button id="supplier-submit" class="primary-button" type="button">Indienen ter beoordeling</button>' : core.canReview(admin) ? '<button id="supplier-draft" class="secondary-button" type="button">Terug naar concept</button>' : ""}<p class="notice">${supplierDeal.environment === "production" ? "Sla inhoud, kosten en prijs op en dien de deal in ter beoordeling. Goedkeuren maakt deze deal automatisch zichtbaar op de website. Boeken blijft tot de livegang gesloten." : "Sandboxgoedkeuring publiceert geen deal."}</p></section>`;
+    const numberInput = (key, label, suffix = "€") => `<div class="price-field"><label for="supplier-${key}">${label}</label><div class="price-input-wrap"><input id="supplier-${key}" name="${key}" type="number" min="0" step="0.01" inputmode="decimal" value="${core.escapeHtml(config[key] ?? "")}" placeholder="Nog te bevestigen" ${writable ? "" : "disabled"}><span aria-hidden="true">${suffix}</span></div></div>`;
+    return `<section class="panel review-card supplier-price-card"><span class="eyebrow">Nuitée</span><h3>Prijs en marge</h3>
+      <div class="price-base"><span>Inkoopprijs (Nuitée)</span><strong>${core.money(supplierDeal.supplier_base_amount)}</strong></div>
+      <form id="supplier-pricing">
+        <label for="supplier-mode">Prijsregel</label><select id="supplier-mode" name="mode" ${writable ? "" : "disabled"}>${[["percentage","Percentage"],["fixed","Vaste opslag"],["override","Vaste verkoopprijs"]].map(([value,label])=>`<option value="${value}" ${config.mode===value?"selected":""}>${label}</option>`).join("")}</select>
+        <div data-price-mode="percentage">${numberInput("markup_percentage","Jouw opslag","%")}</div>
+        <div data-price-mode="fixed">${numberInput("markup_amount","Jouw opslag")}</div>
+        <div data-price-mode="override">${numberInput("override_amount","Verkoopprijs")}</div>
+        <p class="price-help" id="supplier-basis-help">Boven op de inkoopprijs, Nuitée kosten en Stripe kosten.</p>
+        <div class="price-result" id="supplier-price-preview" aria-live="polite"></div>
+        <details class="price-settings"><summary>Kosten aanpassen <span id="supplier-cost-status"></span></summary>
+          ${numberInput("processing_fee","Nuitée kosten")}
+          <fieldset><legend>Stripe kosten</legend><div class="price-columns">${numberInput("stripe_fee_percentage","Percentage","%")}${numberInput("stripe_fee_fixed","Vast bedrag")}</div></fieldset>
+          <p class="price-help">Deze bedragen gelden voor deze deal. Onbekende tarieven worden niet als nul gerekend.</p>
+        </details>
+        <details class="price-settings"><summary>Overige instellingen</summary>
+          ${numberInput("discount_percentage","Korting","%")}${numberInput("min_margin_amount","Minimaal overhouden")}
+          <label for="supplier-rounding">Afronding omhoog</label><select id="supplier-rounding" name="rounding" ${writable ? "" : "disabled"}>${[["none","Op centen"],["whole","Op hele euro"],["99","Op € …,99"]].map(([value,label])=>`<option value="${value}" ${config.rounding===value?"selected":""}>${label}</option>`).join("")}</select>
+        </details>
+        ${writable ? '<button type="submit" class="primary-button">Prijsregels opslaan</button>' : '<p class="price-help">Alleen bewerkbaar bij een conceptdeal door een bevoegde beheerder.</p>'}
+        <p class="price-help">Opslaan wijzigt alleen deze deal. Actuele inkoop en kosten worden bij het boeken opnieuw gecontroleerd.</p>
+      </form>
+      ${writable ? supplierContentForm() + '<button id="supplier-submit" class="primary-button" type="button">Indienen ter beoordeling</button>' : core.canReview(admin) ? '<button id="supplier-draft" class="secondary-button" type="button">Terug naar concept</button>' : ""}
+      <p class="notice">${supplierDeal.environment === "production" ? "Goedkeuren na beoordeling maakt de deal zichtbaar op de website. Boeken blijft tot de livegang gesloten." : "Sandboxgoedkeuring publiceert geen deal."}</p></section>`;
   }
   function supplierContentForm() {
     return '<form id="supplier-content"><h3>Dealinhoud</h3>' + [["title","Titel"],["short_description","Korte omschrijving"],["long_description","Uitgebreide omschrijving"],["cancellation_policy","Annuleringsvoorwaarden"]].map(([key,label]) => '<label for="supplier-content-' + key + '">' + label + '</label><textarea required id="supplier-content-' + key + '" name="' + key + '" class="review-input">' + core.escapeHtml(deal[key] || "") + '</textarea>').join("") + '<button class="secondary-button" type="submit">Inhoud opslaan</button></form>';
@@ -267,29 +343,31 @@ function nuiteeDealContent(mapping, hotelId, contentHotel) {
     const form = document.getElementById("supplier-pricing");
     const config = {mode: form.elements.mode.value, rounding: form.elements.rounding.value};
     for (const key of ["markup_percentage","markup_amount","override_amount","discount_percentage","min_margin_amount","processing_fee","stripe_fee_percentage","stripe_fee_fixed"]) {
-      if (form.elements[key].value.trim() === "") throw new Error("Vul eerst alle prijs- en kostenvelden in.");
-      config[key] = Number(form.elements[key].value);
-      if (!Number.isFinite(config[key]) || config[key] < 0) throw new Error("Vul geldige positieve prijswaarden in.");
+      const value = form.elements[key].value.trim();
+      config[key] = value === "" ? null : Number(value);
     }
-    if (config.discount_percentage >= 100 || config.stripe_fee_percentage >= 100) throw new Error("Korting en kostenpercentage moeten lager zijn dan 100%.");
     return config;
   }
   function calculatePreview(config) {
-    const base = Number(supplierDeal.supplier_base_amount);
-    let amount = config.mode === "percentage" ? base * (1 + config.markup_percentage / 100) : config.mode === "fixed" ? base + config.markup_amount : config.override_amount;
-    amount *= 1 - config.discount_percentage / 100;
-    amount = config.rounding === "whole" ? Math.ceil(amount) : config.rounding === "99" ? Math.ceil(amount - .99) + .99 : Math.ceil(amount * 100) / 100;
-    const estimatedMargin = amount - base - config.processing_fee - amount * config.stripe_fee_percentage / 100 - config.stripe_fee_fixed;
-    if (amount <= 0 || estimatedMargin < config.min_margin_amount) throw new Error("De prijs haalt de ingestelde minimummarge na de kostenreserve niet.");
-    return {amount, estimatedMargin};
+    return calculateSupplierPrice(Number(supplierDeal.supplier_base_amount),config);
   }
   function previewSupplierPrice() {
     const target = document.getElementById("supplier-price-preview");
     if (!target) return;
+    const form = document.getElementById("supplier-pricing"), config = readSupplierPricing();
+    form.querySelectorAll('[data-price-mode]').forEach(row => { row.hidden = row.dataset.priceMode !== config.mode; });
+    document.getElementById("supplier-basis-help").textContent = config.mode === "override" ? "Het totale bedrag dat de klant betaalt." : "Boven op de inkoopprijs, Nuitée kosten en Stripe kosten.";
+    const missing = ['processing_fee','stripe_fee_percentage','stripe_fee_fixed'].some(key=>config[key] == null);
+    document.getElementById("supplier-cost-status").textContent = missing ? "Nog te bevestigen" : "";
+    const submit = form.querySelector('button[type="submit"]');
     try {
-      const result = calculatePreview(readSupplierPricing());
-      target.textContent = "Voorbeeld verkoopprijs: " + core.money(result.amount) + " · Geschatte marge na kostenreserve: " + core.money(result.estimatedMargin);
-    } catch (error) { target.textContent = error.message; }
+      const result = calculatePreview(config);
+      target.innerHTML = `<span>Verkoopprijs</span><strong>${core.money(result.amount)}</strong><div><span>Wat je overhoudt</span><b>${core.money(result.estimatedMargin)}</b></div><small>Na inkoop, Nuitée kosten en Stripe kosten (${core.money(result.stripeCost)}). Vóór overige bedrijfskosten en belastingen.</small>`;
+      if(submit) submit.disabled=false;
+    } catch (error) {
+      target.innerHTML = '<span>Verkoopprijs</span><strong>—</strong><small>' + core.escapeHtml(error.message) + '</small>';
+      if(submit) submit.disabled=true;
+    }
   }
   async function saveSupplierPricing(event) {
     event.preventDefault();
