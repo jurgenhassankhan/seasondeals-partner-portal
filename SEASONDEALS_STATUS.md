@@ -1,5 +1,46 @@
 # SeasonDeals — actuele projectstatus
 
+## Actuele hoofdchecklist — 16 oktober 2026, 13:01 Europe/Amsterdam
+
+**DOC-20261016-LIVEGANG-SEO.** Deze samenvatting is leidend voor de actuele voortgang; eerdere open meldingen hieronder zijn historische tussenstanden waar latere bewijsregels ze vervangen. Liveganglijst = actieoverzicht; statusdocument = bouw-, plaatsings- en testbewijs. Geen derde lijst.
+
+| ID | Actuele stand | Resterende actie |
+|---|---|---|
+| LG-01 | AFGEROND binnen eigenaarakkoord: bewerkbare kostenraming en 20% opslag geplaatst en gecontroleerd | Werkelijke kosten bij productieproef vergelijken; tarieven niet als geverifieerd voorstellen |
+| LG-02 | DOOR EIGENAAR GETEST op16okt: concept → beoordeling → zichtbaar en terug → verborgen | Eigenaarmelding geldt als bewijs van deze route; geen nieuwe agenttest geclaimd. Geen aankoop uitgevoerd |
+| LG-03 | OPEN, op verzoek uitgesteld tot vóór verkoopstart | Gecontroleerde echte betaling/boeking/bevestiging, kostenafstemming en productieherstel bewijzen; concrete transactie vooraf afspreken |
+| LG-04 | OPEN, volgende uitvoeringsfase | Landelijke conceptimport, varianten, duplicaatpreventie, correcte broninhoud/foto’s, verversing, quota en foutbeheer afronden. Eerst nieuwe complete import positief bewijzen |
+| LG-05 | OPEN, verplicht vóór livegang | Tijdelijk openbare interne bronnen en geschiedenis afschermen en gepubliceerde bestanden controleren |
+| LG-06 | OPEN | Website/SEO, mobiel, contact, voorwaarden/privacy/cookies, domein, mail, monitoring/terugval en expliciete verkoopvrijgave |
+| SEO-01 | OPEN, eigenaarprioriteit vóór bulkimport | URL-/pagina-architectuur en importkoppeling bepalen en implementeren; zie acceptatie hieronder |
+
+### SEO-01 — verplicht onderdeel van LG-04 en LG-06
+
+Eigenaar wil SEO nu goed regelen in samenhang met dealimport. Geen alleen-handmatige SEO per deal: dezelfde gecontroleerde bron moet pagina-inhoud en metadata voeden. Geen ranking- of indexeringsgarantie.
+
+- [ ] Stabiele unieke publieke URL per gekozen indexeerbare hotel/dealpagina; identiteit bij verversing behouden. Datum-/kamer-/filtervarianten mogen niet onbeheerst dubbele pagina’s maken. Exacte routearchitectuur eerst vastleggen passend op bestaande Webflow-klantreis.
+- [ ] Automatische unieke titel, metaomschrijving, H1, hotel/plaats/kamer/verblijf/voorwaarden, deelafbeelding en beschrijvende alt-tekst uit bevestigde gegevens. Geen verzonnen voordelen, beoordelingen of prijzen.
+- [ ] Canonical, interne links en redirects consistent op het eigen domein; preview-, admin-, checkout-, bevestigings- en conceptpagina’s uitgesloten van indexering. Robots.txt is geen toegangsbeveiliging.
+- [ ] Indexeerbare inhoud/metadata en correcte HTTP-status in werkelijk geleverde pagina bewijzen; niet alleen document.title na JavaScript. Hosting/rendering en Webflow-sitemapdekking voor dynamische deal-URL’s eerst controleren.
+- [ ] Sitemap met alleen bedoelde publieke canonieke pagina’s automatisch bijwerken bij goedkeuren, terugzetten en verlopen. Search Console-toegang/configuratie en sitemapindiening vóór livegang controleren.
+- [ ] Gestructureerde gegevens passend bij hotels/aanbod en zichtbaar bevestigde inhoud valideren; geen InStock-claim zonder boekbaarheid, geen fictieve reviews. Uitgeschakelde verkoop correct behandelen.
+- [ ] Beleid voor tijdelijk onbeschikbaar, verlopen, verwijderd en vervangen aanbod: nuttige pagina behouden of passende404/410/gerichte redirect; geen massale redirect naar homepage. Publicatie- en verversingsketen moet dit aansturen.
+- [ ] Mobiele prestaties, afbeeldingsformaten/-afmetingen, laadtijd, crawlbarkeit en interne ontdekbaarheid bij grotere aantallen testen.
+- [ ] Bewijs op één nieuwe deal en relevante varianten vóór bulkimport; live indexering pas volgens afgesproken livegang. Geen blanket-verwijdering van noindex tijdens voorbereiding.
+
+### Concrete bronbevindingen en afbakening
+
+Codecontrole16okt: public-preview/js/site.js bevat algemene metadata/canonical en Organization/WebSite/ItemList-schema; ontwikkelroutes krijgen noindex. De lijstschema-URL bevat id en view=inventory-v2; beschikbaarheid wordt uit remaining afgeleid. public-preview/js/deal.js zet document.title maar bevat geen canonical/robots/meta/schema-beheer. Diverse HTML-bronnen hebben noindex,nofollow. Geen sitemap-/robots-bestand in repository gevonden; Webflow kan deze beheren, dus live configuratie TE VERIFIËREN. Dit is een broninspectie, geen afgeronde live SEO-audit en geen bewijs dat alle SEO ontbreekt.
+
+Overige scope niet vergeten: juridische/bedrijfscontent, cookies, mailaflevering, logging en herstel vallen onder LG-06/LG-03. Echte partneronboarding en SiteMinder blijven afzonderlijk open; relevant vóór gebruik van die routes, niet automatisch voor een uitsluitend Nuitée-start. Bestaande sandboxbewijzen blijven geldig.
+
+Werkvolgorde: SEO/importarchitectuur concreet controleren en bespreken → afgesproken aanvoer naar concept bouwen → één complete import bewijzen → begrensde batch → schaal/verversing bewijzen → LG-03/05/06 vóór verkoop. Het voorstel van25deals en verblijfsperiode zijn nog geen vastgesteld eigenaarbesluit. Concept → ter beoordeling → goedgekeurd blijft verplicht; geen automatische goedkeuring toegevoegd.
+
+Documentatierelease: bron main29feadce659ee3f914fff0b3788631b80de10d54; bestemming GitHub main, uitsluitend beide bestaande documenten. Bewijs: eigenaarbericht publicatietest12:55, uitstel boeking12:58 en SEO-opdracht13:01 plus bovenstaande broncontrole. Geen software/configuratie, import, indexeringsinstelling, betaling of publieke verkoop gewijzigd. Terugval: deze documentatieaanvulling gericht terugnemen; historisch bewijs behouden.
+
+---
+
+
 > **Afspraak gecorrigeerd 15 oktober:** concept → ter beoordeling → goedgekeurd → automatisch zichtbaar op de website. Geen afzonderlijke publicatiestap per deal. Eerdere teksten over een extra websitevrijgave zijn vervangen door deze afspraak; algemene livegang/verkoop blijft afzonderlijk.
 
 > **OPEN LIVEGANGVEREISTE — SD-15:** automatisch breed Nuitée-hotelaanbod voor heel Nederland; eerst één Amsterdamse voorbeelddeal samen. Import, varianten, automatische plaatsing en verversing nog afmaken en bewijzen. Zie DOC-20261015-NL-AANBOD-AUTOMATISERING.
