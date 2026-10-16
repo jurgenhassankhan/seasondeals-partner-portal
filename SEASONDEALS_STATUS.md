@@ -12,7 +12,7 @@
 | LG-04 | OPEN, volgende uitvoeringsfase | Landelijke conceptimport, varianten, duplicaatpreventie, correcte broninhoud/foto’s, verversing, quota en foutbeheer afronden. Eerst nieuwe complete import positief bewijzen |
 | LG-05 | OPEN, verplicht vóór livegang | Tijdelijk openbare interne bronnen en geschiedenis afschermen en gepubliceerde bestanden controleren |
 | LG-06 | OPEN | Website/SEO, mobiel, contact, voorwaarden/privacy/cookies, domein, mail, monitoring/terugval en expliciete verkoopvrijgave |
-| SEO-01 | DEELS GEPLAATST: oude site offline; automatische sitemap en uitsluitingen gecontroleerd | Automatische unieke dealpagina’s, CMS-capaciteit en SEO-eindproef nog open; zie REL-20261016-SITEMAP-AUTO |
+| SEO-01 | DEELS GEPLAATST: oude site offline; sitemap gecontroleerd; CMS-HTML/metadata en terugtrekking op testdomein bewezen | Automatische unieke dealpagina’s, CMS-capaciteit en SEO-eindproef nog open; zie REL-20261016-SITEMAP-AUTO |
 
 ### SEO-01 — verplicht onderdeel van LG-04 en LG-06
 
@@ -1344,3 +1344,23 @@ Automatische veiligheidsreview verwierp aanmaken technische fixture met isDraft=
 Checkpoint public-preview/webflow/checkpoints/cms-template-20261016.json bevat oude customcode, lege oude SEO, wrapper/veld/element/fixtureIDs. Terugval: oude wrapper zichtbaar, nieuwe RichText onzichtbaar, oude head/footer/SEO herstellen; nieuwe velden en fixture als ongebruikte concepten behouden. Geen permanente verwijdering vereist. Let op: een toekomstige volledige sitepublicatie neemt deze opgeslagen templatewijzigingen mee; eerst HTML-/metadata-/layoutproef afronden.
 
 Volgende beperkte actie ter eigenaarbevestiging wegens autoreview: technische pagina tijdelijk alleen op seasondeals.webflow.io publiceren, uitgesloten van sitemap/noindex, zonder prijs of boeken, HTML en layout controleren en daarna terug naar concept. Eigen domein Coming Soon en bestaande klantreis niet publiceren/wijzigen voor deze proef. Daarna serveradapter/credential/outbox/retries/adminsync/hydratatie afbouwen en één echte goedgekeurde deal bewijzen. Bestaande eigenaarpublicatietest blijft afgerond; geen extra goedkeuringsknop toegevoegd.
+
+
+## TEST-20261016-CMS-HTML — SEO-01 / LG-04/06
+
+16 oktober 2026, 15:26 Europe/Amsterdam. Bron main39e41bbcf6653290064ffb911d1df307e8a8af04; eigenaar gaf15:20 expliciet akkoord voor de tijdelijke technische proef en vroeg losse eindjes in GitHub vast te leggen. Bestemming uitsluitend seasondeals.webflow.io; customDomains=[] bij beide publicaties. Geen Xano-wijziging, import, echte boeking of verkoopvrijgave.
+
+Fixture6ad222c2304f2eea5254fccd tijdelijk isDraft=false, zonder prijs/formulier/boekbaarheid en uitgesloten van sitemap. Publicatietaak7b532bde-9504-4fca-bdd9-dd379817ed75. Rechtstreekse HTTP-controle bewijst200 en servergeleverde H1/inhoud, titel Technische SEO-controle | SeasonDeals, juiste description, opgeloste canonical naar eigen dealroute, noindex. Geen onopgeloste wf-placeholder in head. Testslug ontbreekt in staging-sitemap. Eigen domein testURL404; homepage200 met titel Coming Soon. Dit bewijst CMS-rendering en metadatabinding, niet visuele gelijkheid of automatische Xano-synchronisatie.
+
+Terugtrekking: fixture terug naar isDraft=true, unpublish_collection_items uitgevoerd. Eerste HTTP-controle bleef200; daarom staging opnieuw gepubliceerd, taak8430be1a-5ea8-49c3-964e-7703cff7ba9c. Daarna staging-testURL404 bevestigd; eigen domein testURL was en bleef tijdens proef404. Fixture blijft bewaard als concept, template blijft alleen op testdomein geplaatst. Geen customdomeinpublicatie uitgevoerd. Terugval van template blijft checkpoint public-preview/webflow/checkpoints/cms-template-20261016.json; oude wrapper/code herstellen en alleen bedoeld domein publiceren.
+
+### Concrete losse eindjes — verplicht vóór voltooiing SEO-01
+
+- [ ] SEO-01-A: Xano-serveradapter en veilig opgeslagen Webflow-credential aansluiten; bestaande goedkeuring automatisch CMS laten bijwerken, terugzetten/verlopen automatisch intrekken. Geen extra goedkeuringsknop.
+- [ ] SEO-01-B: duurzame outbox/worker, retries, versiecontrole en zichtbare synchronisatiefouten afbouwen; voorkomen dat een vertraagde taak verborgen aanbod terug publiceert. Terugtrekking werkelijk HTTP controleren, niet alleen API-succes.
+- [ ] SEO-01-C: actuele gegevens/boekbaarheid aansluiten op de nieuwe route en bestaande dealcardlinks migreren; verkooppoorten gesloten houden tot afzonderlijke verkoopvrijgave. JavaScript voor navigatie, delen, cookies en boekingsroute nog aansluiten/controleren; templatefooter bevat nu alleen stagingcommentaar.
+- [ ] SEO-01-D: één echte goedgekeurde deal met correcte bronfoto’s/voorzieningen en relevante varianten bewijzen; metadata, schema, sociale afbeelding, alt-teksten, sitemap-opname én verwijdering testen. Deze synthetische proef vervangt dat bewijs niet.
+- [ ] SEO-01-E: desktop/mobiele weergave vergelijken met adminpreview en huidige website, screenshotbewijs leveren. Niet visueel getest wegens bestaande browserblokkade; HTML-bewijs is geen screenshot.
+- [ ] SEO-01-F: HTML-taal staat aantoonbaar nog op en; naar Nederlands corrigeren. CMS-accountlimiet vóór bulkimport bevestigen; Search Console, definitieve indexering en homepage/redirects bij livegang afmaken.
+
+Actuele status: technische CMS-HTML-/metadataproef en terugtrekking BEWEZEN op testdomein; volledige SEO-01 OPEN. Bestaande eigenaarstest concept→beoordeling→website→verborgen blijft afgerond. LG-03 echte transactie uitgesteld, LG-05 bronbeveiliging vóór livegang en LG-06 overige eindcontroles blijven gelden. Volgende bouwstap: SEO-01-A/B, daarna C/D/E; geen grote import vóór complete dealproef.
