@@ -1364,3 +1364,12 @@ Terugtrekking: fixture terug naar isDraft=true, unpublish_collection_items uitge
 - [ ] SEO-01-F: HTML-taal staat aantoonbaar nog op en; naar Nederlands corrigeren. CMS-accountlimiet vóór bulkimport bevestigen; Search Console, definitieve indexering en homepage/redirects bij livegang afmaken.
 
 Actuele status: technische CMS-HTML-/metadataproef en terugtrekking BEWEZEN op testdomein; volledige SEO-01 OPEN. Bestaande eigenaarstest concept→beoordeling→website→verborgen blijft afgerond. LG-03 echte transactie uitgesteld, LG-05 bronbeveiliging vóór livegang en LG-06 overige eindcontroles blijven gelden. Volgende bouwstap: SEO-01-A/B, daarna C/D/E; geen grote import vóór complete dealproef.
+
+
+## BLOCK-20261016-XANO-SEO — SEO-01-A/B
+
+16okt2026 15:33 Europe/Amsterdam. Bron main b789442c42d98f3f96a89e46147a78fec19ca55d. Eigenaar autoriseert echte automatische koppeling en verduidelijkt: geen workarounds. Workflowbron endpoint903 gecontroleerd: bestaande transactie wijzigt dealstatus en supplier.is_enabled; nog geen SEO-outbox. Geen Xano-/Webflow-configuratie gewijzigd in deze vervolgpoging.
+
+Xano geopend via https://app.xano.com/instance; ingelogde instance Jurgen zichtbaar. Na selectie blokkeert browserobservatie met credential_observation_restricted; één toegestane navigatieherstelpoging naar hetzelfde document bleef geblokkeerd. Dit is een browserbedieningsblokkade, geen bewezen uitgelogde Xano-sessie. Geen alternatieve API-toegang of beveiligingsomzeiling geprobeerd. Losse lokale workerexperimenten teruggenomen; geen losstaande oplossing als werkende koppeling opgeleverd.
+
+Volgende concrete actie: bestaande Xano-tab via toegestane browseroverdracht herstellen; daarna daadwerkelijk duurzame wachtrij/servercredential/worker aan903 en verversing koppelen, administratieve foutstatus en end-to-end bewijs afmaken. Geen extra goedkeuringsknop. Alle A/B-punten blijven OPEN; bestaande CMS-proef blijft bewezen. Deze documentatierelease gaat uitsluitend naar GitHub main; geen runtimewijziging/boeking/verkoopvrijgave. Terugval: alleen deze documentaanvulling, historische bewijzen behouden.
