@@ -4,10 +4,12 @@ const dir=__dirname+'/../backend/xano/approval-publication/';
 const lambda=name=>new Function('$var',fs.readFileSync(dir+name+'.xs','utf8').match(/code = """\n([\s\S]*?)\n"""/)[1]);
 test('supplier public projection exposes hotel content and no internal review or provider data',()=>{
  const d={id:18,source:'provider_sync',status:'active',is_active:true,hotel_name:'nhow Amsterdam RAI',city:'Amsterdam',price:317.39,external_image_urls:['https://example.test/hotel.jpg','javascript:bad'],review_notes:'private',supplier_mapping:{secret:'private'},pricing_config:{cost:1},external_id:'internal',inventory:0};
+ const mapping={hotel:{id:'h1',name:'nhow Amsterdam RAI'},request:{hotel_ids:['h1'],checkin:'2026-11-27',checkout:'2026-11-29',occupancies:[{adults:2}]},offer:{rates:[{name:'Nhow Room',adultCount:2,childCount:0,boardType:'RO'}]}};
+ d.content_mapping=mapping;d.content_hotel_id='h1';
  const list=lambda('list')({result:[{id:4,source:'hotel'}],supplier_public_rows:[d],production_status:{can_sell:false}});
  assert.equal(list[0].id,4);const item=list[1];assert.equal(item.hotel.name,d.hotel_name);assert.equal(item.inventory,null);assert.equal(item.booking_enabled,false);assert.deepEqual(item.images,['https://example.test/hotel.jpg']);
- for(const key of ['review_notes','supplier_mapping','pricing_config','external_id']) assert.equal(key in item,false);
- for(const name of ['detail64','detail71'])assert.deepEqual(lambda(name)({deal:d,result:d,production_status:{can_sell:false}}),item);
+ for(const key of ['review_notes','supplier_mapping','pricing_config','external_id','content_mapping','content_hotel_id']) assert.equal(key in item,false);
+ for(const name of ['detail64','detail71'])assert.deepEqual(lambda(name)({deal:d,result:d,public_supplier:{supplier_mapping:mapping,supplier_hotel_id:'h1'},production_status:{can_sell:false}}),item);
 });
 test('partner detail projection preserves the existing contract',()=>{
  const d={id:4,source:'hotel',hotel:{name:'Partner'},inventory:5};

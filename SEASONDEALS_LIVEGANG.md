@@ -677,3 +677,22 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Gerichte lokale tests:3 beeldtests (zelfde bytes/andere URL/resize/PNG-encoding, host/kapotte beelden, maximaal5),2 importtests (uitsluitend aangeboden kamer en behoud offer, uitgesloten kosten/package/ontbrekende mapping blokkeren),6 reviewtests; alle11 slagen.
 - OPEN positieve nieuwe-conceptproef: import-ID SD-PROD-NHOW-AUTO-PHOTOS-20261016-V2 is niet aangemaakt. Actuele leverancierrespons27–29november bevatte geen standard/RO/NRFN-aanbod dat tegelijk kamermapping en uitsluitend inbegrepen heffingen had; standaard niet-restitueerbaar aanbod had26,61EUR uitgesloten city_tax. Run stopte vóór DB-writes. Andere aanwezige varianten waren package of restitueerbaar; niet stilzwijgend als hetzelfde aanbod gebruikt. Tijdelijke begrensde diagnose verwijderd vóór publicatie. Eerstvolgende actie: passend actueel aanbod selecteren en de nieuwe-conceptketen één keer positief bewijzen.
 - Landelijke importplanning en varianten SD-15 blijven afzonderlijk open. De automatische fotobouwsteen is nu werkelijk aangesloten op huidige import802 en verversing803, niet alleen als los script aanwezig.
+
+
+## REL-20261016-PREVIEW-CONTENT — SD-13/15
+
+- Eigenaar meldt screenshot deal-preview.html?portal=admin&id=18: SeasonDeals partner en lege inbegrepen-placeholder. Bron main89d773d8fb541937d7398a156847ef6c72fbceed; selectie js/shared-deal-preview.js en deal-preview.html, bestemming main/Pages. Terugval gerichte revert van deze twee bestanden.
+- Preview gebruikt reeds opgehaalde leverancierhotelmetadata voor hotelnaam en concrete verblijfsinhoud. Fallback SeasonDeals zonder partner. Inbegrepen toont bevestigde nachten/leverancierkamer/bezetting en expliciete deal-extra’s; room-only toont ontbijt als niet inbegrepen. Leeg blok en generieke belofte verwijderd. Geen gewijzigde offerte/prijs/voorwaarden/status of backend.
+- JavaScript-syntax en gerichte weergavecontrole geslaagd:2 overnachtingen/Nhow Room/2volwassenen; false-tekst wordt niet als inbegrepen extra behandeld. Plaatsing main/Pages en ingelogde eindcontrole TE VERIFIËREN; nieuwe-conceptimportproef en landelijke planning blijven afzonderlijk open.
+
+
+## REL-20261016-AUTO-CONTENT — SD-13/15
+
+- Eigenaarcorrectie: geen handmatig ingevulde inbegrepen-tekst per deal. Nuitée-metadata, gekozen offer/rate en zoekverblijf zijn de bron voor iedere import en weergave; ontbrekende gegevens nooit invullen met aannames. Dit vervangt de nog niet geplaatste preview-only commit3b70c5a5fa68a26bd256703e158dde54bfb8e75d; main blijft voorlopig89d773d8fb541937d7398a156847ef6c72fbceed.
+- Selectie: centrale backend/nuitee/deal-content.js met buildscript; import802; beoordeling903; openbare lijst63 en details64/71; js/shared-deal-preview.js en public-preview/js/deal.js met bijbehorende HTML/cacheversies en gerichte tests. Bestemming Xano workspace1/v1, GitHub main/Pages. Geen Webflow-paginaconfiguratie, prijs, offer, bestaande dealstatus of verkooppoort wijzigen.
+- Eén gegenereerde projectie leidt hotelnaam, echte leverancierkamer, nachten, bezetting en maaltijdvoorwaarden af. Hotelvoorzieningen en cataloguskamernamen bewijzen geen gratis extra’s. Publieke API geeft uitsluitend veilige klantvelden terug; interne mapping blijft privé. Beoordeling blokkeert onvolledige/tegenstrijdige brongegevens binnen de bestaande indien-/goedkeuringsroute.
+- Terugval: geselecteerde bronnen terug naar main89d773d; geen bestaande dealrecords worden gemigreerd. Nieuwe imports behouden conceptstatus; code-terugval verandert geen eerder geïmporteerde records. Plaatsing en werkelijke ketencontrole TE VERIFIËREN. Nieuwe-conceptproef blijft apart geblokkeerd door eerder beschreven ontbrekend passend actueel tarief.
+
+- Aanvullende eigenaarafspraak16oktober: kritische ketencontrole, professionele presentatie en schaalbaarheid als vaste werkwijze opgenomen in SEASONDEALS_WERKPROTOCOL.md; prioriteit voor concrete livegangblokkades, geen onbewezen onderdelen als gereed markeren.
+
+- Xano-plaatsing16oktober: exact802/903/63/64/71 via Review & Publish geselecteerd (5 drafts); publicatie voltooid, draftteller0. Gerichte lokale tests14/14 geslaagd voor bronprojectie, varianten, ontbrekende/tegenstrijdige gegevens, behoud foto-/indienregels en afscherming interne velden. GitHub/Pages en ingelogde weergave nog TE VERIFIËREN.

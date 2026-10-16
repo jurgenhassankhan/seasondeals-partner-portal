@@ -5,7 +5,7 @@ const source = fs.readFileSync(__dirname + '/../backend/xano/approval-publicatio
 const verify = new Function('$var', source.match(/code = """\n([\s\S]*?)\n"""/)[1]);
 function sample() {
   const gallery = [{url:'https://static.cupid.travel/rooms/a.jpg',scope:'matched_room',sha256:'a'.repeat(64),dhash:'0000000000000000'}, {url:'https://static.cupid.travel/rooms/b.jpg',scope:'matched_room',sha256:'b'.repeat(64),dhash:'ffffffffffffffff'}];
-  return {deal:{external_image_urls:gallery.map(p=>p.url)}, supplier:{supplier_hotel_id:'hotel1',supplier_mapping:{offer:{rates:[{name:'Standard Room',mappedRoomId:12}]}},supplier_content:{hotel:{photo_hotel_id:'hotel1',mapped_room_id:12,photo_rate_name:'Standard Room',room_photos_matched:true,photo_verification:{status:'verified',algorithm:'sha256+dhash64-v1'},photo_gallery:gallery}}}};
+  return {deal:{external_image_urls:gallery.map(p=>p.url)}, supplier:{supplier_hotel_id:'hotel1',supplier_mapping:{hotel:{id:'hotel1',name:'Test Hotel'},request:{hotel_ids:['hotel1'],checkin:'2026-11-27',checkout:'2026-11-29',occupancies:[{adults:2}]},offer:{rates:[{name:'Standard Room',mappedRoomId:12,adultCount:2,childCount:0,boardType:'RO'}]}},supplier_content:{hotel:{photo_hotel_id:'hotel1',mapped_room_id:12,photo_rate_name:'Standard Room',room_photos_matched:true,photo_verification:{status:'verified',algorithm:'sha256+dhash64-v1'},photo_gallery:gallery}}}};
 }
 test('verified room gallery passes without an extra publication action',()=>assert.equal(verify(sample()),true));
 test('missing verification, other hotel, other room or stale gallery is rejected',()=>{

@@ -64,3 +64,7 @@ Xano-branches delen hier databasebron `live`. Een branchback-up is dus geen data
 - [ ] De volgende stap is concreet; geen afhankelijkheid van chatgeheugen.
 
 Deze afspraak organiseert het werk; zij geeft geen aanvullende toestemming voor echte betalingen, boekingen of publieke productieactivering.
+
+## Aanvullende eigenaarafspraak — 16 oktober 2026
+
+Kritisch controleren met snelle, professionele en schaalbare livegang als doel. Los fouten in de automatische keten op, niet door afzonderlijke deals handmatig op te poetsen. Controleer brongegevens, verschillende relevante aanbodvarianten, foutafhandeling en consistente weergave in admin/website. Meld ontbrekend bewijs expliciet. Werk livegangblokkades op risico en afhankelijkheid af; herhaal bewezen controles alleen bij een relevante wijziging of concrete fout.

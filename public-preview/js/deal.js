@@ -37,7 +37,7 @@
 
   function renderDeal() {
     const title = text(deal.title || deal.name, "SeasonDeals deal");
-    const hotel = text(deal.hotel_name || deal.hotel?.name, "SeasonDeals partner");
+    const hotel = text(deal.hotel_name || deal.hotel?.name, "SeasonDeals");
     const city = text(deal.city || deal.hotel?.city, "");
     const country = text(deal.country || deal.hotel?.country, "");
     const location = [city, country].filter(Boolean).join(", ");
@@ -47,6 +47,7 @@
     const rating = number(deal.review_score ?? deal.hotel?.review_score);
     const reviews = number(deal.review_count ?? deal.hotel?.review_count);
     const amenities = getAmenities(deal);
+    const excluded = Array.isArray(deal.excluded_items) ? deal.excluded_items : [];
     const remaining = getRemaining(deal);
     const maxGuests = Math.max(1, Math.min(20, number(deal.max_guests) || 10));
     const travelStart = toDate(deal.travel_period_start);
@@ -62,7 +63,7 @@
       <header class="detail-heading"><div><span class="detail-kicker">${escapeHtml(formatCategory(getCategory(deal)))}${location ? ` · ${escapeHtml(location)}` : ""}</span><h1>${escapeHtml(title)}</h1><div class="detail-subline"><strong>${escapeHtml(hotel)}</strong>${rating > 0 ? `<span class="detail-rating">★ ${escapeHtml(formatDecimal(rating))}${reviews > 0 ? ` · ${escapeHtml(formatNumber(reviews))} beoordelingen` : ""}</span>` : ""}${deal.star_rating > 0 ? `<span>${"★".repeat(Math.min(5, Math.round(deal.star_rating)))} hotel</span>` : ""}${remaining !== null ? `<span class="detail-stock${remaining <= 5 ? " is-low" : ""}">● ${remaining === 0 ? "Uitverkocht" : `Actuele voorraad: ${formatNumber(remaining)}`}</span>` : ""}</div></div><div class="detail-heading-actions"><button class="detail-icon-button" id="share-deal" type="button" aria-label="Deal delen">↗</button><button class="detail-icon-button" id="save-deal" type="button" aria-label="Deal opslaan">♡</button></div></header>
       <div class="detail-layout"><article class="detail-content">
         <section><span class="detail-section-label">Over deze deal</span><h2>Een bijzonder moment voor een mooie prijs.</h2><p>${escapeHtml(mainDescription)}</p>${longDescription && longDescription !== mainDescription ? `<p class="detail-description-long">${formatText(longDescription)}</p>` : ""}</section>
-        <section><span class="detail-section-label">Dit is inbegrepen</span><h2>Alles voor een zorgeloos verblijf.</h2><div class="amenities-grid">${amenities.length ? amenities.map(renderAmenity).join("") : `<div class="amenity"><span class="amenity-icon">◇</span><div><strong>Bekijk de dealvoorwaarden</strong><small>Alle inbegrepen onderdelen staan bij de aanbieding vermeld.</small></div></div>`}</div></section>
+        ${amenities.length ? `<section><span class="detail-section-label">Dit is inbegrepen</span><h2>Jouw verblijf</h2><div class="amenities-grid">${amenities.map(renderAmenity).join("")}</div>${excluded.length ? `<p><strong>Niet inbegrepen:</strong> ${excluded.map(escapeHtml).join(", ")}.</p>` : ""}</section>` : ""}
         <section><span class="detail-section-label">Geldigheid</span><h2>Plan jouw moment.</h2><div class="period-card"><div><span>Te gebruiken vanaf</span><strong>${travelStart ? formatDate(travelStart) : "Zie dealvoorwaarden"}</strong></div><div><span>Te gebruiken tot en met</span><strong>${travelEnd ? formatDate(travelEnd) : "Zie dealvoorwaarden"}</strong></div></div></section>
         <section><span class="detail-section-label">Annuleren en wijzigen</span><h2>Goed om vooraf te weten.</h2><div class="policy-card">${formatText(policy)}</div></section>
       </article>
@@ -184,7 +185,10 @@
   function resolveDeals(data) { return [data,data?.items,data?.deals,data?.records,data?.data,data?.data?.items,data?.result,data?.result?.items].find(Array.isArray)||[]; }
   function isPublicDeal(item) { const status=String(item?.status||"").toLowerCase(); return (status==="active"||item?.is_active===true)&&(item?.deleted_at===0||item?.deleted_at===null||item?.deleted_at===undefined); }
   function getImages(item) { const values=[...(Array.isArray(item.external_image_urls)?item.external_image_urls:[]),...(Array.isArray(item.images)?item.images:[]),item.image,item.cover_image,item.image_url]; return [...new Set(values.map((value)=>typeof value==="string"?value:value?.url).filter(Boolean))]; }
-  function getAmenities(item) { return [[item.includes_breakfast,"☕","Ontbijt inbegrepen","Begin de dag ontspannen"],[item.includes_wifi,"⌁","Wifi inbegrepen","Blijf zorgeloos verbonden"],[item.includes_parking,"P","Parkeren inbegrepen","Comfortabel aankomen"],[item.includes_late_checkout,"◷","Late check-out","Nog iets langer genieten"],[item.includes_welcome_drink,"◇","Welkomstdrankje","Een warm welkom"]].filter(([active])=>active); }
+  function getAmenities(item) {
+    if (item.source === "provider_sync") return item.content_verified === true && Array.isArray(item.included_items) ? item.included_items.map(row => [true,row.icon,row.label,row.detail]) : [];
+    return [[item.includes_breakfast === true,"☕","Ontbijt inbegrepen","Bij deze aanbieding"],[item.includes_wifi === true,"⌁","Wifi inbegrepen","Bij deze aanbieding"],[item.includes_parking === true,"P","Parkeren inbegrepen","Bij deze aanbieding"],[item.includes_late_checkout === true,"◷","Late check-out","Volgens de dealvoorwaarden"],[item.includes_welcome_drink === true,"◇","Welkomstdrankje","Bij deze aanbieding"]].filter(([active])=>active);
+  }
   function renderAmenity([,icon,title,subtitle]) { return `<div class="amenity"><span class="amenity-icon">${icon}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle)}</small></div></div>`; }
   function getRemaining(item) { const direct=number(item.remaining_inventory??item.available_quantity??item.inventory); return direct===null?null:Math.max(0,direct); }
   function getCategory(item) { const raw=[item.category_slug,item.category?.slug,item.category?.name,item.category,item.deal_type,item.package_type,item.type].filter(v=>typeof v==="string").join(" ").toLowerCase(); if(/wellness|spa|sauna/.test(raw))return"wellness";if(/massage|beauty|behandeling/.test(raw))return"massage";if(/ticket|event|concert|festival/.test(raw))return"tickets";if(/attract|uitje|park|museum|activiteit/.test(raw))return"attraction";return"hotel"; }

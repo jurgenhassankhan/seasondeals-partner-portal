@@ -41,6 +41,57 @@ function "supplier/production/import_first_nhow_draft" {
   
     api.lambda {
       code = """
+// BEGIN GENERATED NUITEE CONTENT
+// One projection for import, review, protected preview and public responses.
+// Source: https://docs.liteapi.travel/reference/post_hotels-rates
+function nuiteeDealContent(mapping, hotelId) {
+  const hotel = mapping?.hotel, request = mapping?.request;
+  const rates = mapping?.offer?.rates;
+  const clean = value => typeof value === 'string' ? value.trim() : '';
+  const date = value => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) throw Error('Verblijfsdatums ontbreken.');
+    const ms = Date.parse(value + 'T00:00:00Z');
+    if (!Number.isFinite(ms) || new Date(ms).toISOString().slice(0,10) !== value) throw Error('Ongeldige verblijfsdatum.');
+    return ms;
+  };
+  if (!hotelId || String(hotel?.id) !== String(hotelId) || !clean(hotel?.name) || !request?.hotel_ids?.some(id => String(id) === String(hotelId))) throw Error('Bevestigde hotelgegevens ontbreken.');
+  if (!Array.isArray(rates) || rates.length !== 1) throw Error('Eén bevestigd kameraanbod vereist.');
+  const rate = rates[0], room = clean(rate.name);
+  const nights = (date(request.checkout) - date(request.checkin)) / 86400000;
+  if (!Number.isInteger(nights) || nights < 1 || !room) throw Error('Bevestigde kamer en verblijfsduur ontbreken.');
+  const adults = rate.adultCount, children = rate.childCount;
+  const occupancy = request.occupancies?.[0];
+  if (!Number.isInteger(adults) || adults < 1 || !Number.isInteger(children) || children < 0 || request.occupancies?.length !== 1 || occupancy?.adults !== adults || (occupancy.children?.length || 0) !== children) throw Error('Kamerbezetting komt niet overeen met het aanbod.');
+  const boards = {
+    RO: ['Alleen verblijf', false], BI: ['Ontbijt inbegrepen', true],
+    HB: ['Halfpension inbegrepen', true], FB: ['Volpension inbegrepen', true],
+    AI: ['All-inclusive', true], DI: ['Diner inbegrepen', false],
+    LI: ['Lunch inbegrepen', false], BDI: ['Ontbijt en diner inbegrepen', true],
+    BLI: ['Ontbijt en lunch inbegrepen', true], LDI: ['Lunch en diner inbegrepen', false]
+  };
+  const board = Object.hasOwn(boards, rate.boardType) ? boards[rate.boardType] : null;
+  if (!board) throw Error('Bevestigde maaltijdvoorwaarden ontbreken.');
+  const stay = `${nights} ${nights === 1 ? 'overnachting' : 'overnachtingen'}`;
+  const guests = `${adults} ${adults === 1 ? 'volwassene' : 'volwassenen'}${children ? ` en ${children} ${children === 1 ? 'kind' : 'kinderen'}` : ''}`;
+  const included = [
+    {icon:'☾',label:stay,detail:`Van ${request.checkin} tot ${request.checkout}`},
+    {icon:'▱',label:room,detail:'Het aangeboden kamertype'},
+    {icon:'♧',label:`Voor ${guests}`,detail:'Bezetting van de aangeboden kamer'}
+  ];
+  if (rate.boardType !== 'RO') included.push({icon:'☕',label:board[0],detail:'Volgens het geselecteerde tarief'});
+  // Hotel facilities and room names are not evidence of complimentary extras.
+  return {
+    content_verified:true, hotel_name:clean(hotel.name), room_type:room,
+    minimum_nights:nights, max_guests:adults+children,
+    includes_breakfast:board[1], board_type:rate.boardType,
+    included_items:included, excluded_items:board[1] ? [] : ['Ontbijt'],
+    travel_period_start:date(request.checkin), travel_period_end:date(request.checkout),
+    title:`${stay} bij ${clean(hotel.name)}`,
+    short_description:`${stay} in ${room} voor ${guests}. ${board[0]}.`,
+    long_description:`Verblijf van ${request.checkin} tot ${request.checkout} bij ${clean(hotel.name)}. Eén ${room} voor ${guests}. ${board[0]}.${board[1] ? '' : ' Ontbijt is niet inbegrepen.'}`
+  };
+}
+// END GENERATED NUITEE CONTENT
         const response=$var.rates_http.response, hotel=$var.metadata.hotels?.find(h=>h.id==='lp225fcf');
         if(response.status!==200||(response.result?.sandbox!=null&&response.result.sandbox!==false)||!hotel||!Array.isArray(response.result.data)) return {valid:false,reason:'Verified production response and hotel metadata required'};
         const offers=response.result.data.filter(h=>h.hotelId==='lp225fcf').flatMap(h=>h.roomTypes||[]);
@@ -52,7 +103,8 @@ function "supplier/production/import_first_nhow_draft" {
         const price=Math.ceil(Math.max(suggested,base*1.20)*100)/100;
         const hotelContent={...hotel,images:[]};
         const request={hotel_ids:['lp225fcf'],occupancies:[{adults:2}],checkin:'2026-11-27',checkout:'2026-11-29',currency:'EUR',guest_nationality:'NL'};
-        return {valid:true,hotel:hotelContent,offer,base,price,checked_at:Date.now(),mapping:{provider:'nuitee',environment:'production',import_id:$var.import_id,hotel:hotelContent,request,offer,checked_at:Date.now(),credential_source:'NUITEE_PRODUCTION_API_KEY',provider_sandbox:response.result.sandbox??null,environment_evidence:'dedicated_production_credential; response_has_no_environment_marker',import_version:2},pricing:{mode:'override',override_amount:price,markup_percentage:20,markup_amount:0,discount_percentage:0,rounding:'none',min_margin_amount:20,processing_fee:null,stripe_fee_percentage:null,stripe_fee_fixed:null,payment_method:'ACC_CREDIT_CARD',production_costs_verified:false,cost_evidence:null,price_status:'proposal_requires_review'},start:Date.parse('2026-11-27T00:00:00Z'),end:Date.parse('2026-11-29T00:00:00Z')};
+        const content=nuiteeDealContent({hotel:hotelContent,request,offer},hotel.id);
+        return {valid:true,content,hotel:hotelContent,offer,base,price,checked_at:Date.now(),mapping:{provider:'nuitee',environment:'production',import_id:$var.import_id,hotel:hotelContent,request,offer,checked_at:Date.now(),credential_source:'NUITEE_PRODUCTION_API_KEY',provider_sandbox:response.result.sandbox??null,environment_evidence:'dedicated_production_credential; response_has_no_environment_marker',import_version:3,deal_content:content},pricing:{mode:'override',override_amount:price,markup_percentage:20,markup_amount:0,discount_percentage:0,rounding:'none',min_margin_amount:20,processing_fee:null,stripe_fee_percentage:null,stripe_fee_fixed:null,payment_method:'ACC_CREDIT_CARD',production_costs_verified:false,cost_evidence:null,price_status:'proposal_requires_review'},start:Date.parse('2026-11-27T00:00:00Z'),end:Date.parse('2026-11-29T00:00:00Z')};
         """
       timeout = 5
     } as $prepared
@@ -131,10 +183,10 @@ return {...p,hotel,mapping:{...p.mapping,hotel}};
             db.add deals {
               data = {
                 hotel_id           : 0
-                title              : "Twee nachten bij nhow Amsterdam RAI"
-                description        : "Verblijf van 27 tot 29 november 2026 voor twee volwassenen, zonder ontbijt."
-                short_description  : "Twee nachten in Amsterdam voor twee personen, zonder ontbijt."
-                long_description   : "Verblijf van 27 tot 29 november 2026 bij nhow Amsterdam RAI. Eén " ~ $prepared.offer.rates[0].name ~ " voor twee volwassenen. Ontbijt is niet inbegrepen. Belastingen en heffingen zijn volgens het geselecteerde tarief inbegrepen."
+                title              : $prepared.content.title
+                description        : $prepared.content.short_description
+                short_description  : $prepared.content.short_description
+                long_description   : $prepared.content.long_description
                 price              : $prepared.price
                 deal_price         : $prepared.price
                 inventory          : 0
@@ -151,9 +203,9 @@ return {...p,hotel,mapping:{...p.mapping,hotel}};
                 review_score       : $prepared.hotel.rating
                 external_image_urls: $prepared.hotel.images
                 room_type          : $prepared.offer.rates[0].name
-                includes_breakfast : false
-                max_guests         : 2
-                minimum_nights     : 2
+                includes_breakfast : $prepared.content.includes_breakfast
+                max_guests         : $prepared.content.max_guests
+                minimum_nights     : $prepared.content.minimum_nights
                 travel_period_start: $prepared.start
                 travel_period_end  : $prepared.end
                 cancellation_policy: "Niet restitueerbaar: bij annulering is het volledige verblijfsbedrag verschuldigd."
