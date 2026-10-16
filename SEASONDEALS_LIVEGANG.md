@@ -12,7 +12,7 @@
 | LG-04 | OPEN, volgende uitvoeringsfase | Landelijke conceptimport, varianten, duplicaatpreventie, correcte broninhoud/foto’s, verversing, quota en foutbeheer afronden. Eerst nieuwe complete import positief bewijzen |
 | LG-05 | OPEN, verplicht vóór livegang | Tijdelijk openbare interne bronnen en geschiedenis afschermen en gepubliceerde bestanden controleren |
 | LG-06 | OPEN | Website/SEO, mobiel, contact, voorwaarden/privacy/cookies, domein, mail, monitoring/terugval en expliciete verkoopvrijgave |
-| SEO-01 | OPEN, eigenaarprioriteit vóór bulkimport | URL-/pagina-architectuur en importkoppeling bepalen en implementeren; zie acceptatie hieronder |
+| SEO-01 | DEELS GEPLAATST: oude site offline; automatische sitemap en uitsluitingen gecontroleerd | Automatische unieke dealpagina’s, CMS-capaciteit en SEO-eindproef nog open; zie REL-20261016-SITEMAP-AUTO |
 
 ### SEO-01 — verplicht onderdeel van LG-04 en LG-06
 
@@ -861,3 +861,16 @@ Eigenaar13:48 expliciet: oude website offline, behouden voor terugval; daarna ni
 Openbare HTTP-controle na publicatie: alle9oude routes en alle6oude CMS-dealroutes geven404. /new-website,/dea,/privacy,/algemene-voorwaarden en / geven200. Nieuwe site en Coming Soon behouden. Terugval: genoemde pagina-ID’s uit seo-separation-checkpoint draft=false zetten en geselecteerde6CMS-items opnieuw publiceren; daarna site publiceren en gericht controleren. Bewaarde Webflow-inhoud blijft bron; niets permanent verwijderd.
 
 SEO-vervolg: Webflow API-capabilitycheck bevestigt dat sitemapgeneratie, plan/CMS-limiet en primaire HTML-taal niet via de beschikbare connector instelbaar/uitleesbaar zijn. Browserherstel leidde nu tot echte Webflow-loginmelding: sessie uitgelogd. Veilige aanmelding nodig voor Site settings. Automatische Xano→CMS-dealpagina’s, sitemapgeneratie en SEO-eindbewijs blijven OPEN. Geen ongecontroleerde grootschalige import of verkoopvrijgave. Bron-/statusdocumenten bijgewerkt; geen softwarewijzigingen in deze release.
+
+
+## REL-20261016-SITEMAP-AUTO — SEO-01 / LG-06
+
+Bron main a4cf566f738837190740e3915663d47bf574a0ba en Webflow site68cb0d808ea4f2467bb313af. Eigenaar vraagt SEO voortzetten; aanmelding bevestigd. Automatische sitemapgeneratie via Site settings ingeschakeld en opgeslagen; eerste publicatietaak43723424-ea8d-4433-9300-79dfe839d2b1. Controle vond /search plus zeven noindex-informatiepagina’s in sitemap; gericht gecorrigeerd zonder indexeringsvrijgave.
+
+Bestemming: beide eigen domeinen en webflow.io; definitieve publicatietaak80dd563e-1894-49d4-9cd9-720b881e2a55. /search (6904ae1f766948324a204224) draft=true; geen verwijzingen gevonden in nieuwe JS/Webflow-bronnen. Zoekpagina behouden voor terugval. Zeven sitemapflags true→false: cookies6a71aa02f58e306f4aba7135, privacy6a71a9a1fe016a3c2016b647, inspiratie6a71a90f101fc62569c44df6, partner-worden6a71a874a90a974c89e77f37, over-ons6a71a777f58e306f4ab87f89, veelgestelde-vragen6a5f77e53c4f96df1f204f83, algemene-voorwaarden68ff8ebccc0b4e35c72a47a9. Inhoud blijft bereikbaar; noindex behouden tot livegang.
+
+Verificatie16okt2026: openbare /sitemap.xml HTTP200 met uitsluitend https://www.seasondeals.nl; /robots.txt HTTP200 verwijst naar deze sitemap. /search en /old-home HTTP404; /new-website en /privacy HTTP200. Connector na publicatie bevestigt uitsluitend Home includeInSitemap=true van21statische pagina’s. Coming Soon behouden. Geen conceptimport, Xano-write, betaling of publieke verkoopvrijgave. Geen screenshot verkregen wegens browserblokkade; HTTP/API-bewijs is wel uitgevoerd.
+
+Terugval: zeven genoemde flags terugtrue, search draftfalse en publiceren; automatische sitemap zo nodig via SEO settings uitzetten (oude toestand404, geen aanbevolen terugval). Livegangactie: bedoelde nieuwe informatiepagina’s tegelijk van noindex ontdoen en sitemapflagtrue; nieuwe homepage/canonical op root aansluiten. Administratieve/transactie/previewpagina’s uitgesloten houden.
+
+OPEN: automatische Xano→CMS-publicatie en terugtrekking, unieke servergeleverde dealinhoud/metadata, plan/CMS-capaciteit, veilige servercredentials, HTML-taal, Search Console en eindproef. Browser kon na login SEO-instellingen bedienen, maar Plans geeft credential_observation_restricted, ook na één expliciete navigatie naar dezelfde waargenomen URL. Geen beveiliging omzeild; capaciteit niet bevestigd. Volgende actie: Webflow Site settings → Plans door gebruiker laten openen en CMS-itemlimiet/abonnement vaststellen; daarna gekozen CMS-aanpak afbouwen. Sitemapgeneratie is klaar, volledige SEO-01 blijft deels geplaatst/open.
