@@ -1,0 +1,26 @@
+{
+  "release": "BUILD-20261016-CMS-TEMPLATE",
+  "siteId": "68cb0d808ea4f2467bb313af",
+  "pageId": "68dbc3669fd00ef24093d93f",
+  "beforeCustomCode": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"label\":\"Backup template code\",\"action\":\"get_page_freeform_code\",\"result\":[{\"location\":\"head\",\"content\":\"<meta name=\\\"robots\\\" content=\\\"noindex,nofollow\\\">\\n<meta name=\\\"theme-color\\\" content=\\\"#042821\\\">\\n<meta property=\\\"og:locale\\\" content=\\\"nl_NL\\\">\\n<meta property=\\\"og:site_name\\\" content=\\\"SeasonDeals\\\">\\n<meta name=\\\"twitter:card\\\" content=\\\"summary\\\">\\n\\n<link rel=\\\"preconnect\\\" href=\\\"https://fonts.googleapis.com\\\">\\n<link rel=\\\"preconnect\\\" href=\\\"https://fonts.gstatic.com\\\" crossorigin>\\n\\n<link rel=\\\"stylesheet\\\" href=\\\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/site.css?v=20260803-1\\\">\\n<link rel=\\\"stylesheet\\\" href=\\\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/content-pages.css?v=20260803-1\\\">\\n<link rel=\\\"stylesheet\\\" href=\\\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/cookie-consent.css?v=20260803-2\\\">\\n\\n<link rel=\\\"canonical\\\" href=\\\"https://www.seasondeals.nl/cookies\\\">\"},{\"location\":\"footer\",\"content\":\"<script src=\\\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/js/site.js?v=20260803-1\\\"></script>\\n<script src=\\\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/js/cookie-consent.js?v=20260803-1\\\"></script>\"}]}"
+      }
+    ],
+    "isError": false
+  },
+  "beforeSeo": {},
+  "oldWrapper": "c3ce8d57-5157-8dac-8d56-9cd79e645969",
+  "oldVisibility": true,
+  "newRichText": "35f7c274-b230-104b-06b8-f8148fee062f",
+  "draftFixtureId": "6ad222c2304f2eea5254fccd",
+  "newFields": {
+    "seo-pagina-inhoud": "cde4471021025ab69ac2d9a802336cfc",
+    "xano-deal-id": "a0534285818a1e8d624b50deb6c82556",
+    "seo-titel": "4e64bcada7dbab7fbbf76f4a9d8b7251",
+    "seo-omschrijving": "311918561dbe3291d78e8f351228cd3c",
+    "seo-canonical": "8f259886b5dbff7a10c2a59f15afcec4"
+  }
+}

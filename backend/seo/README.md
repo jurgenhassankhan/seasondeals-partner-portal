@@ -13,4 +13,4 @@ Still required before release:
 - Admin sync status, actual publish/withdraw/sitemap proof and verified server HTML on a real deal. Do not add a second owner approval action.
 - CMS capacity from public Premium documentation is 20,000 items/40 collections; account enforcement still to verify before batch import.
 
-This is preparatory tested code only: no runtime, credential, outbox, CMS mutation or automatic sync is deployed yet.
+Prepared CMS fields and a RichText template binding are now saved, with a draft-only technical fixture. Template metadata placeholders still require a published HTML proof. No runtime, credential, outbox or automatic sync is deployed. See BUILD-20261016-CMS-TEMPLATE in both project documents.
