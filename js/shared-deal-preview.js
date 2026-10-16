@@ -1,5 +1,24 @@
 (() => {
   "use strict";
+// BEGIN GENERATED AMENITY LABELS
+// Presentation only: retain amounts and conditions, translate known facility labels.
+function dealAmenityDetail(label, detail) {
+  const translations = {
+    'wifi available':'Wifi','wifi':'Wifi','wi-fi':'Wifi','parking':'Parkeren',
+    'accessible parking':'Toegankelijk parkeren','parking garage':'Parkeergarage',
+    'self parking':'Zelf parkeren','private parking':'Privéparkeerplaats',
+    'welcome drink':'Welkomstdrankje','late check-out':'Late check-out',
+    'paid':'Tegen betaling'
+  };
+  const parts = String(detail || '').split(' · ');
+  const status = parts.shift() || '';
+  const rest = parts.map(text => translations[text.toLowerCase()] || text
+    .replace(/if available|subject to availability/gi,'afhankelijk van beschikbaarheid')
+    .replace(/on request|upon request/gi,'op aanvraag')
+    .replace(/surcharge/gi,'toeslag'));
+  return [status,...new Set(rest.filter(text => text.toLowerCase() !== String(label).toLowerCase() && text.toLowerCase() !== status.toLowerCase()))].join(' · ');
+}
+// END GENERATED AMENITY LABELS
 
 // BEGIN GENERATED NUITEE CONTENT
 // One projection for import, review, protected preview and public responses.
@@ -309,7 +328,7 @@ function nuiteeDealContent(mapping, hotelId, contentHotel) {
     if (item.source === "provider_sync") return item.content_verified === true && Array.isArray(item.included_items) ? item.included_items.map(row => [true,row.icon,row.label,row.detail]) : [];
     return [[item.includes_breakfast === true,"☕","Ontbijt inbegrepen","Bij deze aanbieding"],[item.includes_wifi === true,"⌁","Wifi inbegrepen","Bij deze aanbieding"],[item.includes_parking === true,"P","Parkeren inbegrepen","Bij deze aanbieding"],[item.includes_late_checkout === true,"◷","Late check-out","Volgens de dealvoorwaarden"],[item.includes_welcome_drink === true,"◇","Welkomstdrankje","Bij deze aanbieding"]].filter(([active])=>active);
   }
-  function renderAmenity([,icon,title,subtitle]) { return `<div class="amenity"><span class="amenity-icon">${icon}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(subtitle)}</small></div></div>`; }
+  function renderAmenity([,icon,title,subtitle]) { return `<div class="amenity"><span class="amenity-icon">${icon}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(dealAmenityDetail(title,subtitle))}</small></div></div>`; }
   function getRemaining(item) { if (availabilityPreview || item.source === "provider_sync") return null; const direct=number(item.remaining_inventory??item.available_quantity??item.inventory); return direct===null?null:Math.max(0,direct); }
   function getCategory(item) { const raw=[item.category_slug,item.category?.slug,item.category?.name,item.category,item.deal_type,item.package_type,item.type].filter(v=>typeof v==="string").join(" ").toLowerCase(); if(/wellness|spa|sauna/.test(raw))return"wellness";if(/massage|beauty|behandeling/.test(raw))return"massage";if(/ticket|event|concert|festival/.test(raw))return"tickets";if(/attract|uitje|park|museum|activiteit/.test(raw))return"attraction";return"hotel"; }
   function formatCategory(value){return({hotel:"Hotel",wellness:"Wellness",massage:"Massage",tickets:"Tickets",attraction:"Attractie"})[value]||"Deal";}

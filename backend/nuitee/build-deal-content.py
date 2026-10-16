@@ -25,3 +25,11 @@ source = path.read_text()
 marker = 'const p=$var.prepared,r=p.offer.rates[0]'
 source = source.replace(marker, block + marker, 1)
 path.write_text(source)
+
+labels = (root / 'backend/nuitee/amenity-label.js').read_text().split("if (typeof module")[0].rstrip()
+label_block = '// BEGIN GENERATED AMENITY LABELS\n' + labels + '\n// END GENERATED AMENITY LABELS\n'
+for name in ['js/shared-deal-preview.js','public-preview/js/deal.js','admin/js/deal-detail-v5.js']:
+    path = root / name
+    source = re.sub(r'// BEGIN GENERATED AMENITY LABELS\n[\s\S]*?// END GENERATED AMENITY LABELS\n', '', path.read_text())
+    source = source.replace('  "use strict";\n', '  "use strict";\n' + label_block, 1)
+    path.write_text(source)

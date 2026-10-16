@@ -1,5 +1,24 @@
 (() => {
   "use strict";
+// BEGIN GENERATED AMENITY LABELS
+// Presentation only: retain amounts and conditions, translate known facility labels.
+function dealAmenityDetail(label, detail) {
+  const translations = {
+    'wifi available':'Wifi','wifi':'Wifi','wi-fi':'Wifi','parking':'Parkeren',
+    'accessible parking':'Toegankelijk parkeren','parking garage':'Parkeergarage',
+    'self parking':'Zelf parkeren','private parking':'Privéparkeerplaats',
+    'welcome drink':'Welkomstdrankje','late check-out':'Late check-out',
+    'paid':'Tegen betaling'
+  };
+  const parts = String(detail || '').split(' · ');
+  const status = parts.shift() || '';
+  const rest = parts.map(text => translations[text.toLowerCase()] || text
+    .replace(/if available|subject to availability/gi,'afhankelijk van beschikbaarheid')
+    .replace(/on request|upon request/gi,'op aanvraag')
+    .replace(/surcharge/gi,'toeslag'));
+  return [status,...new Set(rest.filter(text => text.toLowerCase() !== String(label).toLowerCase() && text.toLowerCase() !== status.toLowerCase()))].join(' · ');
+}
+// END GENERATED AMENITY LABELS
 // BEGIN GENERATED NUITEE CONTENT
 // One projection for import, review, protected preview and public responses.
 // Source: https://docs.liteapi.travel/reference/post_hotels-rates
@@ -132,7 +151,7 @@ function nuiteeDealContent(mapping, hotelId, contentHotel) {
     const photoValues = supplierDeal ? (supplierHotel?.photo_verification?.status === "verified" && supplierHotel.room_photos_matched ? supplierHotel.images || [] : []) : (Array.isArray(deal.images) ? deal.images : []);
     const photos = [...new Set(photoValues.map(value => typeof value === "string" ? value : value?.url).filter(url => typeof url === "string" && url.startsWith("https://")))];
     const image = photos[0] || (supplierDeal ? "" : core.imageUrl(deal.images));
-    const inclusions = supplierDeal?.provider === "nuitee" ? [...deal.included_items, ...deal.extra_conditions.filter(e => !["included","unconfirmed"].includes(e.status))].map(row => `<span class="inclusion">${core.escapeHtml(row.label)} · ${core.escapeHtml(row.detail)}</span>`).join("") : [["includes_breakfast", "Ontbijt"], ["includes_wifi", "Wifi"], ["includes_parking", "Parkeren"], ["includes_late_checkout", "Late check-out"], ["includes_welcome_drink", "Welkomstdrankje"]].filter(([field]) => deal[field] === true).map(([, text]) => `<span class="inclusion">✓ ${text}</span>`).join("");
+    const inclusions = supplierDeal?.provider === "nuitee" ? [...deal.included_items, ...deal.extra_conditions.filter(e => !["included","unconfirmed"].includes(e.status))].map(row => `<span class="inclusion">${core.escapeHtml(row.label)} · ${core.escapeHtml(dealAmenityDetail(row.label,row.detail))}</span>`).join("") : [["includes_breakfast", "Ontbijt"], ["includes_wifi", "Wifi"], ["includes_parking", "Parkeren"], ["includes_late_checkout", "Late check-out"], ["includes_welcome_drink", "Welkomstdrankje"]].filter(([field]) => deal[field] === true).map(([, text]) => `<span class="inclusion">✓ ${text}</span>`).join("");
     const environment = String(deal.integration_environment || "").toLowerCase();
     const isTestDeal = environment === "test";
     const reviewAllowed = core.canReview(admin) && !supplierError && deal.status === "pending_approval" && (!supplierDeal || ["sandbox", "production"].includes(supplierDeal.environment));
