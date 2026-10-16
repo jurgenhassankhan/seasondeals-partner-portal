@@ -1167,3 +1167,27 @@ Bevestigd codecheckpoint: commit `b48c3310d8cd0f30c0272a7ad7b26327e69b0de2` op b
 - Aanvullende presentatie op main c7ccac01ee50e60197bd103ab2c167578db12624, Pages38875498692 completed/success. Adminlijst18 werkelijk gecontroleerd: nhow Amsterdam Rai/Concept/Actuele beschikbaarheid/€317,39. Admindetail18 toont dezelfde inhoud en blijft Concept met Indienen ter beoordeling. Hotelpartnerpreview4 gecontroleerd: SeasonDeals Test Hotel en alle vijf bestaande extra’s aanwezig; bestaande verouderde testdatums/ontbrekende commerciële inhoud niet gewijzigd. Twintig gerichte tests in totaal geslaagd.
 
 - Definitieve ingelogde preview18 met versie20261016-extras-2 toont Nederlandse voorzieningsteksten zonder dubbele leverancierslabels; Wifi beschikbaar/kosten niet bevestigd, Parkeren tegen betaling/toegankelijk parkeren/parkeergarage. Screenshot seasondeals-voorzieningen-bevestiging-20261016.jpg vastgelegd en geleverd. Geen onbevestigde late check-out/welkomstdrankje zichtbaar; geen gratislabel of Uitverkocht. Alleen documentatiebewijs wordt na deze softwarecommit aangevuld. Landelijke automatisering, definitieve kosten en echte boekings-/betaalketen blijven eerder genoteerde afzonderlijke livegangpunten.
+
+
+## REL-20261016-LIVEGANG-ROUTE — afgesproken zes vervolgstappen
+
+Eigenaarbesluit 16 oktober 2026, 10:51 Europe/Amsterdam. Dit is de actuele werkvolgorde voor de resterende livegang, met eigen ID's LG-01 t/m LG-06. Deze nummering vervangt niet de historische sandboxstappen of bestaande SD-ID's; eerder bewezen werk blijft bewezen.
+
+| ID | Volgorde en onderdeel | Wat nog moet gebeuren / bewijs voor afronding | Status |
+| --- | --- | --- | --- |
+| LG-01 | 1. Kosten en verkoopprijs definitief vaststellen | Werkelijke Nuitée-inkoop en eventuele verwerkingskosten, betaalproviderkosten, inbegrepen/aanvullende heffingen en marge inzichtelijk maken. Met Jurgen een concreet prijsvoorbeeld bespreken; onbekende bedragen TE VERIFIËREN. Zijn keuze over prijsregels en gewenste marge vastleggen voordat commerciële instellingen worden gewijzigd. | OPEN — eerstvolgende stap; uitleg en vragen samen doornemen |
+| LG-02 | 2. Goedkeuringsroute volledig bewijzen | Na LG-01 een volledig passend aanbod door concept → ter beoordeling → goedgekeurd → automatisch zichtbaar op de website volgen; terugzetten naar concept moet het aanbod weer verbergen. Geen extra publicatiehandeling. Implementatie is geplaatst; positieve ketenproef met definitieve kosten nog open. | OPEN — afhankelijk van LG-01 |
+| LG-03 | 3. Volledige boeking testen | Beschikbaarheid, gastgegevens, betaling, hotelreservering en bevestiging als geheel bewijzen, inclusief mislukte betaling/reservering en de afhandeling daarvan. Echte transactietest vooraf met Jurgen afspreken; bestaande testorders97/99 behouden. Bewezen sandboxtests niet zonder concrete reden herhalen. | OPEN — productieproef niet vrijgegeven |
+| LG-04 | 4. Automatische aanvoer en verversing afronden | Landelijke importplanning, aanbodvarianten, quota/capaciteit, juiste kamerfoto's en voorzieningen aansluiten. Prijzen/beschikbaarheid verversen en verouderd aanbod tijdig verwijderen of verbergen; foutafhandeling bewijzen. Huidige begrensde nhow-import is geen afgeronde landelijke automatisering. | OPEN |
+| LG-05 | 5. Beveiliging vóór livegang afronden | Tijdelijk openbare interne bronnen en geschiedenis afschermen; controleren dat interne bestanden niet via de website bereikbaar zijn. Bewijs vastleggen van de uiteindelijke afscherming. Tijdelijk openbaar werken is eerder toegestaan, geen definitieve livegangtoestand. | OPEN — verplicht vóór publieke livegang |
+| LG-06 | 6. Laatste websitecontrole en livegang | Mobiel/desktop, links, voorwaarden, contact en bezoekersroute controleren. Eerdere controles gericht hergebruiken. Alleen na afronding van de vereiste voorgaande punten en expliciet livegangbesluit Coming Soon verwijderen en boeken/betalen vrijgeven. | OPEN — verkooppoorten blijven gesloten |
+
+### Vaste begeleiding bij LG-01
+
+Jurgen geeft aan geen ervaring te hebben met deze kosten en heeft vragen. Stap voor stap in begrijpelijke taal uitleggen: welke kosten er zijn, wie ze ontvangt, hoe de klantprijs wordt bepaald en wat er na de meegenomen kosten overblijft. Een concreet voorbeeld gebruiken met duidelijk gemarkeerde bevestigde bedragen en nog onbekende bedragen; geen schattingen als echte tarieven presenteren. Opslag en marge duidelijk onderscheiden, en resterende bijdrage niet zonder meer nettowinst noemen. Eerst vragen beantwoorden en keuzes samen bespreken; niet zelfstandig een definitief margebeleid of commerciële tarieven invullen.
+
+Eerstvolgende actie: vragen van Jurgen over stap1 behandelen en vervolgens de benodigde echte kostengegevens gericht controleren. Dit besluit autoriseert vastlegging en begeleiding; geen echte boeking, betaling, dealgoedkeuring of publieke productieactivering.
+
+### Vastlegging en terugval
+
+Documentatierelease: bron GitHub main ff71923120ddacc53775ec8c1849a6a3bc5eebfa; bestemming dezelfde repository/main, uitsluitend SEASONDEALS_LIVEGANG.md en SEASONDEALS_STATUS.md. Beide bevatten dezelfde route en eigenaarafspraak. Bewijs: zes concrete stappen uit het gesprek en expliciete opdracht om deze te bewaren. Geen software, Xano-configuratie, dealgegevens, prijzen of verkooppoorten gewijzigd. Terugval: alleen deze documentatieaanvulling gericht terugdraaien; historisch bewijs behouden.
