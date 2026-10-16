@@ -2,7 +2,7 @@
 function "supplier/production/refresh_deal_photos" {
   input {
     int deal_id
-    json verified_photos?
+    bool save?
   }
   stack {
     db.get deals {
@@ -68,18 +68,11 @@ if(!mapped){
 }
 const binding={source:mappingSource,hotel_id:$var.supplier.supplier_hotel_id,rate_name:old.name,mapped_room_id:mapped,adult_count:old.adultCount,child_count:old.childCount,checked_at:Date.now()};
 const room=mapped?rooms.find(x=>String(x.id)===String(mapped)):null;
-const photos=(room?.photos||[]).map(p=>({url:p.hd_url||p.url,caption:p.imageDescription||room.roomName||'Kamerfoto',scope:'matched_room'}));
+const photos=(room?.photos||[]).map(p=>({url:p.hd_url||p.url,caption:old.name||'Kamerfoto',scope:'matched_room'}));
 const unique=[...new Map(photos.filter(p=>typeof p.url==='string'&&p.url.startsWith('https://')).map(p=>[p.url,p])).values()];
 const candidates=unique;
-const verified=$input.verified_photos;
-if(verified==null)return {valid:true,reason:room?null:'Confirmed mapping missing from this offer; refresh offer before selecting room photos',preview:true,photos:candidates,room_matched:!!room,mapped_room_id:mapped??null,rate_name:old?.name,mapping:binding,reference_room_name:room?.roomName};
 if(!room||!candidates.length)return {valid:false,reason:'Confirmed room mapping and room photos required'};
-const hamming=(a,b)=>{let n=BigInt('0x'+a)^BigInt('0x'+b),bits=0;while(n){bits+=Number(n&1n);n>>=1n;}return bits;};
-const valid=Array.isArray(verified)&&verified.length>0&&verified.length<=5&&verified.every(p=>candidates.some(c=>c.url===p.url)&&/^[a-f0-9]{64}$/.test(p.sha256)&&/^[a-f0-9]{16}$/.test(p.dhash));
-if(!valid)return {valid:false,reason:'Verified photo selection required'};
-for(let i=0;i<verified.length;i++)for(let j=0;j<i;j++)if(verified[i].url===verified[j].url||verified[i].sha256===verified[j].sha256||hamming(verified[i].dhash,verified[j].dhash)<=5)return {valid:false,reason:'Duplicate or visually similar image rejected'};
-const selected=verified.map(p=>({...candidates.find(c=>c.url===p.url),sha256:p.sha256,dhash:p.dhash}));
-return {valid:true,preview:false,images:selected.map(p=>p.url),photos:selected,room_matched:!!room,mapped_room_id:mapped,rate_name:old.name,binding,checked_at:Date.now()};
+return {valid:true,preview:$input.save!==true,photos:candidates,room_matched:true,mapped_room_id:mapped,rate_name:old.name,binding,checked_at:Date.now()};
 """
       timeout = 5
     } as $prepared
@@ -87,6 +80,14 @@ return {valid:true,preview:false,images:selected.map(p=>p.url),photos:selected,r
     var $result { value = $prepared }
     conditional {
       if ($prepared.preview == false) {
+    function.run "supplier/production/select_room_photos" {
+      input = {photos: $prepared.photos}
+    } as $photo_selection
+    api.lambda {
+      code = "return {...$var.prepared,photos:$var.photo_selection.photos,images:$var.photo_selection.photos.map(p=>p.url),algorithm:$var.photo_selection.algorithm};"
+      timeout = 5
+    } as $verified_selection
+    var.update $prepared { value = $verified_selection }
     db.transaction {
       stack {
         db.get deals {
@@ -104,7 +105,7 @@ return {valid:true,preview:false,images:selected.map(p=>p.url),photos:selected,r
           code = """
 const content=$var.locked_supplier.supplier_content||{},hotel=content.hotel||{};
 if(JSON.stringify($var.locked_supplier.supplier_mapping)!==JSON.stringify($var.supplier.supplier_mapping)||$var.locked_supplier.supplier_hotel_id!==$var.supplier.supplier_hotel_id)throw new Error('Room mapping changed; fetch photos again');
-return {...content,hotel:{...hotel,images:$var.prepared.images,photo_gallery:$var.prepared.photos,photos_checked_at:$var.prepared.checked_at,room_photos_matched:$var.prepared.room_matched,photo_hotel_id:$var.locked_supplier.supplier_hotel_id,mapped_room_id:$var.prepared.mapped_room_id,photo_rate_name:$var.prepared.rate_name,room_photo_binding:$var.prepared.binding,photo_verification:{status:'verified',algorithm:'sha256+dhash64-v1',max_photos:5,checked_at:$var.prepared.checked_at},previous_images:hotel.previous_images||hotel.images||[]}};
+return {...content,hotel:{...hotel,images:$var.prepared.images,photo_gallery:$var.prepared.photos,photos_checked_at:$var.prepared.checked_at,room_photos_matched:$var.prepared.room_matched,photo_hotel_id:$var.locked_supplier.supplier_hotel_id,mapped_room_id:$var.prepared.mapped_room_id,photo_rate_name:$var.prepared.rate_name,room_photo_binding:$var.prepared.binding,photo_verification:{status:'verified',algorithm:$var.prepared.algorithm,max_photos:5,checked_at:$var.prepared.checked_at},previous_images:hotel.previous_images||hotel.images||[]}};
 """
           timeout = 5
         } as $content
@@ -127,4 +128,5 @@ return {...content,hotel:{...hotel,images:$var.prepared.images,photo_gallery:$va
     }
   }
   response = $result
+  history = false
 }

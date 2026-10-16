@@ -98,7 +98,7 @@ query "supplier-deals/{deal_id}/workflow" verb=PATCH {
           code = """
 const supplier=$var.supplier,hotel=supplier.supplier_content?.hotel||{};
 const photos=hotel.photo_gallery,urls=$var.deal.external_image_urls,rateName=supplier.supplier_mapping?.offer?.rates?.[0]?.name;
-if(hotel.photo_verification?.status!=='verified'||hotel.photo_verification?.algorithm!=='sha256+dhash64-v1'||hotel.room_photos_matched!==true||!hotel.mapped_room_id||hotel.photo_rate_name!==rateName||hotel.photo_hotel_id!==supplier.supplier_hotel_id)return false;
+if(hotel.photo_verification?.status!=='verified'||!['sha256+dhash64-v1','sha256+dhash64-area-v2'].includes(hotel.photo_verification?.algorithm)||hotel.room_photos_matched!==true||!hotel.mapped_room_id||hotel.photo_rate_name!==rateName||hotel.photo_hotel_id!==supplier.supplier_hotel_id)return false;
 const rate=supplier.supplier_mapping?.offer?.rates?.[0],binding=hotel.room_photo_binding;
 const direct=rate?.mappedRoomId&&String(hotel.mapped_room_id)===String(rate.mappedRoomId);
 const confirmed=binding?.source==='provider_exact_room_name'&&binding.hotel_id===supplier.supplier_hotel_id&&binding.rate_name===rate?.name&&binding.adult_count===rate.adultCount&&binding.child_count===rate.childCount&&String(binding.mapped_room_id)===String(hotel.mapped_room_id);

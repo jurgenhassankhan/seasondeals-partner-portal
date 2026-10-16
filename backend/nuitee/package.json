@@ -1,0 +1,11 @@
+{
+  "name": "seasondeals-photo-selector",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "jimp": "1.6.0"
+  },
+  "scripts": {
+    "test": "node --test ../../tests/photo-selector.test.cjs ../../tests/photo-import.test.cjs ../../tests/photo-approval.test.cjs"
+  }
+}
