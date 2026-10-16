@@ -1,0 +1,136 @@
+{
+  "release": "REL-20261016-SEO-SEPARATION",
+  "site_id": "68cb0d808ea4f2467bb313af",
+  "publish_task": "509ec730-e5f1-4925-804e-1fc1f44601da",
+  "before_heads": [
+    {
+      "label": "68cb0d818ea4f2467bb313d5",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "6904971c4dedf9b6ae6dffe6",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "6a4d340b1b7a6df4578a7603",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "690497cb2ad61dee207ab9e0",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "69049f8e4eab356c5a474797",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "6904a08dc2a9bb614f8bd98d",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "695bd851c2b988eef5d14f96",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "6a5be050b0c76d8699aa04fe",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "6a5bdd6fcd7a8d988bfe7f7b",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "6acbead36631ab0d5cf3b9fd",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": "<meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"referrer\" content=\"no-referrer\"><link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&display=swap\"><link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/confirmation.css?v=20261011-1\">"
+      }
+    },
+    {
+      "label": "6ad0816f4ae4a03b339917ca",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": ""
+      }
+    },
+    {
+      "label": "6a5f73d431f70573692af960",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": "<!-- SeasonDeals /new-website: plaats dit in Page settings > Inside <head> tag -->\n<meta name=\"theme-color\" content=\"#042821\">\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link rel=\"preconnect\" href=\"https://images.unsplash.com\">\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/site.css?v=20260721-webflow-1\">\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/webflow.css?v=20260721-webflow-2\">\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/typography.css?v=20260721-1\">\n<script>\n  window.SEASONDEALS_CONFIG = {\n    dealPage: \"/dea\",\n    dealsEndpoint: \"https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/deals\",\n    locale: \"nl-NL\",\n    currency: \"EUR\"\n  };\n</script>\n<meta name=\"robots\" content=\"noindex,nofollow\">\n<link rel=\"canonical\" href=\"https://www.seasondeals.nl/\">\n<meta property=\"og:site_name\" content=\"SeasonDeals\">\n<meta property=\"og:locale\" content=\"nl_NL\">\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/cookie-consent.css?v=20260803-2\">"
+      }
+    },
+    {
+      "label": "6a5f7754024f18d807219648",
+      "action": "get_page_freeform_code",
+      "result": {
+        "location": "head",
+        "content": "<!-- SeasonDeals /deal: plaats dit in Page settings > Inside <head> tag -->\n<meta name=\"theme-color\" content=\"#042821\">\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/site.css?v=20260721-webflow-1\">\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/cookie-consent.css?v=20260803-2\">\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/deal.css?v=20260721-webflow-1\">\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/webflow.css?v=20260721-webflow-2\">\n<link rel=\"stylesheet\" href=\"https://jurgenhassankhan.github.io/seasondeals-partner-portal/public-preview/css/typography.css?v=20260721-1\">\n<script>\n  window.SEASONDEALS_CONFIG = {\n    homePage: \"/new-website\",\n    dealsEndpoint: \"https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/deals\",\n    checkoutEndpoint: \"https://xgrq-dkge-tace.n7e.xano.io/api:seasondeals-public/create-checkout-session\",\n    locale: \"nl-NL\",\n    currency: \"EUR\"\n  };\n</script>\n"
+      }
+    }
+  ],
+  "before_sitemap_flags": true,
+  "excluded_page_ids": [
+    "68cb0d818ea4f2467bb313d5",
+    "6904971c4dedf9b6ae6dffe6",
+    "6a4d340b1b7a6df4578a7603",
+    "690497cb2ad61dee207ab9e0",
+    "69049f8e4eab356c5a474797",
+    "6904a08dc2a9bb614f8bd98d",
+    "695bd851c2b988eef5d14f96",
+    "6a5be050b0c76d8699aa04fe",
+    "6a5bdd6fcd7a8d988bfe7f7b",
+    "6acbead36631ab0d5cf3b9fd",
+    "6ad0816f4ae4a03b339917ca",
+    "6a5f73d431f70573692af960",
+    "6a5f7754024f18d807219648"
+  ],
+  "before_seo": {
+    "cookies": {
+      "title": "Cookiebeleid · SeasonDeals"
+    },
+    "dea": {
+      "title": "deal"
+    }
+  },
+  "search_head_before": ""
+}

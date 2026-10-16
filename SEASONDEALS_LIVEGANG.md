@@ -830,3 +830,25 @@ Voorstel ter bespreking vóór bouwen: bestaande /deals/{stabiele-slug-met-id}-c
 Verder: oude/test-/transactiepagina’s uit sitemap/indexering, daadwerkelijke sitemap/robots/canonical en Nederlandse taal controleren; één complete nieuwe deal met metadata/HTML/publiceren-terugzetten bewijzen vóór batch. Geen datum-/kamercombinaties onbeperkt als aparte SEO-pagina publiceren. Search Console en live indexering blijven eindcontrole. Referenties: https://help.webflow.com/hc/en-us/articles/33961277976467-Structure-and-style-Collection-pages ; https://help.webflow.com/hc/en-us/articles/33961355371667-Create-a-sitemap-in-Webflow ; https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics . Google kan rendering overslaan bij noindex in initiële HTML; niet via alleen JavaScript opheffen.
 
 Bestemming van dit onderzoek: beide bestaande documenten op GitHub main. Geen Webflow/CMS/Xano-write, import, softwarewijziging, indexeringsvrijgave of transactie. Voorstel nog niet gebouwd; terugval alleen documentatieaanvulling. SEO-01 blijft OPEN.
+
+
+## REL-20261016-SEO-SEPARATION — SEO-01 / LG-05/06
+
+Eigenaar16okt13:14 vraagt oude/nieuwe pagina’s scheiden en SEO aan nieuwe website koppelen; vraagt advies over verwijderen. Geen verwijdering uitgevoerd. Bron main107426d589937a77c521963dd02321314e735ccb plus Webflow actuele pagina’s/headcode; bestemming Webflow site68cb0d808ea4f2467bb313af, beide domeinen en webflow.io. Publicatietaak509ec730-e5f1-4925-804e-1fc1f44601da. Terugvalgegevens in public-preview/webflow/checkpoints/seo-separation-20261016.json; geen databasewijziging.
+
+### Definitieve paginagroepen op basis van HTML en links
+
+| Groep | Routes | Behandeling |
+|---|---|---|
+| Nieuwe site | /new-website, /dea | Nieuwe assets en juiste informatie-/footerlinks bevestigd; tijdelijk noindex en sitemapuitgesloten. Homepage bij livegang naar /; /dea migratie naar automatische CMS-pagina’s nog open |
+| Nieuwe informatiepagina’s | /over-ons, /partner-worden, /inspiratie, /veelgestelde-vragen, /privacy, /algemene-voorwaarden, /cookies | AlleHTTP200, nieuwe assets, canonical naar eigen route en links naar /new-website bevestigd; behouden. noindex blijft tot livegang. Cookieomschrijving ontbrak en is ingevuld/gepubliceerd |
+| Oud / terugval | /old-home, /home-backup, /deall2, /privacy-verklaring, /cookie-verklaring, /disclaimer | Geen onderdeel nieuwe SEO-route; noindex toegevoegd en sitemapflagfalse. Bewaren; redirect/verwijderbesluit bij livegang per concrete vervanger |
+| Technisch / transacties | /boeken, /partner-login, /partner-dashboard, /hotel-boeken, /boeking-bevestiging, /search | Niet voor zoekresultaten; noindex en sitemapuitsluiting waar ondersteund. /hotel-boeken blijft draft. Geen functionaliteit verwijderd |
+| Oude CMS-voorbeelden | /deals/moviemagic-deals, familyfun-festival, vrrush-deals, heerlijke-ontspannende-massage, hotel-overnachting-voor-2, wellnes-voor-2-personen | Zes live-item sitemapflagsfalse gecontroleerd; voorbeeldHTML bevestigt noindex. Niet verwijderen/overschrijven als nieuwe leverancierdeals |
+| Huidige root | / | Coming Soon behouden; niet vervangen |
+
+Werkelijk gewijzigd:13statische sitemapflagsfalse;11pagina-heads kregen noindex,follow met behoud bestaande code; /search afzonderlijk noindex;6CMS-items uitgesloten. /dea kreeg tijdelijke nette titel/omschrijving (geen claim unieke SEO per deal). /cookies kreeg ontbrekende omschrijving. Webflow volledig gepubliceerd; root blijft Coming Soon, geen checkout/gates veranderd.
+
+Verificatie: openbare HTML van /old-home,/home-backup,/deall2,/dea,/search toont nieuwe noindex; /cookies nieuwe description; /new-website en bevestiging bestaande noindex behouden; /deals/moviemagic-deals noindex bevestigd. Sitemapflags na publicatie opnieuw via API gelezen,6CMSflags via type=live. /sitemap.xml geeft404, /robots.txt leeg: sitemapgeneratie nog OPEN, niet als klaar presenteren. Browserpoging Webflow Site settings geblokkeerd door credential_observation_restricted; geen bruikbare tabhandle verkregen, geen loginbeveiliging omzeild. Connector kan individuele sitemapflags beheren maar biedt geen aangetoonde sitegeneratietoggle.
+
+SEO-01 DEELS GEPLAATST, niet volledig afgerond: nog sitemapgeneratie, automatische Xano→CMS-publicatie/SEO/inhoud, capaciteit/limieten, Nederlandse HTML-taal, juiste redirects, Search Console en eindbewijs. Akkoord13:10 op CMS-aanpak blijft geldig; geen nieuwe toestemming nodig voor normale bouw. Bestaande websitescheiding en metadata nu geplaatst; geen brede import of daadwerkelijke indexeringsvrijgave. Advies: oude site pas verwijderen na nieuwe livegang + terugval/back-up + gerichte redirects; geen generieke homepage-redirect voor alle oude inhoud.
